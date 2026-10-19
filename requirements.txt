@@ -1,0 +1,12 @@
+# Graduation Project: Multi-Level Hybrid Security System
+# Requirements Specification
+
+fastapi>=0.110.0
+uvicorn>=0.28.0
+websockets>=12.0
+cryptography>=42.0.0
+pycryptodome>=3.20.0
+pillow>=10.0.0
+numpy>=1.26.0
+python-multipart>=0.0.9
+kyber-py>=1.2.0

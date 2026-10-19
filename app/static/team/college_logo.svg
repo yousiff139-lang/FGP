@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100" fill="none">
+  <!-- College of Computer Science & Cybersecurity Shield -->
+  <path d="M50 12 L82 24 V52 C82 72 50 88 50 88 C50 88 18 72 18 52 V24 Z" stroke="rgba(255,255,255,0.9)" stroke-width="2.2" stroke-linejoin="round"/>
+  <!-- Inner Circuit & Cryptographic Lattice -->
+  <path d="M50 26 L72 35 V52 C72 66 50 78 50 78 C50 78 28 66 28 52 V35 Z" stroke="rgba(255,255,255,0.4)" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <!-- Key / Lock Core -->
+  <rect x="42" y="46" width="16" height="13" rx="2.5" stroke="rgba(255,255,255,0.95)" stroke-width="1.8"/>
+  <path d="M46 46 V40 a4 4 0 0 1 8 0 v6" stroke="rgba(255,255,255,0.95)" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="50" cy="52" r="1.8" fill="rgba(255,255,255,0.95)"/>
+  <!-- Binary Matrix Lines -->
+  <line x1="33" y1="42" x2="38" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <line x1="62" y1="42" x2="67" y2="42" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <line x1="36" y1="60" x2="40" y2="60" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+  <line x1="60" y1="60" x2="64" y2="60" stroke="rgba(255,255,255,0.6)" stroke-width="1.5"/>
+</svg>

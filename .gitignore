@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs & Temporary
+logs/
+*.log
+scratch/
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Internal Agent & Spec files
+.agents/
+skills/
+DESIGN.md
+PRODUCT.md
+
+# Node & Vite artifacts
+node_modules/
+dist/
+dist-ssr/
+/package.json
+/package-lock.json
+/index.html
+/src/
+/public/
+
