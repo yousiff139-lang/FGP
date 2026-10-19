@@ -396,7 +396,7 @@ tests/test_stego.py::test_stego_capacity_overflow PASSED                 [100%]
 
 ### Mustansiriyah University — College of Engineering
 
-- 🎓 **Dr. Haider Tarish** — Academic Supervisor & Project Advisor
+- 🎓 **Assist. Prof. Haider Tarish** — Academic Supervisor & Project Advisor
   - *Academic oversight, mathematical rigor, validation of Module-LWE lattice hardness, and thesis defense governance.*
 - 🗣️ **Abdulallah Ayeaad** — Lead Presenter & Post-Quantum Cryptography Researcher
   - *Theoretical framework, literature research on Shor's algorithm, NIST FIPS 203 ML-KEM-768 parameters, and oral defense narration.*

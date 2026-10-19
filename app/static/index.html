@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,8 +8,11 @@
   <link rel="stylesheet" href="/static/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
+    rel="stylesheet">
 </head>
+
 <body>
 
   <!-- Top Navigation Bar -->
@@ -16,9 +20,11 @@
     <div class="header-left">
       <div class="brand-logo">
         <div class="header-institution-logos" title="Mustansiriyah University &bull; College of Engineering">
-          <img src="/static/team/university_logo.png" alt="Mustansiriyah University" class="brand-institution-logo" id="header-university-logo" title="Mustansiriyah University (الجامعة المستنصرية)">
+          <img src="/static/team/university_logo.png" alt="Mustansiriyah University" class="brand-institution-logo"
+            id="header-university-logo" title="Mustansiriyah University (الجامعة المستنصرية)">
           <div class="institution-logo-divider"></div>
-          <img src="/static/team/college_logo.png" alt="College of Engineering" class="brand-institution-logo" id="header-college-logo" title="College of Engineering (كلية الهندسة)">
+          <img src="/static/team/college_logo.png" alt="College of Engineering" class="brand-institution-logo"
+            id="header-college-logo" title="College of Engineering (كلية الهندسة)">
         </div>
         <div class="brand-text">
           <span class="brand-title">Post-Quantum Stego System</span>
@@ -30,26 +36,38 @@
 
     <nav class="header-nav">
       <button class="nav-tab active" data-target="section-info">
-        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
         </svg>
         System Info
       </button>
       <button class="nav-tab" data-target="section-encrypt">
-        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
         </svg>
         Encrypt & Conceal
       </button>
       <button class="nav-tab" data-target="section-decrypt">
-        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+          <path d="M7 11V7a5 5 0 0 1 9.9-1" />
         </svg>
         Extract & Decrypt
       </button>
       <button class="nav-tab" data-target="section-channel">
-        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+          <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
+          <circle cx="12" cy="12" r="2" />
+          <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
+          <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
         </svg>
         Peer Channel <span id="channel-pulse" class="pulse-dot hidden"></span>
       </button>
@@ -61,8 +79,10 @@
         <span id="channel-status-label">Channel: Offline</span>
       </div>
       <button class="btn btn-secondary btn-sm" id="btn-open-vault">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M19 4l-4 4-2-2-4 4 1.5 1.5-1.5 1.5-3 3-4-4 3-3 1.5 1.5 1.5-1.5 4-4-2-2 4-4z"/>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path
+            d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M19 4l-4 4-2-2-4 4 1.5 1.5-1.5 1.5-3 3-4-4 3-3 1.5 1.5 1.5-1.5 4-4-2-2 4-4z" />
         </svg>
         Key Vault
       </button>
@@ -77,8 +97,10 @@
     <div class="modal-card">
       <div class="modal-header">
         <h3>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
           ML-KEM-768 Local Key Vault
         </h3>
@@ -86,9 +108,10 @@
       </div>
       <div class="modal-body">
         <p class="text-secondary small">
-          Keys are computed in-memory on this device using NIST FIPS 203 module lattices. Private keys never leave local storage.
+          Keys are computed in-memory on this device using NIST FIPS 203 module lattices. Private keys never leave local
+          storage.
         </p>
-        
+
         <div class="key-actions-row">
           <button class="btn btn-primary btn-sm" id="btn-gen-keys">Generate Lattice Keypair</button>
           <button class="btn btn-secondary btn-sm" id="btn-export-pk" disabled>Save Public Key (.key)</button>
@@ -97,12 +120,14 @@
 
         <div class="form-group mt-3">
           <label>Public Key (1,184 Bytes &bull; Recipient Token):</label>
-          <textarea id="vault-pk" class="form-input code-font" rows="3" readonly placeholder="Generate keypair to derive public token..."></textarea>
+          <textarea id="vault-pk" class="form-input code-font" rows="3" readonly
+            placeholder="Generate keypair to derive public token..."></textarea>
         </div>
 
         <div class="form-group">
           <label>Secret Key (2,400 Bytes &bull; Confidential Decapsulation Key):</label>
-          <textarea id="vault-sk" class="form-input code-font" rows="4" readonly placeholder="Secret key will be stored locally..."></textarea>
+          <textarea id="vault-sk" class="form-input code-font" rows="4" readonly
+            placeholder="Secret key will be stored locally..."></textarea>
         </div>
       </div>
       <div class="modal-footer">
@@ -124,12 +149,15 @@
       <!-- Institutional Accreditation & Academic Banner -->
       <div class="academic-banner-bar">
         <div class="academic-banner-inner">
-          <img src="/static/team/university_logo.png" alt="Mustansiriyah University Logo" class="academic-banner-logo" id="banner-university-logo" title="Mustansiriyah University (الجامعة المستنصرية)">
+          <img src="/static/team/university_logo.png" alt="Mustansiriyah University Logo" class="academic-banner-logo"
+            id="banner-university-logo" title="Mustansiriyah University (الجامعة المستنصرية)">
           <div class="academic-banner-titles">
             <span class="academic-banner-uni">Mustansiriyah University &bull; College of Engineering</span>
-            <span class="academic-banner-coll">Senior Graduation Project Defense &bull; Post-Quantum &amp; Steganography Systems</span>
+            <span class="academic-banner-coll">Senior Graduation Project Defense &bull; Post-Quantum &amp; Steganography
+              Systems</span>
           </div>
-          <img src="/static/team/college_logo.png" alt="College of Engineering Logo" class="academic-banner-logo" id="banner-college-logo" title="College of Engineering (كلية الهندسة)">
+          <img src="/static/team/college_logo.png" alt="College of Engineering Logo" class="academic-banner-logo"
+            id="banner-college-logo" title="College of Engineering (كلية الهندسة)">
         </div>
       </div>
 
@@ -141,7 +169,9 @@
         </div>
         <h1>System Information &amp; Technical Reference</h1>
         <p class="hero-desc">
-          Official senior graduation project thesis documentation covering the multi-layer hybrid cryptographic pipeline, empirical mathematical decision matrix, classical and post-quantum routing, and the engineering project team.
+          Official senior graduation project thesis documentation covering the multi-layer hybrid cryptographic
+          pipeline, empirical mathematical decision matrix, classical and post-quantum routing, and the engineering
+          project team.
         </p>
       </div>
 
@@ -149,21 +179,24 @@
       <div class="card mb-4">
         <div class="arch-card-header">
           <h2 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
             Interactive Execution Architecture Pipeline
           </h2>
           <button class="btn btn-secondary btn-sm" id="btn-run-arch-sim">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="5 3 19 12 5 21 5 3"/>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
             <span id="sim-btn-text">Simulate Pipeline Flow</span>
           </button>
         </div>
 
         <p class="text-secondary small">
-          Click any stage below to inspect its mathematical models, byte transformations, and security parameters in the inspector panel.
+          Click any stage below to inspect its mathematical models, byte transformations, and security parameters in the
+          inspector panel.
         </p>
 
         <!-- Simulation Progress Track -->
@@ -173,12 +206,13 @@
 
         <!-- 4 Clickable Pipeline Stages -->
         <div class="architecture-diagram" id="arch-stages-container">
-          
+
           <div class="arch-stage-card active" data-stage="1" id="arch-stage-1">
             <div class="stage-top-meta">
               <span class="stage-num-badge">Stage 01</span>
               <svg class="stage-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
               </svg>
             </div>
             <h4>Payload Classification</h4>
@@ -194,7 +228,8 @@
             <div class="stage-top-meta">
               <span class="stage-num-badge">Stage 02</span>
               <svg class="stage-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
             </div>
             <h4>Cryptographic Routing</h4>
@@ -210,7 +245,9 @@
             <div class="stage-top-meta">
               <span class="stage-num-badge">Stage 03</span>
               <svg class="stage-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                <polyline points="2 17 12 22 22 17" />
+                <polyline points="2 12 12 17 22 12" />
               </svg>
             </div>
             <h4>ML-KEM-768 Consolidation</h4>
@@ -226,7 +263,9 @@
             <div class="stage-top-meta">
               <span class="stage-num-badge">Stage 04</span>
               <svg class="stage-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                <circle cx="8.5" cy="8.5" r="1.5" />
+                <polyline points="21 15 16 10 5 21" />
               </svg>
             </div>
             <h4>Steganographic Carrier</h4>
@@ -245,7 +284,8 @@
           <div class="inspector-header">
             <div class="inspector-title-group">
               <h3 id="inspector-stage-title">Stage 01: Intelligent Payload Classifier</h3>
-              <span class="text-secondary small" id="inspector-stage-desc">Dynamic route selection based on file header heuristics and entropy analysis.</span>
+              <span class="text-secondary small" id="inspector-stage-desc">Dynamic route selection based on file header
+                heuristics and entropy analysis.</span>
             </div>
             <span class="badge badge-primary" id="inspector-stage-standard">IEEE / RFC Heuristics</span>
           </div>
@@ -273,21 +313,26 @@
             <div class="deep-dive-col">
               <h4>Algorithmic & Mathematical Execution</h4>
               <p id="insp-dive-math">
-                Inspects payload byte distribution, MIME signatures, and high-entropy credential patterns (Bearer tokens, private keys, API secrets). Automatically maps inputs into three isolated security tiers:
+                Inspects payload byte distribution, MIME signatures, and high-entropy credential patterns (Bearer
+                tokens, private keys, API secrets). Automatically maps inputs into three isolated security tiers:
               </p>
               <ul id="insp-dive-steps">
                 <li><strong>Bulk Data (&ge;64KB / media):</strong> ChaCha20-Poly1305 high-throughput AEAD stream.</li>
-                <li><strong>Sensitive Credentials:</strong> Dual-layer payload encryption with ephemeral key encapsulation.</li>
-                <li><strong>Documents & Integrity:</strong> ECDSA P-256 digital signature wrapping for non-repudiation.</li>
+                <li><strong>Sensitive Credentials:</strong> Dual-layer payload encryption with ephemeral key
+                  encapsulation.</li>
+                <li><strong>Documents & Integrity:</strong> ECDSA P-256 digital signature wrapping for non-repudiation.
+                </li>
               </ul>
             </div>
             <div class="deep-dive-col">
               <h4>Defense Threat Model & Guarantees</h4>
               <p id="insp-dive-defense">
-                Prevents "one-size-fits-all" cryptographic pitfalls by enforcing constant-time ARX primitives on high-risk software targets and binding tamper-evident hashes to document payloads.
+                Prevents "one-size-fits-all" cryptographic pitfalls by enforcing constant-time ARX primitives on
+                high-risk software targets and binding tamper-evident hashes to document payloads.
               </p>
               <ul>
-                <li><strong>Zero Leakage:</strong> Stream routing parameters stay isolated inside in-memory execution.</li>
+                <li><strong>Zero Leakage:</strong> Stream routing parameters stay isolated inside in-memory execution.
+                </li>
                 <li><strong>Deterministic Dispatch:</strong> Fallback manual override available in sender workflow.</li>
               </ul>
             </div>
@@ -299,24 +344,46 @@
       <!-- Comparative Analysis Grid -->
       <h2 class="section-heading">Cryptographic Decisions & Technical Justifications</h2>
       <div class="grid-2-col">
-        
+
         <div class="card">
           <div class="card-header-chip">
             <span class="badge badge-success">Primitive 1</span>
             <h3>ChaCha20-Poly1305 vs. AES-256-GCM</h3>
           </div>
           <p class="text-secondary small">
-            AES relies on software lookup tables (S-Boxes) susceptible to <em>cache-timing side-channel attacks</em> when hardware acceleration (AES-NI) is absent. ChaCha20 uses simple <strong>Add-Rotate-XOR (ARX)</strong> operations executing in strictly constant time across all CPU architectures.
+            AES relies on software lookup tables (S-Boxes) susceptible to <em>cache-timing side-channel attacks</em>
+            when hardware acceleration (AES-NI) is absent. ChaCha20 uses simple <strong>Add-Rotate-XOR (ARX)</strong>
+            operations executing in strictly constant time across all CPU architectures.
           </p>
           <table class="data-table">
             <thead>
-              <tr><th>Metric</th><th>ChaCha20-Poly1305</th><th>AES-256-GCM</th></tr>
+              <tr>
+                <th>Metric</th>
+                <th>ChaCha20-Poly1305</th>
+                <th>AES-256-GCM</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Design Architecture</td><td>Constant-Time ARX</td><td>Substitution-Permutation</td></tr>
-              <tr><td>Timing Vulnerability</td><td><span class="text-success">Immune (Constant-Time)</span></td><td>Vulnerable without AES-NI</td></tr>
-              <tr><td>Key & Nonce</td><td>256-bit Key / 96-bit Nonce</td><td>256-bit Key / 96-bit IV</td></tr>
-              <tr><td>Industry Standard</td><td>RFC 8439, TLS 1.3</td><td>NIST SP 800-38D, TLS 1.3</td></tr>
+              <tr>
+                <td>Design Architecture</td>
+                <td>Constant-Time ARX</td>
+                <td>Substitution-Permutation</td>
+              </tr>
+              <tr>
+                <td>Timing Vulnerability</td>
+                <td><span class="text-success">Immune (Constant-Time)</span></td>
+                <td>Vulnerable without AES-NI</td>
+              </tr>
+              <tr>
+                <td>Key & Nonce</td>
+                <td>256-bit Key / 96-bit Nonce</td>
+                <td>256-bit Key / 96-bit IV</td>
+              </tr>
+              <tr>
+                <td>Industry Standard</td>
+                <td>RFC 8439, TLS 1.3</td>
+                <td>NIST SP 800-38D, TLS 1.3</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -327,17 +394,39 @@
             <h3>ECC (ECDH / ECDSA) vs. Legacy RSA</h3>
           </div>
           <p class="text-secondary small">
-            Based on the algebraic structure of elliptic curves over finite fields, ECC achieves 128-bit security level with a compact <strong>64-byte key</strong> compared to a cumbersome <strong>384-byte key</strong> for RSA-3072. Handshake speed is 10&times; to 25&times; faster with drastically lower memory overhead.
+            Based on the algebraic structure of elliptic curves over finite fields, ECC achieves 128-bit security level
+            with a compact <strong>64-byte key</strong> compared to a cumbersome <strong>384-byte key</strong> for
+            RSA-3072. Handshake speed is 10&times; to 25&times; faster with drastically lower memory overhead.
           </p>
           <table class="data-table">
             <thead>
-              <tr><th>Metric</th><th>ECC (P-256)</th><th>RSA-3072</th></tr>
+              <tr>
+                <th>Metric</th>
+                <th>ECC (P-256)</th>
+                <th>RSA-3072</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Public Key Size</td><td><span class="text-success">64 Bytes</span></td><td>384 Bytes (6&times; larger)</td></tr>
-              <tr><td>Sign Operation</td><td><span class="text-success">&sim;0.1 ms</span></td><td>&sim;2.5 ms</td></tr>
-              <tr><td>Resource Profile</td><td>Low Footprint</td><td>High Exponentiation Load</td></tr>
-              <tr><td>Shor's Algorithm</td><td>Vulnerable (Quantum)</td><td>Vulnerable (Quantum)</td></tr>
+              <tr>
+                <td>Public Key Size</td>
+                <td><span class="text-success">64 Bytes</span></td>
+                <td>384 Bytes (6&times; larger)</td>
+              </tr>
+              <tr>
+                <td>Sign Operation</td>
+                <td><span class="text-success">&sim;0.1 ms</span></td>
+                <td>&sim;2.5 ms</td>
+              </tr>
+              <tr>
+                <td>Resource Profile</td>
+                <td>Low Footprint</td>
+                <td>High Exponentiation Load</td>
+              </tr>
+              <tr>
+                <td>Shor's Algorithm</td>
+                <td>Vulnerable (Quantum)</td>
+                <td>Vulnerable (Quantum)</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -348,15 +437,29 @@
             <h3>DSA vs. ElGamal Signatures</h3>
           </div>
           <p class="text-secondary small">
-            Raw ElGamal signatures produce oversized signatures modulo a large prime modulus <em>p</em>. DSA was specifically standardized by NIST to operate in a prime-order subgroup, generating compact signatures (&sim;64 bytes via ECDSA) with significantly faster verification.
+            Raw ElGamal signatures produce oversized signatures modulo a large prime modulus <em>p</em>. DSA was
+            specifically standardized by NIST to operate in a prime-order subgroup, generating compact signatures
+            (&sim;64 bytes via ECDSA) with significantly faster verification.
           </p>
           <table class="data-table">
             <thead>
-              <tr><th>Scheme</th><th>Signature Size</th><th>Arithmetic Complexity</th></tr>
+              <tr>
+                <th>Scheme</th>
+                <th>Signature Size</th>
+                <th>Arithmetic Complexity</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>ElGamal Signatures</td><td>2&times; Modulus Length</td><td>Full-Modulus Exponentiation</td></tr>
-              <tr><td>DSA / ECDSA</td><td><span class="text-success">Compact (64 bytes)</span></td><td>Subgroup Curve Operations</td></tr>
+              <tr>
+                <td>ElGamal Signatures</td>
+                <td>2&times; Modulus Length</td>
+                <td>Full-Modulus Exponentiation</td>
+              </tr>
+              <tr>
+                <td>DSA / ECDSA</td>
+                <td><span class="text-success">Compact (64 bytes)</span></td>
+                <td>Subgroup Curve Operations</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -367,17 +470,39 @@
             <h3>NIST FIPS 203 ML-KEM-768 (CRYSTALS-Kyber)</h3>
           </div>
           <p class="text-secondary small">
-            Kyber relies on the hardness of the <em>Module Learning With Errors (M-LWE)</em> problem in structured module lattices. No known quantum algorithm (including Shor's or Grover's) can solve M-LWE in polynomial time, guaranteeing long-term post-quantum secrecy.
+            Kyber relies on the hardness of the <em>Module Learning With Errors (M-LWE)</em> problem in structured
+            module lattices. No known quantum algorithm (including Shor's or Grover's) can solve M-LWE in polynomial
+            time, guaranteeing long-term post-quantum secrecy.
           </p>
           <table class="data-table">
             <thead>
-              <tr><th>Parameter</th><th>Value</th><th>Cryptographic Purpose</th></tr>
+              <tr>
+                <th>Parameter</th>
+                <th>Value</th>
+                <th>Cryptographic Purpose</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>Public Key (pk)</td><td>1,184 Bytes</td><td>Encapsulation token for sender</td></tr>
-              <tr><td>Secret Key (sk)</td><td>2,400 Bytes</td><td>Decapsulation token for receiver</td></tr>
-              <tr><td>Ciphertext (ct)</td><td>1,088 Bytes</td><td>Quantum-resistant key encapsulation</td></tr>
-              <tr><td>Shared Secret (ss)</td><td>32 Bytes</td><td>HKDF seed for payload key & stego seed</td></tr>
+              <tr>
+                <td>Public Key (pk)</td>
+                <td>1,184 Bytes</td>
+                <td>Encapsulation token for sender</td>
+              </tr>
+              <tr>
+                <td>Secret Key (sk)</td>
+                <td>2,400 Bytes</td>
+                <td>Decapsulation token for receiver</td>
+              </tr>
+              <tr>
+                <td>Ciphertext (ct)</td>
+                <td>1,088 Bytes</td>
+                <td>Quantum-resistant key encapsulation</td>
+              </tr>
+              <tr>
+                <td>Shared Secret (ss)</td>
+                <td>32 Bytes</td>
+                <td>HKDF seed for payload key & stego seed</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -390,7 +515,8 @@
       <div class="team-section">
         <div class="presentation-deck-header">
           <h2 class="presentation-deck-title">Graduation Project Team &amp; Academic Supervision</h2>
-          <p class="presentation-deck-sub">Mustansiriyah University &bull; College of Engineering &bull; Senior Defense</p>
+          <p class="presentation-deck-sub">Mustansiriyah University &bull; College of Engineering &bull; Senior Defense
+          </p>
         </div>
 
         <!-- Clean Standard Presentation Cards Deck (Interactive Shrink on Hover) -->
@@ -401,13 +527,13 @@
             <div class="pc-avatar-wrap">
               <div class="pc-poster-monogram">
                 <span class="monogram-emblem">HT</span>
-                <span class="monogram-crest-sub">Dr. Haider Tarish</span>
+                <span class="monogram-crest-sub">Assist. Prof. Haider Tarish</span>
               </div>
               <div class="pc-poster-overlay">
                 <div class="pc-poster-tag">
                   <span class="badge badge-warning">Academic Advisor</span>
                 </div>
-                <h3 class="pc-poster-name">Dr. Haider Tarish</h3>
+                <h3 class="pc-poster-name">Assist. Prof. Haider Tarish</h3>
                 <div class="pc-peek-badge">
                   <span class="pc-peek-arrow">↶</span>
                   <span>Hover to Reveal Dossier</span>
@@ -417,18 +543,28 @@
             <div class="pc-inner">
               <div class="pc-content">
                 <div class="pc-header">
-                  <h2 class="pc-name" id="team-supervisor-name">Dr. Haider Tarish</h2>
+                  <h2 class="pc-name" id="team-supervisor-name">Assist. Prof. Haider Tarish</h2>
                   <p class="pc-role">Academic Supervisor &amp; Project Advisor</p>
                   <div class="pc-divider"></div>
                   <p class="pc-dept">Mustansiriyah University &bull; College of Engineering</p>
                 </div>
                 <div class="pc-body">
-                  <p class="pc-spec">Academic Advisor directing the senior graduation project, validating the theoretical framework, mathematical rigor, quantum-resistant lattice foundations, and engineering thesis defense.</p>
+                  <p class="pc-spec">Academic Advisor directing the senior graduation project, validating the
+                    theoretical framework, mathematical rigor, quantum-resistant lattice foundations, and engineering
+                    thesis defense.</p>
                   <ul class="pc-scopes-list">
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Formal Proofs:</strong> Validation of Module-LWE lattice hardness underlying NIST FIPS 203 ML-KEM-768 against quantum cryptanalysis.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Cryptographic Governance:</strong> Review of constant-time ARX ciphers to prevent timing side-channel leaks.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Steganographic Assurance:</strong> Rigorous PSNR (&gt;48 dB) and SSIM (&gt;0.999) metric validation for carrier integrity.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Project Supervision:</strong> Academic oversight, graduation project milestones, and thesis defense governance.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Formal
+                          Proofs:</strong> Validation of Module-LWE lattice hardness underlying NIST FIPS 203 ML-KEM-768
+                        against quantum cryptanalysis.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Cryptographic
+                          Governance:</strong> Review of constant-time ARX ciphers to prevent timing side-channel
+                        leaks.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Steganographic
+                          Assurance:</strong> Rigorous PSNR (&gt;48 dB) and SSIM (&gt;0.999) metric validation for
+                        carrier integrity.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Project
+                          Supervision:</strong> Academic oversight, graduation project milestones, and thesis defense
+                        governance.</span></li>
                   </ul>
                   <div class="pc-pill-box">
                     <span class="pc-pill-tag"><span class="pc-pill-dot"></span>Mustansiriyah University</span>
@@ -438,7 +574,9 @@
                   </div>
                 </div>
                 <div class="pc-bottom">
-                  <button class="pc-btn" onclick="event.stopPropagation();window.location.href='mailto:haider.tarish@uomustansiriyah.edu.iq'">Academic Office</button>
+                  <button class="pc-btn"
+                    onclick="event.stopPropagation();window.location.href='mailto:haider.tarish@uomustansiriyah.edu.iq'">Academic
+                    Office</button>
                 </div>
               </div>
             </div>
@@ -471,12 +609,22 @@
                   <p class="pc-dept">Mustansiriyah University &bull; College of Engineering</p>
                 </div>
                 <div class="pc-body">
-                  <p class="pc-spec">Conducted the graduation project's theoretical research, post-quantum cryptography literature, NIST FIPS 203 ML-KEM-768 (CRYSTALS-Kyber) lattice formulation, and primary oral defense presentation.</p>
+                  <p class="pc-spec">Conducted the graduation project's theoretical research, post-quantum cryptography
+                    literature, NIST FIPS 203 ML-KEM-768 (CRYSTALS-Kyber) lattice formulation, and primary oral defense
+                    presentation.</p>
                   <ul class="pc-scopes-list">
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Theoretical Research:</strong> Formulated the graduation thesis academic research on quantum computing threats (Shor's algorithm) and post-quantum migration.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>NIST ML-KEM-768 (Kyber):</strong> Researched Module Learning With Errors (M-LWE) lattice hardness parameters, polynomial rings, and quantum-resistant key encapsulation.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Lead Defense Presenter:</strong> Orchestrated the oral defense presentation, mathematical proofs walkthrough, and thesis committee defense narrative.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Thesis Documentation:</strong> Authored academic research chapters, post-quantum literature reviews, and theoretical comparisons for the capstone report.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Theoretical
+                          Research:</strong> Formulated the graduation thesis academic research on quantum computing
+                        threats (Shor's algorithm) and post-quantum migration.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>NIST ML-KEM-768
+                          (Kyber):</strong> Researched Module Learning With Errors (M-LWE) lattice hardness parameters,
+                        polynomial rings, and quantum-resistant key encapsulation.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Lead Defense
+                          Presenter:</strong> Orchestrated the oral defense presentation, mathematical proofs
+                        walkthrough, and thesis committee defense narrative.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Thesis
+                          Documentation:</strong> Authored academic research chapters, post-quantum literature reviews,
+                        and theoretical comparisons for the capstone report.</span></li>
                   </ul>
                   <div class="pc-pill-box">
                     <span class="pc-pill-tag"><span class="pc-pill-dot"></span>Lead Presenter</span>
@@ -486,7 +634,9 @@
                   </div>
                 </div>
                 <div class="pc-bottom">
-                  <button class="pc-btn" onclick="event.stopPropagation();window.location.href='mailto:abdulallah.ayeaad@student.uomustansiriyah.edu.iq'">Contact Presenter</button>
+                  <button class="pc-btn"
+                    onclick="event.stopPropagation();window.location.href='mailto:abdulallah.ayeaad@student.uomustansiriyah.edu.iq'">Contact
+                    Presenter</button>
                 </div>
               </div>
             </div>
@@ -516,13 +666,25 @@
                   <p class="pc-dept">Mustansiriyah University &bull; College of Engineering</p>
                 </div>
                 <div class="pc-body">
-                  <p class="pc-spec">Engineered the classical cryptographic methods (RSA, DSA/ECDSA, ECDH, ChaCha20/AES), the dynamic routing engine, the Key Vault &amp; key generation system, spatial steganography, and full-stack workstation.</p>
+                  <p class="pc-spec">Engineered the classical cryptographic methods (RSA, DSA/ECDSA, ECDH,
+                    ChaCha20/AES), the dynamic routing engine, the Key Vault &amp; key generation system, spatial
+                    steganography, and full-stack workstation.</p>
                   <ul class="pc-scopes-list">
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>RSA, DSA &amp; Classical Ciphers:</strong> Implemented RSA-3072, DSA / ECDSA P-256 digital signatures, ECDH key exchange, ChaCha20-Poly1305 ARX, and AES pipelines.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Dynamic Routing Matrix:</strong> Architected and implemented the payload classifier and dynamic routing algorithm that directs data based on MIME, entropy, and size.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Key Vault &amp; Key Generation:</strong> Built the in-memory Key Vault system, local lattice &amp; classical keypair generation engine, and key export/import pipelines.</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Spatial LSB Steganography:</strong> Developed the pseudo-random Fisher-Yates pixel permutation steganography engine with zero-leakage embedding (&Delta;E &lt; 0.05).</span></li>
-                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Full-Stack &amp; WebSockets:</strong> Created the FastAPI backend, real-time peer WebSocket channels, and reactive workstation user interface.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>RSA, DSA &amp;
+                          Classical Ciphers:</strong> Implemented RSA-3072, DSA / ECDSA P-256 digital signatures, ECDH
+                        key exchange, ChaCha20-Poly1305 ARX, and AES pipelines.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Dynamic Routing
+                          Matrix:</strong> Architected and implemented the payload classifier and dynamic routing
+                        algorithm that directs data based on MIME, entropy, and size.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Key Vault &amp;
+                          Key Generation:</strong> Built the in-memory Key Vault system, local lattice &amp; classical
+                        keypair generation engine, and key export/import pipelines.</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Spatial LSB
+                          Steganography:</strong> Developed the pseudo-random Fisher-Yates pixel permutation
+                        steganography engine with zero-leakage embedding (&Delta;E &lt; 0.05).</span></li>
+                    <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span><strong>Full-Stack &amp;
+                          WebSockets:</strong> Created the FastAPI backend, real-time peer WebSocket channels, and
+                        reactive workstation user interface.</span></li>
                   </ul>
                   <div class="pc-pill-box">
                     <span class="pc-pill-tag"><span class="pc-pill-dot"></span>RSA &amp; DSA / ECDSA</span>
@@ -533,7 +695,9 @@
                   </div>
                 </div>
                 <div class="pc-bottom">
-                  <button class="pc-btn" onclick="event.stopPropagation();navigator.clipboard.writeText('karrar mayaly@gmail.com');alert('Copied karrar mayaly@gmail.com to clipboard!')">Contact Developer</button>
+                  <button class="pc-btn"
+                    onclick="event.stopPropagation();navigator.clipboard.writeText('karrar mayaly@gmail.com');alert('Copied karrar mayaly@gmail.com to clipboard!')">Contact
+                    Developer</button>
                 </div>
               </div>
             </div>
@@ -545,7 +709,7 @@
         <div class="team-credits-wrap">
           <div class="credit-badge">
             <span class="credit-sub">Academic Supervisor</span>
-            <strong class="credit-name">Dr. Haider Tarish</strong>
+            <strong class="credit-name">Assist. Prof. Haider Tarish</strong>
           </div>
           <div class="credit-badge">
             <span class="credit-sub">Lead Presenter &bull; Research &amp; Kyber</span>
@@ -567,19 +731,22 @@
     <section id="section-encrypt" class="content-section">
       <div class="section-header">
         <h2>Sender Workflow: Encrypt, Encapsulate & Conceal</h2>
-        <p class="text-muted">Supply plaintext or upload a file. The classifier will route to the optimal classical and post-quantum protocols.</p>
+        <p class="text-muted">Supply plaintext or upload a file. The classifier will route to the optimal classical and
+          post-quantum protocols.</p>
       </div>
 
       <div class="workflow-grid">
         <!-- Input Form Column -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
             1. Payload Input & Classification
           </h3>
-          
+
           <div class="input-tabs">
             <button class="tab-btn active" id="tab-input-text">Text Input</button>
             <button class="tab-btn" id="tab-input-file">File Upload</button>
@@ -587,7 +754,8 @@
 
           <div id="input-text-container" class="form-group">
             <label>Plaintext Payload:</label>
-            <textarea id="encrypt-text" class="form-input" rows="4" placeholder="Enter sensitive secret, document text, or credentials..."></textarea>
+            <textarea id="encrypt-text" class="form-input" rows="4"
+              placeholder="Enter sensitive secret, document text, or credentials..."></textarea>
           </div>
 
           <div id="input-file-container" class="form-group hidden">
@@ -631,34 +799,42 @@
           </div>
 
           <h3 class="card-title mt-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             2. Recipient ML-KEM-768 Public Key
           </h3>
           <div class="form-group">
             <label>Recipient Public Key (Base64 &bull; 1,184 Bytes):</label>
-            <textarea id="encrypt-recipient-pk" class="form-input code-font" rows="3" placeholder="Paste 1,184-byte recipient public key or load from Key Vault..."></textarea>
+            <textarea id="encrypt-recipient-pk" class="form-input code-font" rows="3"
+              placeholder="Paste 1,184-byte recipient public key or load from Key Vault..."></textarea>
             <div class="btn-group mt-2">
               <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-pk">Load from Key Vault</button>
-              <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-pk">⚡ Generate Lattice Keypair</button>
+              <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-pk">⚡ Generate Lattice
+                Keypair</button>
             </div>
           </div>
 
           <h3 class="card-title mt-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
             </svg>
             3. Carrier Image (Cover)
           </h3>
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
               <label style="margin-bottom: 0;">Select Cover Image (Lossless PNG):</label>
-              <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-reset-cover">↺ Use Auto-Synthesized Carrier</button>
+              <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-reset-cover">↺ Use Auto-Synthesized
+                Carrier</button>
             </div>
             <input type="file" id="encrypt-cover-image" accept="image/png,image/jpeg,image/webp" class="form-input">
             <p class="small text-muted mt-1">Leave empty to auto-synthesize an optimal carrier image.</p>
-            
+
             <!-- Simple Cover Size Indicator Message -->
             <div id="cover-size-msg" class="cover-size-msg mt-2">
               <span id="cover-size-label">Required cover image size:</span>
@@ -667,15 +843,19 @@
           </div>
 
           <h3 class="card-title mt-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><circle cx="12" cy="12" r="2"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
             </svg>
             4. Peer Channel Broadcast (Optional)
           </h3>
           <div class="form-group">
             <label>Channel Room ID:</label>
             <input type="text" id="encrypt-channel-room" class="form-input" placeholder="e.g. DEFENSE-CHANNEL-1">
-            <p class="small text-muted mt-1">When set, receiver listening on this channel receives the stego package live.</p>
+            <p class="small text-muted mt-1">When set, receiver listening on this channel receives the stego package
+              live.</p>
           </div>
 
           <button class="btn btn-primary btn-block mt-4" id="btn-execute-encrypt">
@@ -686,15 +866,19 @@
         <!-- Output Column -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+              <polyline points="22 4 12 14.01 9 11.01" />
             </svg>
             Steganographic Output Package
           </h3>
-          
+
           <div id="encrypt-placeholder" class="placeholder-box">
             <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
             </svg>
             <p>Generated Stego-Image and Post-Quantum tokens will appear here after execution.</p>
           </div>
@@ -762,8 +946,11 @@
         <!-- Input Form -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+              <circle cx="8.5" cy="8.5" r="1.5" />
+              <polyline points="21 15 16 10 5 21" />
             </svg>
             1. Steganographic Carrier
           </h3>
@@ -777,29 +964,35 @@
           </div>
 
           <h3 class="card-title mt-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
             </svg>
             2. ML-KEM-768 Ciphertext Token
           </h3>
           <div class="form-group">
             <label>Kyber-768 Ciphertext (1,088 Bytes Base64):</label>
-            <textarea id="decrypt-kyber-ct" class="form-input code-font" rows="3" placeholder="Paste 1,088-byte Kyber token or load file..."></textarea>
+            <textarea id="decrypt-kyber-ct" class="form-input code-font" rows="3"
+              placeholder="Paste 1,088-byte Kyber token or load file..."></textarea>
             <input type="file" id="decrypt-token-file" class="form-input mt-2">
           </div>
 
           <h3 class="card-title mt-4">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
             </svg>
             3. Local Receiver Secret Key
           </h3>
           <div class="form-group">
             <label>Recipient Secret Key (2,400 Bytes Base64):</label>
-            <textarea id="decrypt-kyber-sk" class="form-input code-font" rows="3" placeholder="Paste private decapsulation key or load from vault..."></textarea>
+            <textarea id="decrypt-kyber-sk" class="form-input code-font" rows="3"
+              placeholder="Paste private decapsulation key or load from vault..."></textarea>
             <div class="btn-group mt-2">
               <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-sk">Load from Key Vault</button>
-              <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-sk">⚡ Generate Lattice Keypair</button>
+              <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-sk">⚡ Generate Lattice
+                Keypair</button>
               <input type="file" id="decrypt-sk-file" class="hidden">
               <button type="button" class="btn btn-secondary btn-xs" id="btn-browse-sk">Load from Key File</button>
             </div>
@@ -813,15 +1006,17 @@
         <!-- Decrypted Result Display -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="20 6 9 17 4 12"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
             </svg>
             Recovered Payload & Security Audit
           </h3>
 
           <div id="decrypt-placeholder" class="placeholder-box">
             <svg class="placeholder-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
             </svg>
             <p>Decrypted plaintext, signature verification status, and downloads will be rendered here.</p>
           </div>
@@ -831,12 +1026,14 @@
             <div class="verification-banner" id="verification-banner">
               <div class="verification-icon" id="verif-icon">
                 <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/>
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                  <polyline points="9 12 11 14 15 10" />
                 </svg>
               </div>
               <div>
                 <strong id="verif-title">Cryptographic Integrity Verified</strong>
-                <p id="verif-desc" class="small text-secondary">All signatures, symmetric tags, and lattice tokens validated.</p>
+                <p id="verif-desc" class="small text-secondary">All signatures, symmetric tags, and lattice tokens
+                  validated.</p>
               </div>
             </div>
 
@@ -887,25 +1084,31 @@
     <section id="section-channel" class="content-section">
       <div class="section-header">
         <h2>Live Peer Transmission Channel</h2>
-        <p class="text-muted">Synchronize sender and receiver over a peer channel room for real-time quantum-safe transmissions.</p>
+        <p class="text-muted">Synchronize sender and receiver over a peer channel room for real-time quantum-safe
+          transmissions.</p>
       </div>
 
       <div class="grid-2-col">
         <!-- Channel Setup Card -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><circle cx="12" cy="12" r="2"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
+              <circle cx="12" cy="12" r="2" />
+              <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
             </svg>
             Channel Connection
           </h3>
           <div class="form-group">
             <label>Channel Room ID:</label>
             <div class="input-with-button">
-              <input type="text" id="channel-room-input" class="form-input" value="DEFENSE-ROOM-1" placeholder="Enter channel name...">
+              <input type="text" id="channel-room-input" class="form-input" value="DEFENSE-ROOM-1"
+                placeholder="Enter channel name...">
               <button class="btn btn-primary" id="btn-join-channel">Join Room</button>
             </div>
-            <p class="small text-muted mt-1">Both sender and receiver enter the exact same Room ID to establish a live pipeline.</p>
+            <p class="small text-muted mt-1">Both sender and receiver enter the exact same Room ID to establish a live
+              pipeline.</p>
           </div>
 
           <div class="channel-telemetry mt-3">
@@ -923,9 +1126,11 @@
             <h4>Live Channel Protocol</h4>
             <ol class="small text-secondary">
               <li><strong>Receiver:</strong> Join the channel room and keep this tab active.</li>
-              <li><strong>Sender:</strong> In the <em>Encrypt & Conceal</em> tab, set the Channel Room to the same ID and execute.</li>
+              <li><strong>Sender:</strong> In the <em>Encrypt & Conceal</em> tab, set the Channel Room to the same ID
+                and execute.</li>
               <li><strong>Live Sync:</strong> Stego-image and Kyber token transmit instantly across the channel.</li>
-              <li><strong>One-Click Extraction:</strong> Click "Transfer to Decryptor" to unpack the incoming payload.</li>
+              <li><strong>One-Click Extraction:</strong> Click "Transfer to Decryptor" to unpack the incoming payload.
+              </li>
             </ol>
           </div>
         </div>
@@ -933,8 +1138,10 @@
         <!-- Live Feed Log Card -->
         <div class="card">
           <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="4 17 10 11 4 5" />
+              <line x1="12" y1="19" x2="20" y2="19" />
             </svg>
             Live Transmission Feed
           </h3>
@@ -948,7 +1155,9 @@
           <div id="incoming-alert-box" class="incoming-alert hidden mt-3">
             <div class="incoming-header">
               <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
               </svg>
               <div>
                 <strong>Incoming Quantum-Safe Stego Package</strong>
@@ -968,4 +1177,5 @@
   <!-- Application Controller -->
   <script src="/static/app.js"></script>
 </body>
+
 </html>
