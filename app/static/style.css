@@ -2895,7 +2895,6 @@ textarea.form-input {
   color: #818cf8;
   border-color: rgba(99, 102, 241, 0.4);
 }
-
 .audit-empty-state {
   padding: 3rem 1rem;
   text-align: center;
@@ -2906,3 +2905,200 @@ textarea.form-input {
   margin-bottom: 0.75rem;
   opacity: 0.6;
 }
+
+/* ========================================================
+   ARGON2 SHIELD BADGE & SECURITY TAG
+   ======================================================== */
+.argon2-shield-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+  padding: 0.3rem 0.65rem;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: var(--radius-sm);
+  color: var(--accent-emerald);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ========================================================
+   INTERACTIVE SECURITY INTENT QUESTIONNAIRE WIZARD
+   ======================================================== */
+.security-wizard-card {
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  padding: 1.15rem;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.15);
+}
+
+.security-wizard-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-emerald));
+}
+
+.wizard-header {
+  margin-bottom: 0.9rem;
+}
+
+.wizard-badge {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  border-radius: 9999px;
+  background: var(--accent-primary-subtle);
+  color: var(--accent-primary);
+  border: 1px solid var(--theme-accent-border);
+  margin-bottom: 0.35rem;
+}
+
+.wizard-header h4 {
+  margin: 0.2rem 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.wizard-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.4rem;
+  display: block;
+}
+
+.wizard-options-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+@media (min-width: 640px) {
+  .wizard-options-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.wizard-radio-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem 0.8rem;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 180ms ease;
+  user-select: none;
+}
+
+.wizard-radio-box:hover {
+  border-color: var(--accent-primary);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.wizard-radio-box.active {
+  border-color: var(--accent-primary);
+  background: var(--accent-primary-subtle);
+  box-shadow: 0 0 10px rgba(0, 240, 255, 0.08);
+}
+
+.wizard-radio-box input[type="radio"] {
+  margin-top: 0.2rem;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+
+.wizard-opt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.wizard-opt-content strong {
+  font-size: 0.82rem;
+  color: var(--text-primary);
+}
+
+.wizard-opt-content span {
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+/* Smart Enforce Dynamic Banner */
+.smart-enforce-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: var(--radius-sm);
+  color: var(--accent-amber);
+  animation: fadeInDown 200ms ease;
+}
+
+.smart-enforce-banner.financial-active {
+  background: rgba(0, 240, 255, 0.08);
+  border-color: rgba(0, 240, 255, 0.4);
+  color: var(--accent-primary);
+}
+
+.smart-enforce-banner svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.smart-enforce-banner strong {
+  font-size: 0.82rem;
+  display: block;
+  margin-bottom: 0.2rem;
+}
+
+.smart-enforce-banner p {
+  font-size: 0.74rem;
+  margin: 0;
+  line-height: 1.4;
+  color: var(--text-secondary);
+}
+
+/* ========================================================
+   MODULAR RESULT CARDS (STANDALONE DSA & DIRECT PQC)
+   ======================================================== */
+.result-modular-card {
+  padding: 1rem;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-md);
+  margin-top: 1rem;
+  animation: fadeInDown 200ms ease;
+}
+
+.modular-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.modular-card-top h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}

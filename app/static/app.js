@@ -491,12 +491,14 @@ function initClassifier() {
   let debounceTimer = null;
   textInput.addEventListener("input", () => {
     updateStegoCapacity();
+    scanAndEnforceFinancialPolicy();
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(triggerClassification, 250);
   });
 
   fileInput.addEventListener("change", () => {
     updateStegoCapacity();
+    scanAndEnforceFinancialPolicy();
     triggerClassification();
   });
 
@@ -552,6 +554,11 @@ async function triggerClassification() {
       route.textContent = `Route: ${data.route}`;
       // Update capacity with backend-confirmed data type
       updateStegoCapacity(data.type);
+
+      // If backend detects financial sensitivity, align interactive wizard
+      if (data.security_intent && data.security_intent.recommended_cipher === "chacha20") {
+        scanAndEnforceFinancialPolicy();
+      }
     }
   } catch (e) {
     console.error("Classification error:", e);
@@ -559,9 +566,119 @@ async function triggerClassification() {
 }
 
 /* ==========================================================================
-   5. ENCRYPTION PIPELINE (SENDER)
+   5. INTERACTIVE SECURITY INTENT WIZARD & SENSITIVITY POLICIES
+   ========================================================================== */
+function initInteractiveWizard() {
+  const objectiveRadios = document.querySelectorAll('input[name="wizard_objective"]');
+  const sensitivityRadios = document.querySelectorAll('input[name="wizard_sensitivity"]');
+  const banner = document.getElementById("smart-enforce-banner");
+  const secRecipient = document.getElementById("encrypt-section-recipient-pk");
+  const secCover = document.getElementById("encrypt-section-cover-image");
+  const secCipher = document.getElementById("encrypt-section-cipher-choice");
+  const btnEncrypt = document.getElementById("btn-execute-encrypt");
+
+  function updateObjectiveUI(val) {
+    objectiveRadios.forEach((r) => {
+      const box = r.closest(".wizard-radio-box");
+      if (box) box.classList.toggle("active", r.value === val);
+    });
+
+    if (val === "dsa_only") {
+      if (secRecipient) secRecipient.classList.add("hidden");
+      if (secCover) secCover.classList.add("hidden");
+      if (secCipher) secCipher.classList.add("hidden");
+      if (btnEncrypt) btnEncrypt.textContent = "✍️ توليد توقيع رقمي فقط (Generate Standalone DSA Signature)";
+    } else if (val === "direct_pqc") {
+      if (secRecipient) secRecipient.classList.remove("hidden");
+      if (secCover) secCover.classList.add("hidden");
+      if (secCipher) secCipher.classList.remove("hidden");
+      if (btnEncrypt) btnEncrypt.textContent = "⚡ تشفير كايبر كمومي مباشر (Direct PQC Encryption)";
+    } else {
+      // full_hybrid
+      if (secRecipient) secRecipient.classList.remove("hidden");
+      if (secCover) secCover.classList.remove("hidden");
+      if (secCipher) secCipher.classList.remove("hidden");
+      if (btnEncrypt) btnEncrypt.textContent = "🛡️ تشفير هجين وإخفاء تكيفي (Hybrid Encryption & Stego)";
+    }
+  }
+
+  function updateSensitivityUI(val, autoTriggered = false) {
+    sensitivityRadios.forEach((r) => {
+      const box = r.closest(".wizard-radio-box");
+      if (box) box.classList.toggle("active", r.value === val);
+    });
+
+    if (val === "financial_critical") {
+      if (banner) banner.classList.remove("hidden");
+      const chachaRadio = document.querySelector('input[name="cipher_choice"][value="chacha20"]');
+      if (chachaRadio) chachaRadio.checked = true;
+      if (autoTriggered) {
+        showToast("Auto-selected ChaCha20-Poly1305 for financial data (side-channel protection).", "info");
+      }
+    } else {
+      if (banner && !checkLiveFinancialContent()) {
+        banner.classList.add("hidden");
+      }
+    }
+  }
+
+  objectiveRadios.forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      updateObjectiveUI(e.target.value);
+    });
+  });
+
+  sensitivityRadios.forEach((radio) => {
+    radio.addEventListener("change", (e) => {
+      updateSensitivityUI(e.target.value, false);
+    });
+  });
+
+  // Initialize defaults
+  const initialObj = document.querySelector('input[name="wizard_objective"]:checked')?.value || "full_hybrid";
+  updateObjectiveUI(initialObj);
+  const initialSens = document.querySelector('input[name="wizard_sensitivity"]:checked')?.value || "confidential_text";
+  updateSensitivityUI(initialSens, false);
+}
+
+function checkLiveFinancialContent() {
+  const textVal = document.getElementById("encrypt-text")?.value || "";
+  const fileInput = document.getElementById("encrypt-file");
+  const fileName = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : "";
+  const combined = textVal + " " + fileName;
+
+  const FINANCIAL_REGEX = /\b(?:\d[ -]*?){13,19}\b|(?:credit[\s_-]?card|visa|mastercard|amex|cvv|iban|swift|pin\s*code|private[\s_-]?key|password|seed[\s_-]?phrase|حساب[\s_]?بنكي|بطاقة[\s_]?ائتمان|كلمة[\s_]?مرور)/i;
+  return FINANCIAL_REGEX.test(combined);
+}
+
+function scanAndEnforceFinancialPolicy() {
+  if (checkLiveFinancialContent()) {
+    const finRadio = document.querySelector('input[name="wizard_sensitivity"][value="financial_critical"]');
+    if (finRadio && !finRadio.checked) {
+      finRadio.checked = true;
+      const allSens = document.querySelectorAll('input[name="wizard_sensitivity"]');
+      allSens.forEach((r) => {
+        const box = r.closest(".wizard-radio-box");
+        if (box) box.classList.toggle("active", r.value === "financial_critical");
+      });
+    }
+    const banner = document.getElementById("smart-enforce-banner");
+    if (banner) banner.classList.remove("hidden");
+
+    const chachaRadio = document.querySelector('input[name="cipher_choice"][value="chacha20"]');
+    if (chachaRadio && !chachaRadio.checked) {
+      chachaRadio.checked = true;
+      showToast("Financial data detected! Auto-enforcing ChaCha20-Poly1305 (Constant-Time ARX).", "info");
+    }
+  }
+}
+
+/* ==========================================================================
+   6. ENCRYPTION PIPELINE (SENDER)
    ========================================================================== */
 function initEncryptSection() {
+  initInteractiveWizard();
+
   const btnEncrypt = document.getElementById("btn-execute-encrypt");
   const coverInput = document.getElementById("encrypt-cover-image");
   const btnResetCover = document.getElementById("btn-reset-cover");
@@ -629,27 +746,73 @@ function initEncryptSection() {
     const textVal = document.getElementById("encrypt-text").value;
     const fileInput = document.getElementById("encrypt-file");
     const pkVal = document.getElementById("encrypt-recipient-pk").value.trim();
-    const cipherChoice = document.querySelector('input[name="cipher_choice"]:checked').value;
+    const cipherChoice = document.querySelector('input[name="cipher_choice"]:checked')?.value || "chacha20";
     const overrideVal = document.getElementById("encrypt-override").value;
     const channelRoomVal = document.getElementById("encrypt-channel-room").value.trim();
+    const wizardObjective = document.querySelector('input[name="wizard_objective"]:checked')?.value || "full_hybrid";
+    const wizardSensitivity = document.querySelector('input[name="wizard_sensitivity"]:checked')?.value || "confidential_text";
 
+    if (isFile && fileInput.files.length === 0) {
+      showToast("Please select a file to process.", "error");
+      return;
+    }
+
+    if (!isFile && !textVal.trim()) {
+      showToast("Please enter text payload to process.", "error");
+      return;
+    }
+
+    // Branch 1: Standalone Digital Signature Only (ECDSA P-256)
+    if (wizardObjective === "dsa_only") {
+      btnEncrypt.disabled = true;
+      btnEncrypt.textContent = "Signing with ECDSA P-256...";
+
+      const formData = new FormData();
+      if (isFile) {
+        formData.append("file", fileInput.files[0]);
+      } else {
+        formData.append("text", textVal);
+      }
+      formData.append("username", getActiveUser());
+
+      try {
+        const res = await fetch("/api/sign_only", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Signing failed");
+        }
+
+        const result = await res.json();
+        renderDsaResult(result);
+        showToast("Digital signature generated successfully!", "success");
+
+        if (typeof logClientAction === "function") {
+          logClientAction("SIGN_ONLY", {
+            sha256: result.data_sha256,
+            payload_size: result.payload_size
+          });
+        }
+      } catch (e) {
+        showToast("Error: " + e.message, "error");
+      } finally {
+        btnEncrypt.disabled = false;
+        btnEncrypt.textContent = "✍️ توليد توقيع رقمي فقط (Generate Standalone DSA Signature)";
+      }
+      return;
+    }
+
+    // Direct PQC and Full Hybrid need Recipient ML-KEM-768 Public Key
     if (!pkVal) {
       showToast("Recipient Kyber-768 Public Key is required!", "error");
       return;
     }
 
-    if (isFile && fileInput.files.length === 0) {
-      showToast("Please select a file to encrypt.", "error");
-      return;
-    }
-
-    if (!isFile && !textVal.trim()) {
-      showToast("Please enter text payload to encrypt.", "error");
-      return;
-    }
-
-    // Proactive Capacity Verification: block submission if custom cover is too small
-    if (currentUploadedCover && !lastCalculatedCapacity.isSufficient) {
+    // Full Hybrid: Proactive Capacity Verification
+    if (wizardObjective === "full_hybrid" && currentUploadedCover && !lastCalculatedCapacity.isSufficient) {
       showToast(
         `Selected cover image is too small! Required size: at least ${lastCalculatedCapacity.minDim}×${lastCalculatedCapacity.minDim} px.`,
         "error"
@@ -670,7 +833,7 @@ function initEncryptSection() {
       formData.append("text", textVal);
     }
 
-    if (coverInput && coverInput.files.length > 0) {
+    if (wizardObjective === "full_hybrid" && coverInput && coverInput.files.length > 0) {
       formData.append("cover_image", coverInput.files[0]);
     }
 
@@ -679,9 +842,11 @@ function initEncryptSection() {
     if (overrideVal) formData.append("override_type", overrideVal);
     if (channelRoomVal) formData.append("channel_room", channelRoomVal);
     formData.append("username", getActiveUser());
+    formData.append("intent_objective", wizardObjective);
+    formData.append("intent_sensitivity", wizardSensitivity);
 
     btnEncrypt.disabled = true;
-    btnEncrypt.textContent = "Processing Multi-Level Pipeline...";
+    btnEncrypt.textContent = wizardObjective === "direct_pqc" ? "Encapsulating Kyber-768 & Encrypting..." : "Processing Multi-Level Pipeline...";
 
     try {
       const res = await fetch("/api/encrypt", {
@@ -695,8 +860,27 @@ function initEncryptSection() {
       }
 
       const result = await res.json();
-      renderEncryptionResult(result);
-      showToast("Encryption and steganographic embedding completed!", "success");
+
+      if (wizardObjective === "direct_pqc" || result.mode === "direct_pqc") {
+        renderDirectPqcResult(result);
+        showToast("Direct PQC ciphertext package generated!", "success");
+        if (typeof logClientAction === "function") {
+          logClientAction("ENCRYPT_DIRECT_PQC", {
+            cipher: cipherChoice,
+            payload_size: result.payload_size
+          });
+        }
+      } else {
+        renderEncryptionResult(result);
+        showToast("Encryption and adaptive steganographic embedding completed!", "success");
+        if (typeof logClientAction === "function") {
+          logClientAction("ENCRYPT_HYBRID_STEGO", {
+            cipher: cipherChoice,
+            payload_size: result.payload_size,
+            stego_size: result.stego_size
+          });
+        }
+      }
 
       if (channelRoomVal) {
         showToast(`Payload broadcasted to channel room: ${channelRoomVal}`, "info");
@@ -705,7 +889,11 @@ function initEncryptSection() {
       showToast("Error: " + e.message, "error");
     } finally {
       btnEncrypt.disabled = false;
-      btnEncrypt.textContent = "🛡️ Encrypt, Wrap with Kyber & Conceal";
+      if (wizardObjective === "direct_pqc") {
+        btnEncrypt.textContent = "⚡ تشفير كايبر كمومي مباشر (Direct PQC Encryption)";
+      } else {
+        btnEncrypt.textContent = "🛡️ تشفير هجين وإخفاء تكيفي (Hybrid Encryption & Stego)";
+      }
     }
   });
 
@@ -725,6 +913,11 @@ function initEncryptSection() {
 
 function renderEncryptionResult(result) {
   document.getElementById("encrypt-placeholder").classList.add("hidden");
+  const dsaCard = document.getElementById("result-dsa-card");
+  if (dsaCard) dsaCard.classList.add("hidden");
+  const pqcCard = document.getElementById("result-direct-pqc-card");
+  if (pqcCard) pqcCard.classList.add("hidden");
+
   const container = document.getElementById("encrypt-results-container");
   container.classList.remove("hidden");
 
@@ -744,6 +937,68 @@ function renderEncryptionResult(result) {
   document.getElementById("telem-stego-size").textContent = `${result.stego_size.toLocaleString()} Bytes`;
   document.getElementById("telem-route").textContent = result.classification.route;
   document.getElementById("telem-signature").textContent = result.signature_b64 ? "ECDSA P-256 Attached" : "Not Required";
+}
+
+function renderDsaResult(result) {
+  document.getElementById("encrypt-placeholder").classList.add("hidden");
+  document.getElementById("encrypt-results-container").classList.add("hidden");
+  const pqcCard = document.getElementById("result-direct-pqc-card");
+  if (pqcCard) pqcCard.classList.add("hidden");
+
+  const dsaCard = document.getElementById("result-dsa-card");
+  dsaCard.classList.remove("hidden");
+
+  document.getElementById("dsa-sha256-val").value = result.data_sha256 || "";
+  document.getElementById("dsa-sig-val").value = result.dsa_signature_b64 || "";
+  document.getElementById("dsa-pubkey-val").value = result.public_key_pem || "";
+
+  const receiptJson = JSON.stringify(result.audit_receipt || result, null, 2);
+  const btnDl = document.getElementById("btn-download-sig-receipt");
+  if (btnDl) {
+    btnDl.onclick = (e) => {
+      e.preventDefault();
+      downloadBlob(receiptJson, "signature_receipt.sig.json", "application/json");
+    };
+  }
+
+  const btnCopy = document.getElementById("btn-copy-sig");
+  if (btnCopy) {
+    btnCopy.onclick = () => {
+      navigator.clipboard.writeText(result.dsa_signature_b64 || "");
+      showToast("Digital Signature copied to clipboard!", "success");
+    };
+  }
+}
+
+function renderDirectPqcResult(result) {
+  document.getElementById("encrypt-placeholder").classList.add("hidden");
+  document.getElementById("encrypt-results-container").classList.add("hidden");
+  const dsaCard = document.getElementById("result-dsa-card");
+  if (dsaCard) dsaCard.classList.add("hidden");
+
+  const pqcCard = document.getElementById("result-direct-pqc-card");
+  pqcCard.classList.remove("hidden");
+
+  const pkg = result.direct_pqc_package || result;
+  document.getElementById("direct-ct-val").value = pkg.data_ciphertext_b64 || "";
+  document.getElementById("direct-kyber-val").value = pkg.kyber_ciphertext_b64 || "";
+
+  const pkgJson = JSON.stringify(pkg, null, 2);
+  const btnDl = document.getElementById("btn-download-direct-pqc");
+  if (btnDl) {
+    btnDl.onclick = (e) => {
+      e.preventDefault();
+      downloadBlob(pkgJson, "direct_pqc_package.json", "application/json");
+    };
+  }
+
+  const btnCopy = document.getElementById("btn-copy-direct-pqc");
+  if (btnCopy) {
+    btnCopy.onclick = () => {
+      navigator.clipboard.writeText(pkg.data_ciphertext_b64 || "");
+      showToast("Direct PQC Ciphertext copied to clipboard!", "success");
+    };
+  }
 }
 
 /* ==========================================================================
@@ -1477,13 +1732,22 @@ function initAuthGateway() {
       fd.append("password", p);
 
       try {
-// Verify user from localStorage
+        // Verify user from localStorage using Argon2id
         const stored = JSON.parse(localStorage.getItem(`fgp_user_${u}`));
         if (!stored) throw new Error(currentLang === "ar" ? "المستخدم غير موجود" : "User not found");
-        if (stored.password !== p) throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+
+        // Verify password against Argon2id hash via zero-database API
+        const verifyFd = new FormData();
+        verifyFd.append("password", p);
+        verifyFd.append("argon2_hash", stored.argon2_hash || stored.password || "");
+
+        const verifyRes = await fetch("/api/auth/verify-password", { method: "POST", body: verifyFd });
+        const verifyJson = await verifyRes.json();
+        if (!verifyJson.valid) throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+
         localStorage.setItem("fgp_auth_user", u);
         updateUserDisplay(u);
-        showToast(`مرحباً بك مجدداً ${u}! تم تسجيل الدخول بنجاح`, "success");
+        showToast(`مرحباً بك مجدداً ${u}! تم التحقق من كلمة المرور عبر Argon2id بنجاح`, "success");
         if (typeof loadAuditLogs === "function") loadAuditLogs();
       } catch (err) {
         if (loginErr) {
@@ -1510,16 +1774,26 @@ function initAuthGateway() {
         return;
       }
 
-      const fd = new FormData();
-      fd.append("username", u);
-      fd.append("password", p);
-
       try {
-// Save new user to localStorage
-        localStorage.setItem(`fgp_user_${u}`, JSON.stringify({ password: p }));
+        // Hash password with Argon2id (64MB memory-hard KDF)
+        const hashFd = new FormData();
+        hashFd.append("password", p);
+        const hashRes = await fetch("/api/auth/hash-password", { method: "POST", body: hashFd });
+        const hashJson = await hashRes.json();
+
+        if (hashJson.status !== "success" || !hashJson.argon2_hash) {
+          throw new Error("فشل توليد تجزئة Argon2id لكلمة المرور");
+        }
+
+        // Save user credentials (Argon2id hash only, zero plain text, zero SQL database)
+        localStorage.setItem(`fgp_user_${u}`, JSON.stringify({
+          username: u,
+          argon2_hash: hashJson.argon2_hash,
+          created_at: new Date().toISOString()
+        }));
         localStorage.setItem("fgp_auth_user", u);
         updateUserDisplay(u);
-        showToast(`تم إنشاء الحساب بنجاح! أهلاً بك يا ${u}`, "success");
+        showToast(`تم إنشاء الحساب بنجاح وتأمينه عبر Argon2id! أهلاً بك يا ${u}`, "success");
         if (typeof loadAuditLogs === "function") loadAuditLogs();
       } catch (err) {
         if (regErr) {

@@ -216,3 +216,114 @@ class SecurityPipeline:
             "cipher_used": cipher_used,
             "data_type": data_type
         }
+
+    @staticmethod
+    def process_dsa_only(data_bytes: bytes, filename: str = "document") -> dict:
+        """
+        Standalone Digital Signature Pipeline:
+        Signs the payload with ECDSA P-256 for non-repudiation and generates a verifiable
+        receipt (.sig.json) without steganography or symmetric encryption overhead.
+        """
+        import datetime
+        import hashlib
+        priv_pem, pub_pem = ECDSAEngine.generate_keypair()
+        signature = ECDSAEngine.sign_document(data_bytes, priv_pem)
+        
+        sha256_hash = hashlib.sha256(data_bytes).hexdigest()
+        sig_b64 = base64.b64encode(signature).decode('utf-8')
+        pub_b64 = base64.b64encode(pub_pem).decode('utf-8')
+
+        receipt = {
+            "version": "1.0",
+            "type": "dsa_only",
+            "filename": filename or "document",
+            "filesize": len(data_bytes),
+            "payload_size": len(data_bytes),
+            "sha256": sha256_hash,
+            "data_sha256": sha256_hash,
+            "signature_b64": sig_b64,
+            "public_key_pem_b64": pub_b64,
+            "public_key_pem": pub_pem.decode('utf-8'),
+            "signer_public_key_pem": pub_pem.decode('utf-8'),
+            "algorithm": "ECDSA-P256-SHA256",
+            "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat()
+        }
+        return receipt
+
+    @staticmethod
+    def verify_dsa_only(data_bytes: bytes, signature_b64: str, public_key_pem_b64: str) -> bool:
+        """
+        Verify standalone signature against data bytes and public key PEM.
+        """
+        sig = base64.b64decode(signature_b64)
+        pub_pem = base64.b64decode(public_key_pem_b64)
+        return ECDSAEngine.verify_document(data_bytes, sig, pub_pem)
+
+    @staticmethod
+    def process_direct_pqc(
+        data_bytes: bytes,
+        filename: str,
+        recipient_kyber_pk: bytes,
+        preferred_cipher: str = "chacha20"
+    ) -> dict:
+        """
+        Direct Quantum-Safe Ciphertext Pipeline:
+        Kyber-768 KEM encapsulation + AEAD symmetric cipher without steganography.
+        """
+        shared_secret, kyber_ct = KyberEngine.encapsulate(recipient_kyber_pk)
+        subkeys = derive_subkeys_from_kyber(shared_secret)
+        payload_key = subkeys["payload_key"]
+
+        if preferred_cipher == "aes_gcm":
+            ciphertext, _, nonce = SymmetricEngine.encrypt_aes_gcm(data_bytes, payload_key)
+        else:
+            ciphertext, _, nonce = SymmetricEngine.encrypt_chacha20(data_bytes, payload_key)
+
+        return {
+            "ciphertext_b64": base64.b64encode(ciphertext).decode('utf-8'),
+            "nonce_b64": base64.b64encode(nonce).decode('utf-8'),
+            "kyber_ciphertext_b64": KyberEngine.to_b64(kyber_ct),
+            "cipher": preferred_cipher,
+            "filename": filename or "payload.enc",
+            "filesize": len(data_bytes)
+        }
+
+    @staticmethod
+    def decrypt_direct_pqc(
+        ciphertext_b64: str,
+        nonce_b64: str,
+        kyber_ct_b64: str,
+        recipient_kyber_sk_b64: str,
+        cipher_used: str = "chacha20"
+    ) -> dict:
+        """
+        Decapsulate and decrypt direct PQC ciphertext.
+        """
+        kyber_ct = KyberEngine.from_b64(kyber_ct_b64)
+        recipient_sk = KyberEngine.from_b64(recipient_kyber_sk_b64)
+        ciphertext = base64.b64decode(ciphertext_b64)
+        nonce = base64.b64decode(nonce_b64)
+
+        shared_secret = KyberEngine.decapsulate(recipient_sk, kyber_ct)
+        subkeys = derive_subkeys_from_kyber(shared_secret)
+        payload_key = subkeys["payload_key"]
+
+        if cipher_used == "aes_gcm":
+            plaintext = SymmetricEngine.decrypt_aes_gcm(ciphertext, payload_key, nonce)
+        else:
+            plaintext = SymmetricEngine.decrypt_chacha20(ciphertext, payload_key, nonce)
+
+        is_text = False
+        text_preview = ""
+        try:
+            text_preview = plaintext.decode('utf-8')
+            is_text = True
+        except UnicodeDecodeError:
+            text_preview = f"[Binary payload: {len(plaintext):,} bytes]"
+
+        return {
+            "plaintext": plaintext,
+            "text_preview": text_preview,
+            "is_text": is_text,
+            "size": len(plaintext)
+        }

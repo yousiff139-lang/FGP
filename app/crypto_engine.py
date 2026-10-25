@@ -153,7 +153,7 @@ class ECDSAEngine:
             return False
 
 
-# --- 4. Post-Quantum Key Derivation (HKDF) ---
+# --- 4. Post-Quantum Key Derivation (HKDF & Argon2id) ---
 
 def derive_subkeys_from_kyber(kyber_shared_secret: bytes) -> dict:
     """
@@ -174,3 +174,54 @@ def derive_subkeys_from_kyber(kyber_shared_secret: bytes) -> dict:
         "stego_seed": expanded[32:64],
         "integrity_key": expanded[64:96]
     }
+
+
+# --- 5. Argon2id Password Hashing & Key Derivation ---
+
+import argon2
+import argon2.low_level as al
+
+
+class Argon2Engine:
+    _hasher = argon2.PasswordHasher(
+        time_cost=3,
+        memory_cost=65536,
+        parallelism=4,
+        hash_len=32,
+        type=argon2.Type.ID
+    )
+
+    @classmethod
+    def hash_password(cls, password: str) -> str:
+        """
+        Hash password using Argon2id with 64MB memory cost, 3 iterations, 4 parallelism.
+        Returns serialized PHC string including algorithm, parameters, and salt.
+        """
+        return cls._hasher.hash(password)
+
+    @classmethod
+    def verify_password(cls, hash_str: str, password: str) -> bool:
+        """
+        Verify password against Argon2id hash in constant time.
+        """
+        try:
+            return cls._hasher.verify(hash_str, password)
+        except (argon2.exceptions.VerifyMismatchError, Exception):
+            return False
+
+    @staticmethod
+    def derive_kdf(secret: bytes, salt: bytes, length: int = 64) -> bytes:
+        """
+        Derive raw cryptographic keys from secret using memory-hard Argon2id KDF.
+        """
+        if len(salt) < 16:
+            salt = salt.ljust(16, b"\x00")
+        return al.hash_secret_raw(
+            secret=secret,
+            salt=salt[:16],
+            time_cost=2,
+            memory_cost=65536,
+            parallelism=2,
+            hash_len=length,
+            type=al.Type.ID
+        )

@@ -17,11 +17,11 @@ if __name__ == "__main__":
             port = 8080
             
     print(f"  Local Server:  http://localhost:{port}")
-    print(f"  Architecture:  Info Section, Encrypt Section, Decrypt Section")
+    print(f"  Architecture:  Zero-Database (Client Auth) + Argon2id Key Derivation")
     print(f"  Post-Quantum:  NIST FIPS 203 ML-KEM-768 (CRYSTALS-Kyber)")
     print(f"  Symmetric:     ChaCha20-Poly1305 (Constant-Time ARX) / AES-256-GCM")
     print(f"  Signatures:    ECDSA P-256 Digital Signatures")
-    print(f"  Steganography: LSB Spatial-Domain with Kyber-Seeded Permutation")
+    print(f"  Steganography: Higher-Bit Invariant Gradient (HBIG) Edge Steganography")
     print("=" * 70)
     
-    uvicorn.run("app.main:app", host="127.0.0.1", port=port, reload=False)
+    uvicorn.run("app.main:app", host="127.0.0.1", port=port, reload=True)

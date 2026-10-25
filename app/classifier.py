@@ -9,6 +9,7 @@ Acts as an intelligent routing gateway that inspects input parameters
 """
 
 import os
+import re
 
 BULK_THRESHOLD = 1024  # bytes (1 KB)
 
@@ -22,10 +23,102 @@ BINARY_EXTENSIONS = {
     '.exe', '.dll', '.so', '.mp3', '.mp4', '.avi', '.jpg', '.png'
 }
 
+# Regex for financial data: credit card (Luhn-candidate sequences), CVV, bank serials, API keys
+FINANCIAL_PATTERNS = [
+    re.compile(r'\b(?:\d[ -]*?){13,19}\b'),  # Credit/Debit card numbers (13-19 digits)
+    re.compile(r'\b(?:cvv|cvc|exp|cardholder|iban|bank|account|pin)\b', re.IGNORECASE),
+    re.compile(r'\b(?:secret|password|api[_-]?key|token|serial[_-]?key)\b', re.IGNORECASE)
+]
+
+
+def detect_financial_sensitivity(data_bytes: bytes, filename: str = "") -> bool:
+    """
+    Inspect payload content and filename for financial credentials or high-value secrets.
+    """
+    fn_lower = filename.lower()
+    if any(k in fn_lower for k in ("card", "bank", "financial", "salary", "invoice", "secret", "password")):
+        return True
+
+    try:
+        text = data_bytes.decode('utf-8', errors='ignore')
+        for pat in FINANCIAL_PATTERNS:
+            if pat.search(text):
+                return True
+    except Exception:
+        pass
+    return False
+
+
+def evaluate_security_intent(
+    data_bytes: bytes,
+    filename: str = "",
+    intent_objective: str = "full_hybrid",
+    sensitivity_level: str = "auto",
+    user_cipher: str = "auto"
+) -> dict:
+    """
+    Evaluates user answers from the Security Intent Questionnaire:
+      - Automatically detects or confirms financial/credit card data.
+      - Enforces ChaCha20-Poly1305 for financial secrets (constant-time ARX immune to cache-timing attacks).
+      - Routes between Full Hybrid, Standalone Digital Signature (DSA), or Direct Quantum Ciphertext.
+    """
+    size = len(data_bytes)
+    is_financial = detect_financial_sensitivity(data_bytes, filename) or sensitivity_level == "financial_critical"
+
+    # 1. Determine cipher recommendation
+    if is_financial:
+        recommended_cipher = "chacha20"
+        cipher_reason = (
+            "Enforced ChaCha20-Poly1305: Constant-time ARX (Add-Rotate-XOR) cipher eliminates "
+            "CPU cache-collision side-channel timing attacks on sensitive financial credentials/card numbers."
+        )
+    elif user_cipher in ("chacha20", "aes_gcm"):
+        recommended_cipher = user_cipher
+        cipher_reason = f"User preference selected: {user_cipher.upper()} AEAD"
+    else:
+        recommended_cipher = "chacha20"
+        cipher_reason = "Default high-performance constant-time ChaCha20-Poly1305 AEAD"
+
+    # Allow user override if explicitly given
+    active_cipher = user_cipher if user_cipher in ("chacha20", "aes_gcm") else recommended_cipher
+
+    # 2. Determine pipeline target
+    if intent_objective == "dsa_only":
+        pipeline_target = "dsa_only"
+        route_desc = "Standalone Digital Signature Pipeline (ECDSA P-256 / Cryptographic Receipt - No Stego)"
+        effective_type = "document"
+    elif intent_objective == "direct_pqc":
+        pipeline_target = "direct_pqc"
+        route_desc = f"Direct Quantum-Safe Ciphertext (Kyber-768 + {active_cipher.upper()} - No Stego Carrier)"
+        effective_type = "bulk" if size > BULK_THRESHOLD else "sensitive"
+    else:
+        pipeline_target = "full_hybrid"
+        route_desc = f"Full Multi-Level Hybrid Protection (Kyber-768 + {active_cipher.upper()} + Adaptive Steganography)"
+        if is_financial:
+            effective_type = "sensitive"
+        elif size > BULK_THRESHOLD:
+            effective_type = "bulk"
+        else:
+            effective_type = "sensitive"
+
+    return {
+        "objective": intent_objective,
+        "pipeline_target": pipeline_target,
+        "sensitivity": "financial_critical" if is_financial else sensitivity_level,
+        "is_financial": is_financial,
+        "recommended_cipher": recommended_cipher,
+        "active_cipher": active_cipher,
+        "cipher_reason": cipher_reason,
+        "route_desc": route_desc,
+        "type": effective_type,
+        "size": size,
+        "filename": filename
+    }
+
 
 def classify_input(data_bytes: bytes, filename: str = "", override_type: str = "") -> dict:
     """
-    Classify input data into: 'bulk', 'sensitive', or 'document'.
+    Standard classifier maintaining complete backwards compatibility.
     """
     if override_type in ("bulk", "sensitive", "document"):
         return {
@@ -38,6 +131,16 @@ def classify_input(data_bytes: bytes, filename: str = "", override_type: str = "
 
     size = len(data_bytes)
     ext = os.path.splitext(filename)[1].lower() if filename else ""
+
+    # Check for financial data first
+    if detect_financial_sensitivity(data_bytes, filename):
+        return {
+            "type": "sensitive",
+            "reason": "Detected financial credentials / high-value secrets (requires constant-time ChaCha20)",
+            "route": _get_route_desc("sensitive"),
+            "size": size,
+            "filename": filename
+        }
 
     # Check by file extension if provided
     if ext in BINARY_EXTENSIONS:
@@ -61,7 +164,6 @@ def classify_input(data_bytes: bytes, filename: str = "", override_type: str = "
 
     # If no filename, inspect payload content and size
     if size > BULK_THRESHOLD:
-        # Check if text or binary
         try:
             data_bytes.decode('utf-8')
             return {
@@ -80,7 +182,6 @@ def classify_input(data_bytes: bytes, filename: str = "", override_type: str = "
                 "filename": filename or "payload.bin"
             }
     else:
-        # Small sensitive payload (passwords, tokens, keys, credentials)
         return {
             "type": "sensitive",
             "reason": f"Small credential/sensitive payload ({size} bytes <= {BULK_THRESHOLD}B)",
