@@ -398,7 +398,7 @@ tests/test_stego.py::test_stego_capacity_overflow PASSED                 [100%]
 
 - 🎓 **Assist. Prof. Haider Tarish** — Academic Supervisor & Project Advisor
   - *Academic oversight, mathematical rigor, validation of Module-LWE lattice hardness, and thesis defense governance.*
-- 🗣️ **Abdulallah Ayeaad** — Lead Presenter & Post-Quantum Cryptography Researcher
+- 🗣️ **Abdulallah Ayad** — Lead Presenter & Post-Quantum Cryptography Researcher
   - *Theoretical framework, literature research on Shor's algorithm, NIST FIPS 203 ML-KEM-768 parameters, and oral defense narration.*
 - 💻 **Karrar Haider Ismail** — Systems Architect & Cryptographic Engineer
   - *Classical and quantum-resistant implementations (Kyber, ChaCha20, ECDH, ECDSA), dynamic routing engine, Key Vault, spatial LSB steganography, and full-stack application.*

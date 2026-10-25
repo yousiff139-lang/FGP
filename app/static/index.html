@@ -71,6 +71,15 @@
         </svg>
         Peer Channel <span id="channel-pulse" class="pulse-dot hidden"></span>
       </button>
+      <button class="nav-tab" data-target="section-audit" id="tab-audit">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+          <polyline points="14 2 14 8 20 8"></polyline>
+          <line x1="16" y1="13" x2="8" y2="13"></line>
+          <line x1="16" y1="17" x2="8" y2="17"></line>
+        </svg>
+        <span data-i18n="nav_audit">سجل العمليات</span>
+      </button>
     </nav>
 
     <div class="header-right">
@@ -78,16 +87,134 @@
         <span class="status-indicator offline" id="channel-indicator"></span>
         <span id="channel-status-label">Channel: Offline</span>
       </div>
+
+      <!-- Language Switcher Button -->
+      <button class="btn btn-secondary btn-sm" id="btn-lang-toggle" title="تبديل اللغة / Toggle Language">
+        <span class="lang-flag">🌐</span>
+        <span id="lang-label">English</span>
+      </button>
+
+      <div class="theme-picker-wrapper">
+        <button class="btn btn-secondary btn-sm" id="btn-theme-accent" title="Change Color Theme (Borders & Highlights)">
+          <span class="theme-accent-dot" id="theme-accent-dot"></span>
+          <span id="theme-accent-label">اللون</span>
+        </button>
+        <div id="theme-palette-popover" class="theme-palette-popover hidden"></div>
+      </div>
+      <button class="btn btn-secondary btn-sm" id="btn-theme-mode" title="Toggle Dark / Light Mode">
+        <svg class="mode-icon-sun" id="theme-sun-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+        <svg class="mode-icon-moon hidden" id="theme-moon-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+        </svg>
+        <span id="theme-mode-label">النمط</span>
+      </button>
       <button class="btn btn-secondary btn-sm" id="btn-open-vault">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <path
             d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M19 4l-4 4-2-2-4 4 1.5 1.5-1.5 1.5-3 3-4-4 3-3 1.5 1.5 1.5-1.5 4-4-2-2 4-4z" />
         </svg>
-        Key Vault
+        <span id="btn-vault-label">خزنة المفاتيح</span>
       </button>
+
+      <!-- User Session Pill & Logout -->
+      <div class="user-session-pill hidden" id="user-session-pill">
+        <span class="user-avatar-dot"></span>
+        <span class="user-session-name" id="user-session-name">Guest</span>
+        <button class="btn-user-logout" id="btn-user-logout" title="تسجيل الخروج / Logout">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg>
+        </button>
+      </div>
     </div>
   </header>
+
+  <!-- Welcome / Authentication Gateway Overlay -->
+  <div id="auth-gateway-overlay" class="auth-gateway-overlay">
+    <div class="auth-gateway-card">
+      <div class="auth-gateway-top">
+        <div class="auth-gateway-logos">
+          <img src="/static/team/university_logo.png" alt="University Logo" class="gateway-logo">
+          <div class="gateway-logo-sep"></div>
+          <img src="/static/team/college_logo.png" alt="College Logo" class="gateway-logo">
+        </div>
+        <div class="auth-lang-switch">
+          <button class="auth-lang-btn active" data-lang="ar">العربية</button>
+          <button class="auth-lang-btn" data-lang="en">English</button>
+        </div>
+      </div>
+
+      <div class="auth-gateway-header">
+        <span class="badge badge-accent" id="auth-badge-txt">مشروع التخرج الهندسي</span>
+        <h2 class="auth-gateway-title" id="auth-title-txt">نظام الأمان السيبراني الهجين المقاوم للحوسبة الكمومية</h2>
+        <p class="auth-gateway-sub" id="auth-sub-txt">الجامعة المستنصرية &bull; كلية الهندسة &bull; قسم هندسة الحاسوب</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-auth-login" data-target="form-auth-login">
+          <span id="tab-login-txt">تسجيل الدخول</span>
+        </button>
+        <button class="auth-tab" id="tab-auth-register" data-target="form-auth-register">
+          <span id="tab-register-txt">إنشاء حساب جديد</span>
+        </button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-auth-login" class="auth-form">
+        <div class="form-group">
+          <label id="lbl-login-user">اسم المستخدم:</label>
+          <input type="text" id="login-username" class="form-input" placeholder="أدخل اسم المستخدم..." required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label id="lbl-login-pass">كلمة المرور:</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+        </div>
+        <div id="login-error-msg" class="auth-error-msg hidden"></div>
+        <button type="submit" class="btn btn-primary btn-block" id="btn-submit-login">
+          تسجيل الدخول والمتابعة
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-auth-register" class="auth-form hidden">
+        <div class="form-group">
+          <label id="lbl-reg-user">اسم المستخدم الجديد:</label>
+          <input type="text" id="reg-username" class="form-input" placeholder="اختر اسم المستخدم..." required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label id="lbl-reg-pass">كلمة المرور:</label>
+          <input type="password" id="reg-password" class="form-input" placeholder="4 أحرف أو أرقام على الأقل..." required autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label id="lbl-reg-confirm">تأكيد كلمة المرور:</label>
+          <input type="password" id="reg-confirm-password" class="form-input" placeholder="أعد إدخال كلمة المرور..." required autocomplete="new-password">
+        </div>
+        <div id="reg-error-msg" class="auth-error-msg hidden"></div>
+        <button type="submit" class="btn btn-success btn-block" id="btn-submit-register">
+          إنشاء الحساب وتفعيل النظام
+        </button>
+      </form>
+
+      <div class="auth-gateway-footer">
+        <button type="button" class="btn-ghost-demo" id="btn-guest-login">
+          🚀 الدخول كضيف للاختبار السريع (Guest Access)
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Notification Bar -->
   <div id="toast-container" class="toast-container"></div>
@@ -102,36 +229,35 @@
             <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
             <path d="M7 11V7a5 5 0 0 1 10 0v4" />
           </svg>
-          ML-KEM-768 Local Key Vault
+          <span id="vault-modal-title">خزنة مفاتيح كايبر المحلية (ML-KEM-768 Local Vault)</span>
         </h3>
         <button class="btn-close" id="btn-close-vault">&times;</button>
       </div>
       <div class="modal-body">
-        <p class="text-secondary small">
-          Keys are computed in-memory on this device using NIST FIPS 203 module lattices. Private keys never leave local
-          storage.
+        <p class="text-secondary small" id="vault-modal-desc">
+          يتم توليد المفاتيح محلياً داخل الذاكرة باستخدام شبكات NIST FIPS 203. المفاتيح السرية لا تغادر جهازك إطلاقاً.
         </p>
 
         <div class="key-actions-row">
-          <button class="btn btn-primary btn-sm" id="btn-gen-keys">Generate Lattice Keypair</button>
-          <button class="btn btn-secondary btn-sm" id="btn-export-pk" disabled>Save Public Key (.key)</button>
-          <button class="btn btn-warning btn-sm" id="btn-export-sk" disabled>Save Secret Key (.key)</button>
+          <button class="btn btn-primary btn-sm" id="btn-gen-keys">توليد زوج مفاتيح كايبر</button>
+          <button class="btn btn-secondary btn-sm" id="btn-export-pk" disabled>حفظ المفتاح العام (.key)</button>
+          <button class="btn btn-warning btn-sm" id="btn-export-sk" disabled>حفظ المفتاح السري (.key)</button>
         </div>
 
         <div class="form-group mt-3">
-          <label>Public Key (1,184 Bytes &bull; Recipient Token):</label>
+          <label id="lbl-vault-pk">المفتاح العام (1,184 بايت &bull; رمز التشفير للمرسل):</label>
           <textarea id="vault-pk" class="form-input code-font" rows="3" readonly
-            placeholder="Generate keypair to derive public token..."></textarea>
+            placeholder="قم بتوليد المفاتيح لاشتقاق رمز التشفير العام..."></textarea>
         </div>
 
         <div class="form-group">
-          <label>Secret Key (2,400 Bytes &bull; Confidential Decapsulation Key):</label>
+          <label id="lbl-vault-sk">المفتاح السري (2,400 بايت &bull; مفتاح فك التشفير الخاص):</label>
           <textarea id="vault-sk" class="form-input code-font" rows="4" readonly
-            placeholder="Secret key will be stored locally..."></textarea>
+            placeholder="المفتاح السري سيُخزن محلياً فقط..."></textarea>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary btn-sm" id="btn-use-vault-keys">Load Keys into Workflows</button>
+        <button class="btn btn-primary btn-sm" id="btn-use-vault-keys">تحميل المفاتيح إلى سير العمل</button>
       </div>
     </div>
   </div>
@@ -152,9 +278,8 @@
           <img src="/static/team/university_logo.png" alt="Mustansiriyah University Logo" class="academic-banner-logo"
             id="banner-university-logo" title="Mustansiriyah University (الجامعة المستنصرية)">
           <div class="academic-banner-titles">
-            <span class="academic-banner-uni">Mustansiriyah University &bull; College of Engineering</span>
-            <span class="academic-banner-coll">Senior Graduation Project Defense &bull; Post-Quantum &amp; Steganography
-              Systems</span>
+            <span class="academic-banner-uni" id="banner-uni-txt">الجامعة المستنصرية &bull; كلية الهندسة</span>
+            <span class="academic-banner-coll" id="banner-coll-txt">مشروع التخرج النهائي &bull; منظومة الأمان السيبراني المقاومة للكم والإخفاء</span>
           </div>
           <img src="/static/team/college_logo.png" alt="College of Engineering Logo" class="academic-banner-logo"
             id="banner-college-logo" title="College of Engineering (كلية الهندسة)">
@@ -163,40 +288,37 @@
 
       <div class="section-hero">
         <div class="hero-meta-row">
-          <span class="badge badge-accent">Graduation Project</span>
-          <span class="badge badge-warning">NIST FIPS 203 ML-KEM</span>
-          <span class="badge badge-subtle">College of Engineering Defense</span>
+          <span class="badge badge-accent" id="hero-badge-1">مشروع التخرج</span>
+          <span class="badge badge-warning" id="hero-badge-2">NIST FIPS 203 ML-KEM</span>
+          <span class="badge badge-subtle" id="hero-badge-3">مناقشة كلية الهندسة</span>
         </div>
-        <h1>System Information &amp; Technical Reference</h1>
-        <p class="hero-desc">
-          Official senior graduation project thesis documentation covering the multi-layer hybrid cryptographic
-          pipeline, empirical mathematical decision matrix, classical and post-quantum routing, and the engineering
-          project team.
+        <h1 id="hero-info-title">معلومات النظام والمرجع الفني والرياضي</h1>
+        <p class="hero-desc" id="hero-info-desc">
+          التوثيق الرسمي لأطروحة مشروع التخرج الهندسي الذي يغطي مسار التشفير الهجين متعدد الطبقات، ومصفوفة القرارات الرياضية، والتوجيه الكلاسيكي والكمومي، وفريق العمل الأكاديمي.
         </p>
       </div>
 
       <!-- Interactive Architecture Pipeline Card -->
       <div class="card mb-4">
         <div class="arch-card-header">
-          <h2 class="card-title">
+          <h2 class="card-title" id="arch-card-title">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
               <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
             </svg>
-            Interactive Execution Architecture Pipeline
+            <span id="arch-card-title-txt">مسار المعمارية التفاعلي ومحاكاة التدفق</span>
           </h2>
           <button class="btn btn-secondary btn-sm" id="btn-run-arch-sim">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <polygon points="5 3 19 12 5 21 5 3" />
             </svg>
-            <span id="sim-btn-text">Simulate Pipeline Flow</span>
+            <span id="sim-btn-text">محاكاة تدفق المسار</span>
           </button>
         </div>
 
-        <p class="text-secondary small">
-          Click any stage below to inspect its mathematical models, byte transformations, and security parameters in the
-          inspector panel.
+        <p class="text-secondary small" id="arch-card-subtitle">
+          انقر على أي مرحلة أدناه لمعاينة النماذج الرياضية، تحويلات البايتات، ومعايير الأمان في لوحة الفحص الفنية.
         </p>
 
         <!-- Simulation Progress Track -->
@@ -582,18 +704,15 @@
             </div>
           </div>
 
-          <!-- 2. STUDENT RESEARCHER 1: ABDULALLAH AYEAAD (AA) -->
+          <!-- 2. STUDENT RESEARCHER 1: ABDULALLAH AYAD (AA) -->
           <div class="presentation-card" id="card-student1">
             <div class="pc-avatar-wrap">
-              <div class="pc-poster-monogram">
-                <span class="monogram-emblem">AA</span>
-                <span class="monogram-crest-sub">Abdulallah Ayeaad</span>
-              </div>
+              <img src="/static/team/IMG_0105.jpg" alt="Abdulallah Ayad" id="img-student1" />
               <div class="pc-poster-overlay">
                 <div class="pc-poster-tag">
                   <span class="badge badge-primary">Lead Presenter &amp; Kyber</span>
                 </div>
-                <h3 class="pc-poster-name">Abdulallah Ayeaad</h3>
+                <h3 class="pc-poster-name">Abdulallah Ayad</h3>
                 <div class="pc-peek-badge">
                   <span class="pc-peek-arrow">↶</span>
                   <span>Hover to Reveal Dossier</span>
@@ -603,7 +722,7 @@
             <div class="pc-inner">
               <div class="pc-content">
                 <div class="pc-header">
-                  <h2 class="pc-name" id="team-student1-name">Abdulallah Ayeaad</h2>
+                  <h2 class="pc-name" id="team-student1-name">Abdulallah Ayad</h2>
                   <p class="pc-role">Lead Presenter &amp; PQC Researcher</p>
                   <div class="pc-divider"></div>
                   <p class="pc-dept">Mustansiriyah University &bull; College of Engineering</p>
@@ -635,7 +754,7 @@
                 </div>
                 <div class="pc-bottom">
                   <button class="pc-btn"
-                    onclick="event.stopPropagation();window.location.href='mailto:abdulallah.ayeaad@student.uomustansiriyah.edu.iq'">Contact
+                    onclick="event.stopPropagation();window.location.href='mailto:abdulallah.ayad@student.uomustansiriyah.edu.iq'">Contact
                     Presenter</button>
                 </div>
               </div>
@@ -713,7 +832,7 @@
           </div>
           <div class="credit-badge">
             <span class="credit-sub">Lead Presenter &bull; Research &amp; Kyber</span>
-            <strong class="credit-name">Abdulallah Ayeaad</strong>
+            <strong class="credit-name">Abdulallah Ayad</strong>
           </div>
           <div class="credit-badge">
             <span class="credit-sub">Systems Architect &bull; RSA, DSA, Routing &amp; Keys</span>
@@ -1167,6 +1286,108 @@
             <button class="btn btn-primary btn-block mt-3" id="btn-load-incoming-to-decrypt">
               Transfer to Decryptor & Unpack
             </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+
+    <!-- ========================================================
+         SECTION 5: ACTIVITY & SECURITY AUDIT LOG (سجل العمليات)
+         ======================================================== -->
+    <section id="section-audit" class="content-section">
+      <div class="section-header">
+        <h2 id="audit-hdr-title">سجل العمليات والتدقيق الأمني</h2>
+        <p class="text-muted" id="audit-hdr-sub">تتبع شامل لكافة العمليات المشفرة، حزم كايبر (Kyber-768)، وعمليات الإخفاء التي قام بها الحساب.</p>
+      </div>
+
+      <!-- Telemetry Metrics Bar -->
+      <div class="telemetry-grid-4 mb-4">
+        <div class="telemetry-card">
+          <span class="telemetry-label" id="lbl-stat-total">إجمالي العمليات</span>
+          <strong class="telemetry-val" id="audit-stat-total">0</strong>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label" id="lbl-stat-encrypt">التشفير والإخفاء</span>
+          <strong class="telemetry-val text-accent" id="audit-stat-encrypt">0</strong>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label" id="lbl-stat-decrypt">فك التشفير</span>
+          <strong class="telemetry-val text-success" id="audit-stat-decrypt">0</strong>
+        </div>
+        <div class="telemetry-card">
+          <span class="telemetry-label" id="lbl-stat-keygen">توليد المفاتيح</span>
+          <strong class="telemetry-val text-amber" id="audit-stat-keygen">0</strong>
+        </div>
+      </div>
+
+      <!-- Audit Table Card -->
+      <div class="card">
+        <div class="card-header-flex">
+          <h3 class="card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+            </svg>
+            <span id="audit-table-title">سجل العمليات المشفرة للمستخدم</span>
+          </h3>
+          <div class="audit-controls">
+            <div class="filter-pill-group">
+              <button class="filter-pill active" data-filter="all" id="filter-all-btn">الكل</button>
+              <button class="filter-pill" data-filter="encrypt" id="filter-enc-btn">تشفير</button>
+              <button class="filter-pill" data-filter="decrypt" id="filter-dec-btn">فك تشفير</button>
+              <button class="filter-pill" data-filter="keygen" id="filter-key-btn">مفاتيح</button>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btn-refresh-audit" title="تحديث السجل">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 4 23 10 17 10"></polyline>
+                <polyline points="1 20 1 14 7 14"></polyline>
+                <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+              </svg>
+              <span id="btn-refresh-txt">تحديث</span>
+            </button>
+            <button class="btn btn-secondary btn-sm" id="btn-export-audit" title="تصدير السجل JSON">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span id="btn-export-txt">تصدير</span>
+            </button>
+            <button class="btn btn-secondary btn-sm btn-danger-hover" id="btn-clear-audit" title="مسح السجل">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+              <span id="btn-clear-txt">مسح</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Audit Table Container -->
+        <div class="audit-table-wrap">
+          <table class="audit-table" id="audit-table">
+            <thead>
+              <tr>
+                <th id="th-time">التوقيت والتاريخ</th>
+                <th id="th-action">العملية والنوع</th>
+                <th id="th-details">تفاصيل الحزمة والتشفير</th>
+                <th id="th-status">الحالة والتحقق</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body">
+              <!-- Populated dynamically via app.js -->
+            </tbody>
+          </table>
+          <div id="audit-empty-state" class="audit-empty-state hidden">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="8" x2="12" y2="12"></line>
+              <line x1="12" y1="16" x2="12.01" y2="16"></line>
+            </svg>
+            <p id="audit-empty-txt">لا توجد عمليات مسجلة حتى الآن لهذا الحساب.</p>
           </div>
         </div>
       </div>

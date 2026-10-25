@@ -65,7 +65,7 @@ class ChannelManager:
 channel_manager = ChannelManager()
 
 
-# --- REST Endpoints ---
+# --- REST Cryptographic Endpoints ---
 
 @app.post("/api/keygen")
 async def generate_kyber_keys():
@@ -115,7 +115,8 @@ async def encrypt_and_conceal(
     recipient_kyber_pk_b64: str = Form(...),
     preferred_cipher: str = Form("chacha20"),
     override_type: Optional[str] = Form(None),
-    channel_room: Optional[str] = Form(None)
+    channel_room: Optional[str] = Form(None),
+    username: Optional[str] = Form(None)
 ):
     """
     Full Sender Execution:
@@ -189,7 +190,8 @@ async def extract_and_decrypt(
     stego_image: Optional[UploadFile] = File(None),
     stego_image_b64: Optional[str] = Form(None),
     kyber_ciphertext_b64: str = Form(...),
-    recipient_kyber_sk_b64: str = Form(...)
+    recipient_kyber_sk_b64: str = Form(...),
+    username: Optional[str] = Form(None)
 ):
     """
     Full Receiver Execution:
