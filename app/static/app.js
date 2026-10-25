@@ -11,7 +11,10 @@ const state = {
   },
   activeRoom: null,
   socket: null,
+  inboxSocket: null,
   lastIncomingTransmission: null,
+  peerDirectory: [],
+  unreadInboxCount: 0,
 };
 
 // DOM Ready
@@ -27,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initDecryptSection();
   initChannelSection();
   initAuditLogSection();
+  initDropzones();
 
   // Try loading saved local keys from localStorage if any
   loadKeysFromStorage();
@@ -131,9 +135,17 @@ function initNavigation() {
       const targetSec = document.getElementById(targetId);
       if (targetSec) targetSec.classList.add("active");
 
-      // Clear pulse if viewing channel
+      // Clear pulse & unread badge if viewing channel/inbox
       if (targetId === "section-channel") {
         document.getElementById("channel-pulse").classList.add("hidden");
+        state.unreadInboxCount = 0;
+        const unreadBadge = document.getElementById("inbox-unread-count");
+        if (unreadBadge) {
+          unreadBadge.classList.add("hidden");
+          unreadBadge.textContent = "0";
+        }
+        if (typeof loadDirectoryPeers === "function") loadDirectoryPeers();
+        if (typeof loadInboxTransmissions === "function") loadInboxTransmissions();
       }
 
       // Automatically refresh audit logs when viewing audit section
@@ -191,6 +203,12 @@ async function generateLatticeKeys(autoApply = true, notify = true) {
 
       saveKeysToStorage();
 
+      const btnPublishVault = document.getElementById("btn-publish-vault-pk");
+      if (btnPublishVault) btnPublishVault.disabled = false;
+      if (typeof publishCurrentIdentity === "function") {
+        publishCurrentIdentity(false);
+      }
+
       if (autoApply) {
         applyVaultKeysToForms();
       }
@@ -238,6 +256,17 @@ function initKeyVault() {
       await generateLatticeKeys(true, true);
       btnGen.disabled = false;
       btnGen.textContent = "⚡ Generate New Kyber-768 Keypair";
+    });
+  }
+
+  const btnPublishVault = document.getElementById("btn-publish-vault-pk");
+  if (btnPublishVault) {
+    btnPublishVault.addEventListener("click", async () => {
+      btnPublishVault.disabled = true;
+      btnPublishVault.textContent = "Publishing to Directory...";
+      await publishCurrentIdentity(true);
+      btnPublishVault.disabled = false;
+      btnPublishVault.textContent = "🌐 نشر في الدليل العام";
     });
   }
 
@@ -341,8 +370,12 @@ function loadKeysFromStorage() {
       const btnExportPk = document.getElementById("btn-export-pk");
       const btnExportSk = document.getElementById("btn-export-sk");
       if (btnExportPk) btnExportPk.disabled = false;
-      if (btnExportSk) btnExportSk.disabled = false;
+      const btnPublishVault = document.getElementById("btn-publish-vault-pk");
+      if (btnPublishVault) btnPublishVault.disabled = false;
       applyVaultKeysToForms();
+      if (typeof publishCurrentIdentity === "function") {
+        publishCurrentIdentity(false);
+      }
     } else {
       // Auto-generate initial keys so the user never encounters an empty vault
       generateLatticeKeys(true, false);
@@ -741,6 +774,44 @@ function initEncryptSection() {
     });
   }
 
+  // Peer Picker & SAS Safety Number in Encrypt section
+  const peerSelect = document.getElementById("encrypt-peer-select");
+  const btnRefreshPeers = document.getElementById("btn-refresh-peers-encrypt");
+
+  if (peerSelect) {
+    peerSelect.addEventListener("change", async () => {
+      const selectedUser = peerSelect.value;
+      if (!selectedUser) {
+        document.getElementById("peer-safety-badge")?.classList.add("hidden");
+        const srcBadge = document.getElementById("pk-source-badge");
+        if (srcBadge) srcBadge.textContent = "إدخال يدوي أو تلقائي";
+        return;
+      }
+
+      // Auto-populate recipient PK from directory cache
+      const peer = state.peerDirectory.find((p) => p.username === selectedUser);
+      if (peer && peer.kyber_pk_b64) {
+        document.getElementById("encrypt-recipient-pk").value = peer.kyber_pk_b64;
+        const srcBadge = document.getElementById("pk-source-badge");
+        if (srcBadge) srcBadge.textContent = `محمل من دليل النظراء (@${selectedUser})`;
+      }
+
+      // Calculate mutual cryptographic safety number
+      if (typeof updateMutualSafetyNumber === "function") {
+        await updateMutualSafetyNumber(selectedUser);
+      }
+    });
+  }
+
+  if (btnRefreshPeers) {
+    btnRefreshPeers.addEventListener("click", async () => {
+      if (typeof loadDirectoryPeers === "function") {
+        await loadDirectoryPeers();
+        showToast("تم تحديث قائمة النظراء المسجلين", "info");
+      }
+    });
+  }
+
   btnEncrypt.addEventListener("click", async () => {
     const isFile = document.getElementById("tab-input-file").classList.contains("active");
     const textVal = document.getElementById("encrypt-text").value;
@@ -748,7 +819,7 @@ function initEncryptSection() {
     const pkVal = document.getElementById("encrypt-recipient-pk").value.trim();
     const cipherChoice = document.querySelector('input[name="cipher_choice"]:checked')?.value || "chacha20";
     const overrideVal = document.getElementById("encrypt-override").value;
-    const channelRoomVal = document.getElementById("encrypt-channel-room").value.trim();
+    const channelRoomVal = document.getElementById("channel-room-input")?.value?.trim() || "";
     const wizardObjective = document.querySelector('input[name="wizard_objective"]:checked')?.value || "full_hybrid";
     const wizardSensitivity = document.querySelector('input[name="wizard_sensitivity"]:checked')?.value || "confidential_text";
 
@@ -837,6 +908,10 @@ function initEncryptSection() {
       formData.append("cover_image", coverInput.files[0]);
     }
 
+    const recipientPeer = document.getElementById("encrypt-peer-select")?.value || "";
+    if (recipientPeer) {
+      formData.append("recipient_username", recipientPeer);
+    }
     formData.append("recipient_kyber_pk_b64", pkVal);
     formData.append("preferred_cipher", cipherChoice);
     if (overrideVal) formData.append("override_type", overrideVal);
@@ -880,6 +955,15 @@ function initEncryptSection() {
             stego_size: result.stego_size
           });
         }
+      }
+
+      if (recipientPeer) {
+        showToast(
+          currentLang === "ar"
+            ? `تم إرسال الحزمة المشفرة مباشرة إلى صندوق @${recipientPeer} بنجاح!`
+            : `Encrypted transmission dispatched directly to @${recipientPeer}'s inbox!`,
+          "success"
+        );
       }
 
       if (channelRoomVal) {
@@ -1151,37 +1235,582 @@ function renderDecryptionResult(result) {
 }
 
 /* ==========================================================================
-   6. LIVE SENDER ⇄ RECEIVER CHANNEL (WEBSOCKETS)
+   6. DIRECT PEER INBOX & PUBLIC DIRECTORY CONTROLLER
    ========================================================================== */
 function initChannelSection() {
+  const btnRepublish = document.getElementById("btn-republish-identity");
+  const btnRefreshDir = document.getElementById("btn-refresh-peers-dir");
+  const searchInput = document.getElementById("peer-search-input");
+  const btnRefreshInbox = document.getElementById("btn-refresh-inbox");
+  const btnClearInbox = document.getElementById("btn-clear-inbox");
+
+  // Legacy channel elements
   const btnJoin = document.getElementById("btn-join-channel");
   const roomInput = document.getElementById("channel-room-input");
   const btnTransfer = document.getElementById("btn-load-incoming-to-decrypt");
 
-  btnJoin.addEventListener("click", () => {
-    const roomId = roomInput.value.trim();
-    if (!roomId) return;
-    connectToChannel(roomId);
-  });
+  if (btnRepublish) {
+    btnRepublish.addEventListener("click", async () => {
+      btnRepublish.disabled = true;
+      await publishCurrentIdentity(true);
+      btnRepublish.disabled = false;
+    });
+  }
 
-  btnTransfer.addEventListener("click", () => {
-    if (!state.lastIncomingTransmission) return;
+  if (btnRefreshDir) {
+    btnRefreshDir.addEventListener("click", async () => {
+      await loadDirectoryPeers();
+      showToast(currentLang === "ar" ? "تم تحديث دليل النظراء" : "Peer directory refreshed", "info");
+    });
+  }
 
-    // Populate Decrypt Form
-    const trans = state.lastIncomingTransmission;
-    document.getElementById("decrypt-kyber-ct").value = trans.kyber_ciphertext_b64;
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      const q = searchInput.value.toLowerCase().trim();
+      document.querySelectorAll(".peer-card").forEach((card) => {
+        const text = card.textContent.toLowerCase();
+        if (!q || text.includes(q)) {
+          card.style.display = "flex";
+        } else {
+          card.style.display = "none";
+        }
+      });
+    });
+  }
 
-    const previewBox = document.getElementById("decrypt-image-preview-box");
-    const previewImg = document.getElementById("decrypt-image-preview");
-    previewImg.src = `data:image/png;base64,${trans.stego_image_b64}`;
-    previewBox.classList.remove("hidden");
+  if (btnRefreshInbox) {
+    btnRefreshInbox.addEventListener("click", async () => {
+      await loadInboxTransmissions();
+      showToast(currentLang === "ar" ? "تم تحديث صندوق الرسائل" : "Inbox refreshed", "info");
+    });
+  }
 
-    // Switch Tab to Decrypt
-    document.querySelector('.nav-tab[data-target="section-decrypt"]').click();
-    showToast("Incoming package loaded into Decrypt section. Click Decapsulate!", "success");
-  });
+  if (btnClearInbox) {
+    btnClearInbox.addEventListener("click", async () => {
+      if (!confirm(currentLang === "ar" ? "هل أنت متأكد من مسح جميع الرسائل المستلمة في صندوقك؟" : "Clear all received transmissions in your inbox?")) {
+        return;
+      }
+      await clearInboxTransmissions();
+    });
+  }
+
+  // Legacy channel room
+  if (btnJoin && roomInput) {
+    btnJoin.addEventListener("click", () => {
+      const roomId = roomInput.value.trim();
+      if (!roomId) return;
+      connectToChannel(roomId);
+    });
+  }
+
+  if (btnTransfer) {
+    btnTransfer.addEventListener("click", () => {
+      if (!state.lastIncomingTransmission) return;
+      loadTransmissionIntoDecrypt(state.lastIncomingTransmission);
+    });
+  }
+
+  // Initial load
+  loadDirectoryPeers();
+  loadInboxTransmissions();
+  connectInboxWebSocket(getActiveUser());
 }
 
+async function publishCurrentIdentity(notify = false) {
+  const username = getActiveUser();
+  if (!username) return;
+
+  // Ensure we have local keys
+  if (!state.localKeys.pk) {
+    const pk = localStorage.getItem("kyber_pk");
+    if (pk) state.localKeys.pk = pk;
+  }
+
+  if (!state.localKeys.pk) return;
+
+  try {
+    const fd = new FormData();
+    fd.append("username", username);
+    fd.append("kyber_pk_b64", state.localKeys.pk);
+
+    const res = await fetch("/api/directory/publish", { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Failed to publish identity");
+    const data = await res.json();
+
+    const fp = data.kyber_fingerprint || "----";
+    const avatarEl = document.getElementById("my-identity-avatar");
+    const userEl = document.getElementById("my-identity-username");
+    const fpEl = document.getElementById("my-identity-fingerprint");
+
+    if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
+    if (userEl) userEl.textContent = `@${username}`;
+    if (fpEl) fpEl.textContent = fp;
+
+    // Refresh peer lists
+    await loadDirectoryPeers();
+
+    if (notify) {
+      showToast(
+        currentLang === "ar"
+          ? `تم تحديث ونشر مفتاح @${username} العام في الدليل بنجاح (${fp})`
+          : `Identity published to directory (@${username} • ${fp})`,
+        "success"
+      );
+    }
+  } catch (err) {
+    console.warn("Could not publish identity:", err);
+  }
+}
+
+async function loadDirectoryPeers() {
+  const container = document.getElementById("peer-directory-list");
+  const peerSelect = document.getElementById("encrypt-peer-select");
+  const myUser = getActiveUser();
+
+  try {
+    const res = await fetch("/api/directory/peers");
+    if (!res.ok) throw new Error("Could not fetch peers");
+    const data = await res.json();
+    state.peerDirectory = data.peers || [];
+
+    // 1. Populate Dropdown in Encrypt Tab
+    if (peerSelect) {
+      const curVal = peerSelect.value;
+      peerSelect.innerHTML = `<option value="">-- ${currentLang === "ar" ? "اختر النظير المستلم من الدليل العام" : "Select Peer from Directory"} --</option>`;
+      state.peerDirectory.forEach((peer) => {
+        if (peer.username !== myUser) {
+          const opt = document.createElement("option");
+          opt.value = peer.username;
+          opt.textContent = `@${peer.username} ${peer.online ? "🟢" : "⚪"} (${peer.fingerprint || ""})`;
+          if (opt.value === curVal) opt.selected = true;
+          peerSelect.appendChild(opt);
+        }
+      });
+    }
+
+    // 2. Populate Directory Cards
+    if (container) {
+      const otherPeers = state.peerDirectory.filter((p) => p.username !== myUser);
+      if (otherPeers.length === 0) {
+        container.innerHTML = `
+          <div class="inbox-empty-box" style="padding: 1.5rem 1rem;">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+            </svg>
+            <h4 style="font-size: 0.88rem; margin: 0.3rem 0;">${currentLang === "ar" ? "لا يوجد نظراء آخرون حالياً" : "No other peers registered"}</h4>
+            <p style="font-size: 0.74rem;">${currentLang === "ar" ? "يمكنك فتح نافذة تصفح خاصة وتسجيل حساب جديد لاختبار الإرسال المباشر بين الطرفين." : "Open a private browsing window to register a second user and test direct PQC delivery."}</p>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = "";
+      otherPeers.forEach((peer) => {
+        const card = document.createElement("div");
+        card.className = "peer-card";
+        card.innerHTML = `
+          <div class="peer-card-left">
+            <div class="peer-avatar">
+              ${peer.username.charAt(0).toUpperCase()}
+              <span class="peer-status-dot ${peer.online ? "online" : "offline"}" title="${peer.online ? "متصل الآن (Online)" : "غير متصل (Offline)"}"></span>
+            </div>
+            <div class="peer-info">
+              <div class="peer-username-row">
+                <span class="peer-username">@${peer.username}</span>
+                <span class="badge badge-subtle badge-xs">${peer.online ? "نشط" : "أوفلاين"}</span>
+              </div>
+              <div class="peer-fp-text">
+                FP: <code>${peer.fingerprint || "----"}</code>
+              </div>
+            </div>
+          </div>
+          <div class="peer-card-actions">
+            <button class="btn btn-secondary btn-xs btn-peer-sas" data-user="${peer.username}" title="${currentLang === "ar" ? "عرض الرقم الأمني المشترك (SAS)" : "Mutual SAS Safety Number"}">
+              🔢 SAS
+            </button>
+            <button class="btn btn-primary btn-xs btn-peer-send" data-user="${peer.username}" title="${currentLang === "ar" ? "إرسال حزمة مشفرة لهذا النظير" : "Send transmission"}">
+              ✉️ ${currentLang === "ar" ? "إرسال" : "Send"}
+            </button>
+          </div>
+        `;
+
+        // Bind Send action
+        card.querySelector(".btn-peer-send").addEventListener("click", () => {
+          selectPeerForSend(peer.username);
+        });
+
+        // Bind SAS action
+        card.querySelector(".btn-peer-sas").addEventListener("click", async () => {
+          await showPeerSasDialog(peer.username);
+        });
+
+        container.appendChild(card);
+      });
+    }
+  } catch (err) {
+    console.warn("loadDirectoryPeers error:", err);
+  }
+}
+
+function selectPeerForSend(peerUsername) {
+  // Switch to Encrypt Tab
+  const tab = document.querySelector('.nav-tab[data-target="section-encrypt"]');
+  if (tab) tab.click();
+
+  // Set dropdown
+  const select = document.getElementById("encrypt-peer-select");
+  if (select) {
+    select.value = peerUsername;
+    select.dispatchEvent(new Event("change"));
+  }
+
+  // Scroll to input
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  showToast(
+    currentLang === "ar"
+      ? `تم اختيار النظير @${peerUsername} وتحميل مفتاح كايبر العام الخاص به تلقائياً`
+      : `Selected @${peerUsername}. Recipient Kyber-768 PK loaded.`,
+    "info"
+  );
+}
+
+async function updateMutualSafetyNumber(peerUsername) {
+  const badge = document.getElementById("peer-safety-badge");
+  const digitsEl = document.getElementById("peer-sas-digits");
+  const emojisEl = document.getElementById("peer-sas-emojis");
+  const myUser = getActiveUser();
+
+  if (!badge) return;
+
+  if (!peerUsername) {
+    badge.classList.add("hidden");
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/directory/safety_number?user_a=${encodeURIComponent(myUser)}&user_b=${encodeURIComponent(peerUsername)}`);
+    if (!res.ok) throw new Error("Could not calculate SAS");
+    const data = await res.json();
+
+    if (digitsEl) digitsEl.textContent = data.digits || "--- ---";
+    if (emojisEl) emojisEl.textContent = data.emojis || "🔒 🛡️ 🔑 ⚛️";
+    badge.classList.remove("hidden");
+  } catch (err) {
+    badge.classList.add("hidden");
+  }
+}
+
+async function showPeerSasDialog(peerUsername) {
+  const myUser = getActiveUser();
+  try {
+    const res = await fetch(`/api/directory/safety_number?user_a=${encodeURIComponent(myUser)}&user_b=${encodeURIComponent(peerUsername)}`);
+    if (!res.ok) throw new Error("Failed to compute SAS");
+    const data = await res.json();
+    alert(
+      currentLang === "ar"
+        ? `🔐 الرقم الأمني المشترك (SAS Safety Number):\n\nبينك (@${myUser}) وبين (@${peerUsername}):\nالأرقام: ${data.digits}\nالرموز: ${data.emojis}\n\nتطابق هذه الأرقام لدى الطرفين يثبت رياضياً عدم وجود أي وسيط أو هجوم MITM على مفاتيح كايبر.`
+        : `🔐 Cryptographic Safety Number (Mutual SAS):\n\nBetween @${myUser} and @${peerUsername}:\nDigits: ${data.digits}\nEmojis: ${data.emojis}\n\nComparing these values ensures mutual identity and mathematical protection against Man-in-the-Middle attacks.`
+    );
+  } catch (e) {
+    showToast("Error computing safety number: " + e.message, "error");
+  }
+}
+
+function connectInboxWebSocket(username) {
+  if (!username) return;
+
+  if (state.inboxSocket) {
+    try { state.inboxSocket.close(); } catch (e) {}
+    state.inboxSocket = null;
+  }
+
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  const wsUrl = `${protocol}//${window.location.host}/ws/inbox/${encodeURIComponent(username)}`;
+
+  const ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    const statusEl = document.getElementById("my-inbox-ws-status");
+    if (statusEl) {
+      statusEl.textContent = currentLang === "ar" ? "متصل بالبث المباشر" : "Push Active";
+      statusEl.className = "badge badge-success badge-xs";
+    }
+  };
+
+  ws.onmessage = (event) => {
+    try {
+      const data = JSON.parse(event.data);
+      if (data.type === "new_inbox_item" && data.item) {
+        state.unreadInboxCount++;
+        const badge = document.getElementById("inbox-unread-count");
+        if (badge) {
+          badge.textContent = state.unreadInboxCount;
+          badge.classList.remove("hidden");
+        }
+        document.getElementById("channel-pulse")?.classList.remove("hidden");
+
+        const sender = data.item.sender || "Anonymous";
+        showToast(
+          currentLang === "ar"
+            ? `⚡ استلمت حزمة مشفرة جديدة مباشرة من @${sender}!`
+            : `⚡ New encrypted transmission received from @${sender}!`,
+          "warning"
+        );
+
+        loadInboxTransmissions();
+      }
+    } catch (e) {
+      console.warn("Inbox ws message error:", e);
+    }
+  };
+
+  ws.onclose = () => {
+    const statusEl = document.getElementById("my-inbox-ws-status");
+    if (statusEl) {
+      statusEl.textContent = currentLang === "ar" ? "غير متصل" : "Disconnected";
+      statusEl.className = "badge badge-subtle badge-xs";
+    }
+  };
+
+  state.inboxSocket = ws;
+}
+
+async function loadInboxTransmissions() {
+  const container = document.getElementById("inbox-transmissions-list");
+  const countBadge = document.getElementById("inbox-header-count");
+  const emptyBox = document.getElementById("inbox-empty-box");
+  const username = getActiveUser();
+
+  if (!username) return;
+
+  try {
+    const res = await fetch(`/api/inbox/list?username=${encodeURIComponent(username)}`);
+    if (!res.ok) throw new Error("Failed to load inbox");
+    const data = await res.json();
+    const items = data.items || [];
+
+    if (countBadge) {
+      countBadge.textContent = `${items.length} ${currentLang === "ar" ? "حزم" : "items"}`;
+    }
+
+    if (!container) return;
+
+    if (items.length === 0) {
+      container.innerHTML = "";
+      if (emptyBox) {
+        emptyBox.classList.remove("hidden");
+        container.appendChild(emptyBox);
+      }
+      return;
+    }
+
+    if (emptyBox) emptyBox.classList.add("hidden");
+    container.innerHTML = "";
+
+    items.forEach((item) => {
+      const card = document.createElement("div");
+      card.className = "inbox-trans-item unread";
+
+      const isStego = item.mode === "full_hybrid" || !!item.stego_image_b64;
+      const modeLabel = isStego
+        ? (currentLang === "ar" ? "🛡️ حماية هجينة وإخفاء تكيفي (Hybrid Stego)" : "🛡️ Hybrid Stego Carrier")
+        : (currentLang === "ar" ? "⚡ تشفير كمومي مباشر (Direct PQC)" : "⚡ Direct PQC Ciphertext");
+
+      const thumbHtml = item.stego_image_b64
+        ? `<img class="inbox-carrier-thumb" src="data:image/png;base64,${item.stego_image_b64}" alt="Carrier Thumbnail">`
+        : `<div class="inbox-carrier-thumb" style="display:flex;align-items:center;justify-content:center;background:var(--bg-canvas);font-size:1.3rem;">⚛️</div>`;
+
+      card.innerHTML = `
+        <div class="inbox-item-head">
+          <div class="inbox-sender-row">
+            <span class="badge badge-primary badge-xs">من / From</span>
+            <span class="inbox-sender-name">@${item.sender || "Anonymous"}</span>
+            <span class="badge badge-accent badge-xs">${modeLabel}</span>
+          </div>
+          <span class="inbox-item-time">${item.timestamp || ""}</span>
+        </div>
+
+        <div class="inbox-item-body">
+          ${thumbHtml}
+          <div class="inbox-item-details">
+            <div class="inbox-meta-line">
+              <span>${currentLang === "ar" ? "الملف / المحتوى:" : "Filename / Type:"}</span>
+              <strong>${item.filename || "payload.dat"}</strong>
+            </div>
+            <div class="inbox-meta-line">
+              <span>${currentLang === "ar" ? "حجم الحمولة المشفرة:" : "Payload Size:"}</span>
+              <strong>${item.payload_size || 0} Bytes</strong>
+              <span>&bull;</span>
+              <span>${currentLang === "ar" ? "الخوارزمية:" : "Cipher:"}</span>
+              <strong>${(item.cipher_used || "ChaCha20").toUpperCase()}</strong>
+            </div>
+            <div class="inbox-meta-line">
+              <span>${currentLang === "ar" ? "معيار التبادل الكمومي:" : "PQC Exchange:"}</span>
+              <strong class="text-success">NIST FIPS 203 ML-KEM-768</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="inbox-item-actions">
+          <button class="btn btn-primary btn-sm btn-inbox-decrypt">
+            🔓 ${currentLang === "ar" ? "فك التشفير والاستخراج فوراً (1-Click Decrypt)" : "1-Click Decapsulate & Decrypt"}
+          </button>
+          <button class="btn btn-secondary btn-xs btn-inbox-delete" title="${currentLang === "ar" ? "حذف الحزمة" : "Delete"}">
+            🗑️
+          </button>
+        </div>
+      `;
+
+      // 1-Click Decrypt
+      card.querySelector(".btn-inbox-decrypt").addEventListener("click", async () => {
+        await executeInboxItemDecrypt(item);
+      });
+
+      // Delete
+      card.querySelector(".btn-inbox-delete").addEventListener("click", async () => {
+        await deleteInboxItem(item.id);
+      });
+
+      container.appendChild(card);
+    });
+  } catch (err) {
+    console.warn("loadInboxTransmissions error:", err);
+  }
+}
+
+async function executeInboxItemDecrypt(item) {
+  // Check local secret key
+  const sk = state.localKeys.sk || localStorage.getItem("kyber_sk");
+  if (!sk) {
+    showToast(
+      currentLang === "ar"
+        ? "مفتاح فك التشفير السري (ML-KEM-768 SK) غير متوفر في جهازك! يرجى توليده أو تحميله في خزنة المفاتيح."
+        : "Local Kyber secret key not found! Please generate or load it in Key Vault.",
+      "error"
+    );
+    document.getElementById("btn-open-vault")?.click();
+    return;
+  }
+
+  // Branch 1: Direct PQC (without Stego)
+  if (item.mode === "direct_pqc") {
+    const pkg = item.direct_pqc_package || item.direct_result || {};
+    const ctB64 = pkg.ciphertext_b64 || item.ciphertext_b64;
+    const nonceB64 = pkg.nonce_b64 || item.nonce_b64;
+    const kyberCt = pkg.kyber_ciphertext_b64 || item.kyber_ciphertext_b64;
+    const cipherUsed = pkg.cipher_used || item.cipher_used || "chacha20";
+
+    if (!ctB64 || !nonceB64 || !kyberCt) {
+      showToast("حزمة التشفير الكمومي المباشر غير مكتملة المعطيات", "error");
+      return;
+    }
+
+    try {
+      showToast(currentLang === "ar" ? "جاري فك تشفير حزمة كايبر في الوقت الثابت..." : "Decapsulating Kyber-768...", "info");
+      const fd = new FormData();
+      fd.append("ciphertext_b64", ctB64);
+      fd.append("nonce_b64", nonceB64);
+      fd.append("kyber_ciphertext_b64", kyberCt);
+      fd.append("recipient_kyber_sk_b64", sk);
+      fd.append("cipher_used", cipherUsed);
+      fd.append("username", getActiveUser());
+
+      const res = await fetch("/api/decrypt_direct", { method: "POST", body: fd });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.detail || "Decryption failed");
+      }
+
+      const result = await res.json();
+
+      // Switch to Decrypt tab & render
+      document.querySelector('.nav-tab[data-target="section-decrypt"]')?.click();
+      renderDecryptionResult({
+        status: "success",
+        is_text: result.is_text,
+        text_preview: result.text_preview,
+        data_b64: result.data_b64,
+        filename: result.filename || item.filename || "recovered_secret.txt",
+        data_type: result.data_type || "sensitive_credential",
+        cipher_used: result.cipher_used || cipherUsed,
+        signature_verified: true
+      });
+
+      showToast(
+        currentLang === "ar"
+          ? `تم فك تشفير الحزمة بنجاح واستخراج المحتوى السري المرسل من @${item.sender}!`
+          : `Package from @${item.sender} successfully decapsulated and decrypted!`,
+        "success"
+      );
+    } catch (e) {
+      showToast("Direct PQC Decryption error: " + e.message, "error");
+    }
+    return;
+  }
+
+  // Branch 2: Full Hybrid Stego
+  loadTransmissionIntoDecrypt(item);
+  document.getElementById("btn-execute-decrypt")?.click();
+  showToast(
+    currentLang === "ar"
+      ? `جاري استخراج وفك تشفير حزمة الإخفاء التكيفي المستلمة من @${item.sender}...`
+      : `Unpacking and decrypting stego package from @${item.sender}...`,
+    "info"
+  );
+}
+
+function loadTransmissionIntoDecrypt(trans) {
+  state.lastIncomingTransmission = trans;
+
+  // Populate Decrypt Form
+  const ctInput = document.getElementById("decrypt-kyber-ct");
+  if (ctInput) ctInput.value = trans.kyber_ciphertext_b64 || "";
+
+  const skInput = document.getElementById("decrypt-kyber-sk");
+  if (skInput && state.localKeys.sk) skInput.value = state.localKeys.sk;
+
+  if (trans.stego_image_b64) {
+    const previewBox = document.getElementById("decrypt-image-preview-box");
+    const previewImg = document.getElementById("decrypt-image-preview");
+    if (previewImg) previewImg.src = `data:image/png;base64,${trans.stego_image_b64}`;
+    if (previewBox) previewBox.classList.remove("hidden");
+  }
+
+  // Switch Tab to Decrypt
+  document.querySelector('.nav-tab[data-target="section-decrypt"]')?.click();
+}
+
+async function deleteInboxItem(txId) {
+  try {
+    const fd = new FormData();
+    fd.append("username", getActiveUser());
+    fd.append("transmission_id", txId);
+
+    const res = await fetch("/api/inbox/delete", { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Delete failed");
+    await loadInboxTransmissions();
+    showToast(currentLang === "ar" ? "تم حذف الحزمة من الصندوق" : "Transmission deleted", "info");
+  } catch (err) {
+    showToast("Error deleting item: " + err.message, "error");
+  }
+}
+
+async function clearInboxTransmissions() {
+  try {
+    const fd = new FormData();
+    fd.append("username", getActiveUser());
+
+    const res = await fetch("/api/inbox/clear", { method: "POST", body: fd });
+    if (!res.ok) throw new Error("Clear failed");
+    await loadInboxTransmissions();
+    showToast(currentLang === "ar" ? "تم تفريغ صندوق البريد بالكامل" : "Inbox cleared", "info");
+  } catch (err) {
+    showToast("Error clearing inbox: " + err.message, "error");
+  }
+}
+
+// Legacy channel room connection
 function connectToChannel(roomId) {
   if (state.socket) {
     state.socket.close();
@@ -1217,10 +1846,12 @@ function connectToChannel(roomId) {
         );
 
         // Flash pulse
-        document.getElementById("channel-pulse").classList.remove("hidden");
-        document.getElementById("incoming-alert-box").classList.remove("hidden");
-        document.getElementById("incoming-desc").textContent =
-          `Received from room ${data.room_id}: ${data.filename || "data"} (${data.payload_size} bytes)`;
+        document.getElementById("channel-pulse")?.classList.remove("hidden");
+        document.getElementById("incoming-alert-box")?.classList.remove("hidden");
+        const inDesc = document.getElementById("incoming-desc");
+        if (inDesc) {
+          inDesc.textContent = `Received from room ${data.room_id}: ${data.filename || "data"} (${data.payload_size} bytes)`;
+        }
 
         showToast("⚡ Incoming Stego Package received on Channel!", "warning");
       }
@@ -1240,6 +1871,7 @@ function connectToChannel(roomId) {
 
 function appendChannelLog(message, type = "normal") {
   const logBox = document.getElementById("channel-event-log");
+  if (!logBox) return;
   const entry = document.createElement("div");
   entry.className = `log-entry ${type}-entry`;
   const time = new Date().toLocaleTimeString();
@@ -1432,7 +2064,8 @@ const I18N_DATA = {
     nav_info: "معلومات النظام",
     nav_encrypt: "تشفير وحجب",
     nav_decrypt: "فك التشفير",
-    nav_channel: "قناة البث",
+    nav_channel: "صندوق البريد والنظراء",
+    nav_inbox: "صندوق البريد والنظراء",
     nav_audit: "سجل العمليات",
     vault_btn: "خزنة المفاتيح",
     theme_accent: "اللون",
@@ -1475,6 +2108,26 @@ const I18N_DATA = {
     th_details: "تفاصيل الحزمة والتشفير",
     th_status: "الحالة والتحقق",
     audit_empty: "لا توجد عمليات مسجلة حتى الآن لهذا الحساب.",
+
+    // Dropzone Strings
+    lbl_upload_payload: "رفع ملف (مستندات، بيانات، أو ملفات ثنائية):",
+    dropzone_payload_cta: "اسحب وأفلت ملف البيانات هنا",
+    dropzone_payload_browse: "تصفح من جهازك",
+    dropzone_payload_hint: "يدعم المستندات، الملفات الثنائية، والبيانات بجميع الصيغ (PDF, DOCX, TXT, ZIP, BIN...) • فحص وتشفير آلي",
+    dropzone_payload_overlay: "أفلت الملف هنا فوراً للتحميل...",
+    lbl_cover_image: "صورة الغلاف الحاملة (Carrier Cover Image):",
+    dropzone_cover_cta: "اسحب وأفلت صورة الغلاف الحاملة",
+    dropzone_cover_browse: "اختر صورة",
+    dropzone_cover_hint: "صيغ مدعومة: PNG, JPG, WebP • (اتركها فارغة للتوليد العشوائي المشفر تلقائياً)",
+    dropzone_cover_overlay: "أفلت صورة الغلاف هنا",
+    lbl_decrypt_stego: "رفع الصورة الحاملة المشفرة (Stego-Image PNG):",
+    dropzone_stego_cta: "اسحب وأفلت الصورة المشفرة هنا",
+    dropzone_stego_browse: "اختر ملف PNG",
+    dropzone_stego_hint: "صيغة PNG عديمة الفقد • تحتوي على الحمولة المشفرة المخبأة بنظام Sobel LSB",
+    dropzone_stego_overlay: "أفلت صورة Stego PNG هنا",
+    dropzone_token_cta: "اسحب وأفلت ملف الرمز (Token File) هنا أو انقر لتصفحه",
+    dropzone_ready_encrypt: "جاهز للتشفير ✓",
+    dropzone_ready_decrypt: "جاهز للاستخراج والفك ✓",
   },
   en: {
     lang_btn: "العربية",
@@ -1484,7 +2137,8 @@ const I18N_DATA = {
     nav_info: "System Info",
     nav_encrypt: "Encrypt & Conceal",
     nav_decrypt: "Extract & Decrypt",
-    nav_channel: "Peer Channel",
+    nav_channel: "Peer Inbox & Directory",
+    nav_inbox: "Peer Inbox & Directory",
     nav_audit: "Activity Log",
     vault_btn: "Key Vault",
     theme_accent: "Color",
@@ -1527,6 +2181,26 @@ const I18N_DATA = {
     th_details: "Package & Cipher Details",
     th_status: "Status & Verification",
     audit_empty: "No operations recorded yet for this account.",
+
+    // Dropzone Strings
+    lbl_upload_payload: "Upload File (Document, Binary, or Data):",
+    dropzone_payload_cta: "Drag & Drop Data File Here",
+    dropzone_payload_browse: "Browse Device",
+    dropzone_payload_hint: "Supports Documents, Binaries, and Data (PDF, DOCX, TXT, ZIP, BIN...) • Auto-Classified",
+    dropzone_payload_overlay: "Drop file here to upload...",
+    lbl_cover_image: "Carrier Cover Image:",
+    dropzone_cover_cta: "Drag & Drop Carrier Cover Image",
+    dropzone_cover_browse: "Select Image",
+    dropzone_cover_hint: "Supported formats: PNG, JPG, WebP • (Leave empty for auto-synthesized carrier)",
+    dropzone_cover_overlay: "Drop cover image here",
+    lbl_decrypt_stego: "Upload Steganographic Carrier (PNG):",
+    dropzone_stego_cta: "Drag & Drop Stego-Image Carrier",
+    dropzone_stego_browse: "Choose PNG File",
+    dropzone_stego_hint: "Lossless PNG only • Contains concealed payload embedded via Sobel LSB",
+    dropzone_stego_overlay: "Drop Stego PNG image here",
+    dropzone_token_cta: "Drag & Drop Kyber Token file here or click to browse",
+    dropzone_ready_encrypt: "Ready to Encrypt ✓",
+    dropzone_ready_decrypt: "Ready to Decrypt ✓",
   }
 };
 
@@ -1568,6 +2242,9 @@ function initLanguageController() {
 
     const tabAudit = document.querySelector('#tab-audit span');
     if (tabAudit) tabAudit.textContent = dict.nav_audit;
+
+    const tabInbox = document.getElementById("nav-channel-label");
+    if (tabInbox) tabInbox.textContent = dict.nav_inbox;
 
     // Auth Gateway Modal
     const authBadge = document.getElementById("auth-badge-txt");
@@ -1637,6 +2314,47 @@ function initLanguageController() {
     const emptyTxt = document.getElementById("audit-empty-txt");
     if (emptyTxt) emptyTxt.textContent = dict.audit_empty;
 
+    // Dropzone Elements Translation
+    const lblPayload = document.getElementById("lbl-upload-payload");
+    if (lblPayload) lblPayload.textContent = dict.lbl_upload_payload;
+    const ctaPayload = document.getElementById("dropzone-payload-cta");
+    if (ctaPayload) ctaPayload.textContent = dict.dropzone_payload_cta;
+    const browsePayload = document.getElementById("dropzone-payload-browse");
+    if (browsePayload) browsePayload.textContent = dict.dropzone_payload_browse;
+    const hintPayload = document.getElementById("dropzone-payload-hint");
+    if (hintPayload) hintPayload.innerHTML = dict.dropzone_payload_hint;
+    const overlayPayload = document.getElementById("dropzone-payload-overlay-txt");
+    if (overlayPayload) overlayPayload.textContent = dict.dropzone_payload_overlay;
+
+    const lblCover = document.getElementById("lbl-cover-image");
+    if (lblCover) lblCover.textContent = dict.lbl_cover_image;
+    const ctaCover = document.getElementById("dropzone-cover-cta");
+    if (ctaCover) ctaCover.textContent = dict.dropzone_cover_cta;
+    const browseCover = document.getElementById("dropzone-cover-browse");
+    if (browseCover) browseCover.textContent = dict.dropzone_cover_browse;
+    const hintCover = document.getElementById("dropzone-cover-hint");
+    if (hintCover) hintCover.innerHTML = dict.dropzone_cover_hint;
+    const overlayCover = document.getElementById("dropzone-cover-overlay-txt");
+    if (overlayCover) overlayCover.textContent = dict.dropzone_cover_overlay;
+
+    const lblStego = document.getElementById("lbl-decrypt-stego");
+    if (lblStego) lblStego.textContent = dict.lbl_decrypt_stego;
+    const ctaStego = document.getElementById("dropzone-stego-cta");
+    if (ctaStego) ctaStego.textContent = dict.dropzone_stego_cta;
+    const browseStego = document.getElementById("dropzone-stego-browse");
+    if (browseStego) browseStego.textContent = dict.dropzone_stego_browse;
+    const hintStego = document.getElementById("dropzone-stego-hint");
+    if (hintStego) hintStego.innerHTML = dict.dropzone_stego_hint;
+    const overlayStego = document.getElementById("dropzone-stego-overlay-txt");
+    if (overlayStego) overlayStego.textContent = dict.dropzone_stego_overlay;
+
+    const ctaToken = document.getElementById("dropzone-token-cta-txt");
+    if (ctaToken) ctaToken.textContent = dict.dropzone_token_cta;
+    const readyEnc = document.getElementById("encrypt-file-ready-badge");
+    if (readyEnc) readyEnc.textContent = dict.dropzone_ready_encrypt;
+    const readyDec = document.getElementById("decrypt-stego-ready-badge");
+    if (readyDec) readyDec.textContent = dict.dropzone_ready_decrypt;
+
     // Update active pill in auth modal
     authLangBtns.forEach((btn) => {
       btn.classList.toggle("active", btn.dataset.lang === currentLang);
@@ -1686,9 +2404,17 @@ function initAuthGateway() {
       if (sessionName) sessionName.textContent = username;
       if (pill) pill.classList.remove("hidden");
       if (overlay) overlay.classList.add("hidden");
+      if (typeof publishCurrentIdentity === "function") publishCurrentIdentity(false);
+      if (typeof connectInboxWebSocket === "function") connectInboxWebSocket(username);
+      if (typeof loadInboxTransmissions === "function") loadInboxTransmissions();
+      if (typeof loadDirectoryPeers === "function") loadDirectoryPeers();
     } else {
       if (pill) pill.classList.add("hidden");
       if (overlay) overlay.classList.remove("hidden");
+      if (state.inboxSocket) {
+        try { state.inboxSocket.close(); } catch (e) {}
+        state.inboxSocket = null;
+      }
     }
   }
 
@@ -1983,5 +2709,370 @@ function initAuditLogSection() {
     });
   }
 }
+
+/* ==========================================================================
+   11. CYBER DRAG & DROP FILE SYSTEM (MODERN DROPZONE CONTROLLER)
+   ========================================================================== */
+function initDropzones() {
+  // Global prevention of default browser behavior when files dropped outside dropzones
+  window.addEventListener("dragover", (e) => e.preventDefault(), false);
+  window.addEventListener("drop", (e) => e.preventDefault(), false);
+
+  // Helper: Format file size
+  function formatBytes(bytes) {
+    if (!bytes || bytes === 0) return "0 Bytes";
+    const k = 1024;
+    const sizes = ["Bytes", "KB", "MB", "GB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  }
+
+  // Helper: File type styling info
+  function getFileType(fileName) {
+    const ext = (fileName.split(".").pop() || "").toLowerCase();
+    if (["pdf"].includes(ext)) {
+      return { badge: "PDF", class: "is-pdf" };
+    } else if (["zip", "tar", "gz", "7z", "rar", "bz2"].includes(ext)) {
+      return { badge: "ARCHIVE", class: "is-archive" };
+    } else if (["json", "csv", "xml", "yaml", "sql", "txt", "md"].includes(ext)) {
+      return { badge: "DATA", class: "is-data" };
+    } else if (["png", "jpg", "jpeg", "webp", "bmp", "svg", "gif"].includes(ext)) {
+      return { badge: "IMAGE", class: "is-image" };
+    } else if (["docx", "doc", "rtf", "odt"].includes(ext)) {
+      return { badge: "DOC", class: "is-pdf" };
+    }
+    return { badge: ext.toUpperCase() || "BIN", class: "" };
+  }
+
+  // Helper: Setup generic dragover/dragleave/drop on dropzone element
+  function bindDropEvents(dropzoneEl, onFilesDropped) {
+    if (!dropzoneEl) return;
+
+    let dragCounter = 0;
+
+    dropzoneEl.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter++;
+      dropzoneEl.classList.add("is-dragover");
+    });
+
+    dropzoneEl.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropzoneEl.classList.add("is-dragover");
+    });
+
+    dropzoneEl.addEventListener("dragleave", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter--;
+      if (dragCounter <= 0) {
+        dragCounter = 0;
+        dropzoneEl.classList.remove("is-dragover");
+      }
+    });
+
+    dropzoneEl.addEventListener("drop", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter = 0;
+      dropzoneEl.classList.remove("is-dragover");
+
+      if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        onFilesDropped(e.dataTransfer.files);
+      }
+    });
+  }
+
+  // -------------------------------------------------------------
+  // 1. PAYLOAD FILE DROPZONE (#dropzone-encrypt-file)
+  // -------------------------------------------------------------
+  const payloadDropzone = document.getElementById("dropzone-encrypt-file");
+  const payloadInput = document.getElementById("encrypt-file");
+  const payloadEmptyState = document.getElementById("encrypt-file-empty-state");
+  const payloadLoadedState = document.getElementById("encrypt-file-loaded-state");
+  const payloadFileName = document.getElementById("encrypt-file-name");
+  const payloadFileSize = document.getElementById("encrypt-file-size");
+  const payloadTypeBadge = document.getElementById("encrypt-file-type-badge");
+  const payloadIconWrap = document.getElementById("encrypt-file-type-icon");
+  const btnClearPayload = document.getElementById("btn-clear-encrypt-file");
+
+  function updatePayloadDropzoneUI() {
+    if (payloadInput && payloadInput.files && payloadInput.files.length > 0) {
+      const file = payloadInput.files[0];
+      if (payloadFileName) payloadFileName.textContent = file.name;
+      if (payloadFileSize) payloadFileSize.textContent = formatBytes(file.size);
+
+      const typeInfo = getFileType(file.name);
+      if (payloadTypeBadge) payloadTypeBadge.textContent = typeInfo.badge;
+      if (payloadIconWrap) {
+        payloadIconWrap.className = "dropzone-file-icon-wrap " + typeInfo.class;
+      }
+
+      if (payloadEmptyState) payloadEmptyState.classList.add("hidden");
+      if (payloadLoadedState) payloadLoadedState.classList.remove("hidden");
+    } else {
+      if (payloadEmptyState) payloadEmptyState.classList.remove("hidden");
+      if (payloadLoadedState) payloadLoadedState.classList.add("hidden");
+    }
+  }
+
+  if (payloadDropzone && payloadInput) {
+    // Click triggers native input
+    payloadDropzone.addEventListener("click", (e) => {
+      if (e.target.closest(".btn-dropzone-action") || e.target.closest("button")) return;
+      payloadInput.click();
+    });
+
+    payloadDropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        payloadInput.click();
+      }
+    });
+
+    // Drop binding
+    bindDropEvents(payloadDropzone, (files) => {
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      payloadInput.files = dt.files;
+      payloadInput.dispatchEvent(new Event("change", { bubbles: true }));
+      showToast(currentLang === "ar" ? `تم تحميل الملف: ${files[0].name}` : `Payload loaded: ${files[0].name}`, "info");
+    });
+
+    // Listen to native change to update dropzone UI
+    payloadInput.addEventListener("change", () => {
+      updatePayloadDropzoneUI();
+    });
+
+    // Clear file
+    if (btnClearPayload) {
+      btnClearPayload.addEventListener("click", (e) => {
+        e.stopPropagation();
+        payloadInput.value = "";
+        updatePayloadDropzoneUI();
+        payloadInput.dispatchEvent(new Event("change", { bubbles: true }));
+        showToast(currentLang === "ar" ? "تمت إزالة ملف البيانات" : "Payload file removed", "info");
+      });
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 2. COVER IMAGE DROPZONE (#dropzone-encrypt-cover)
+  // -------------------------------------------------------------
+  const coverDropzone = document.getElementById("dropzone-encrypt-cover");
+  const coverInput = document.getElementById("encrypt-cover-image");
+  const coverEmptyState = document.getElementById("encrypt-cover-empty-state");
+  const coverLoadedState = document.getElementById("encrypt-cover-loaded-state");
+  const coverThumb = document.getElementById("encrypt-cover-thumb");
+  const coverName = document.getElementById("encrypt-cover-name");
+  const coverDim = document.getElementById("encrypt-cover-dim");
+  const coverCapacity = document.getElementById("encrypt-cover-capacity");
+  const btnClearCover = document.getElementById("btn-clear-cover-image");
+  const btnResetCover = document.getElementById("btn-reset-cover");
+
+  function updateCoverDropzoneUI(file, width, height, capacityBytes) {
+    if (file) {
+      if (coverName) coverName.textContent = file.name;
+      if (coverDim) coverDim.textContent = `${width} × ${height} px`;
+      if (coverCapacity) {
+        coverCapacity.textContent = currentLang === "ar" ? `السعة: ${formatBytes(capacityBytes)}` : `Capacity: ${formatBytes(capacityBytes)}`;
+      }
+      if (coverThumb) {
+        coverThumb.src = URL.createObjectURL(file);
+      }
+      if (coverEmptyState) coverEmptyState.classList.add("hidden");
+      if (coverLoadedState) coverLoadedState.classList.remove("hidden");
+    } else {
+      if (coverEmptyState) coverEmptyState.classList.remove("hidden");
+      if (coverLoadedState) coverLoadedState.classList.add("hidden");
+      if (coverThumb) coverThumb.src = "";
+    }
+  }
+
+  if (coverDropzone && coverInput) {
+    coverDropzone.addEventListener("click", (e) => {
+      if (e.target.closest(".btn-dropzone-action") || e.target.closest("button")) return;
+      coverInput.click();
+    });
+
+    coverDropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        coverInput.click();
+      }
+    });
+
+    bindDropEvents(coverDropzone, (files) => {
+      const file = files[0];
+      if (!file.type.startsWith("image/")) {
+        showToast(currentLang === "ar" ? "يرجى إفلات ملف صورة (PNG/JPG/WebP)" : "Please drop an image file (PNG/JPG/WebP)", "error");
+        return;
+      }
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      coverInput.files = dt.files;
+      coverInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    // Inspect image and update UI when coverInput changes
+    coverInput.addEventListener("change", (e) => {
+      const file = e.target.files ? e.target.files[0] : null;
+      if (!file) {
+        updateCoverDropzoneUI(null);
+        return;
+      }
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      img.onload = () => {
+        const width = img.naturalWidth;
+        const height = img.naturalHeight;
+        const pixels = width * height;
+        const totalBytes = Math.floor((pixels * 3) / 8);
+        const capacityBytes = Math.max(0, totalBytes - 36);
+        updateCoverDropzoneUI(file, width, height, capacityBytes);
+        URL.revokeObjectURL(objectUrl);
+      };
+      img.src = objectUrl;
+    });
+
+    function resetCoverAction() {
+      coverInput.value = "";
+      updateCoverDropzoneUI(null);
+      currentUploadedCover = null;
+      if (btnResetCover) btnResetCover.classList.add("hidden");
+      updateStegoCapacity();
+      showToast(currentLang === "ar" ? "تمت إزالة صورة الغلاف (سيتم التوليد التلقائي)" : "Cover removed (auto-synthesis enabled)", "info");
+    }
+
+    if (btnClearCover) {
+      btnClearCover.addEventListener("click", (e) => {
+        e.stopPropagation();
+        resetCoverAction();
+      });
+    }
+
+    if (btnResetCover) {
+      btnResetCover.addEventListener("click", () => {
+        updateCoverDropzoneUI(null);
+      });
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 3. STEGO CARRIER DECRYPT DROPZONE (#dropzone-decrypt-stego)
+  // -------------------------------------------------------------
+  const stegoDropzone = document.getElementById("dropzone-decrypt-stego");
+  const stegoInput = document.getElementById("decrypt-stego-file");
+  const stegoEmptyState = document.getElementById("decrypt-stego-empty-state");
+  const stegoLoadedState = document.getElementById("decrypt-stego-loaded-state");
+  const stegoThumb = document.getElementById("decrypt-stego-thumb");
+  const stegoName = document.getElementById("decrypt-stego-name");
+  const stegoSize = document.getElementById("decrypt-stego-size");
+  const btnClearStego = document.getElementById("btn-clear-decrypt-stego");
+
+  function updateStegoDropzoneUI() {
+    if (stegoInput && stegoInput.files && stegoInput.files.length > 0) {
+      const file = stegoInput.files[0];
+      if (stegoName) stegoName.textContent = file.name;
+      if (stegoSize) stegoSize.textContent = formatBytes(file.size);
+      if (stegoThumb) {
+        stegoThumb.src = URL.createObjectURL(file);
+      }
+      if (stegoEmptyState) stegoEmptyState.classList.add("hidden");
+      if (stegoLoadedState) stegoLoadedState.classList.remove("hidden");
+    } else {
+      if (stegoEmptyState) stegoEmptyState.classList.remove("hidden");
+      if (stegoLoadedState) stegoLoadedState.classList.add("hidden");
+      if (stegoThumb) stegoThumb.src = "";
+    }
+  }
+
+  if (stegoDropzone && stegoInput) {
+    stegoDropzone.addEventListener("click", (e) => {
+      if (e.target.closest(".btn-dropzone-action") || e.target.closest("button")) return;
+      stegoInput.click();
+    });
+
+    stegoDropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        stegoInput.click();
+      }
+    });
+
+    bindDropEvents(stegoDropzone, (files) => {
+      const file = files[0];
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      stegoInput.files = dt.files;
+      stegoInput.dispatchEvent(new Event("change", { bubbles: true }));
+      showToast(currentLang === "ar" ? `تم تحميل صورة Stego: ${file.name}` : `Stego carrier loaded: ${file.name}`, "info");
+    });
+
+    stegoInput.addEventListener("change", () => {
+      updateStegoDropzoneUI();
+    });
+
+    if (btnClearStego) {
+      btnClearStego.addEventListener("click", (e) => {
+        e.stopPropagation();
+        stegoInput.value = "";
+        updateStegoDropzoneUI();
+        const previewBox = document.getElementById("decrypt-image-preview-box");
+        if (previewBox) previewBox.classList.add("hidden");
+        stegoInput.dispatchEvent(new Event("change", { bubbles: true }));
+        showToast(currentLang === "ar" ? "تمت إزالة صورة Stego" : "Stego image cleared", "info");
+      });
+    }
+  }
+
+  // -------------------------------------------------------------
+  // 4. KYBER TOKEN DROPZONE (#dropzone-decrypt-token)
+  // -------------------------------------------------------------
+  const tokenDropzone = document.getElementById("dropzone-decrypt-token");
+  const tokenInput = document.getElementById("decrypt-token-file");
+  const tokenLabel = document.getElementById("decrypt-token-dropzone-label");
+
+  if (tokenDropzone && tokenInput) {
+    tokenDropzone.addEventListener("click", () => {
+      tokenInput.click();
+    });
+
+    tokenDropzone.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        tokenInput.click();
+      }
+    });
+
+    bindDropEvents(tokenDropzone, async (files) => {
+      const file = files[0];
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      tokenInput.files = dt.files;
+      tokenInput.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+
+    tokenInput.addEventListener("change", async () => {
+      if (tokenInput.files && tokenInput.files.length > 0) {
+        const file = tokenInput.files[0];
+        const text = await file.text();
+        document.getElementById("decrypt-kyber-ct").value = text.trim();
+        if (tokenLabel) {
+          tokenLabel.innerHTML = `
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: var(--accent-emerald);">
+              <polyline points="20 6 9 17 4 12"></polyline>
+            </svg>
+            <span style="color: var(--accent-emerald); font-weight: 600;">✓ ${file.name} (${formatBytes(file.size)})</span>
+          `;
+        }
+        showToast(currentLang === "ar" ? `تم تحميل رمز كايبر من ${file.name}` : `Kyber token loaded from ${file.name}`, "info");
+      }
+    });
+  }
+}
+
 
 

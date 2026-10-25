@@ -65,6 +65,54 @@ class ChannelManager:
 
 channel_manager = ChannelManager()
 
+# --- Zero-Database Public Key Directory & Direct Peer Inbox Infrastructure ---
+public_directory_store: dict[str, dict] = {}
+peer_inbox_store: dict[str, list[dict]] = {}
+user_inbox_sockets: dict[str, list[WebSocket]] = {}
+
+EMOJI_SAS_LIST = ["🛡️", "⚡", "🔒", "🗝️", "💎", "🌐", "🚀", "🪐", "🌟", "🔥", "🔮", "🎯", "⚓", "🛸", "🔑", "🏆"]
+
+def compute_sas_safety_number(pk_a_b64: str, pk_b_b64: str) -> dict:
+    import hashlib
+    # Canonical sorting ensures Alice and Bob independently compute the exact same SAS
+    sorted_pks = sorted([pk_a_b64 or "", pk_b_b64 or ""])
+    combined = (sorted_pks[0] + ":" + sorted_pks[1]).encode('utf-8')
+    h = hashlib.blake2b(combined, digest_size=16).digest()
+    
+    num = int.from_bytes(h[:4], byteorder='big') % 1000000
+    digits_str = f"{num:06d}"
+    formatted_digits = f"{digits_str[:3]}-{digits_str[3:]}"
+    emojis = " ".join([EMOJI_SAS_LIST[b % len(EMOJI_SAS_LIST)] for b in h[4:8]])
+    
+    return {
+        "digits": formatted_digits,
+        "emojis": emojis,
+        "raw_hex": h[:8].hex()
+    }
+
+async def dispatch_to_peer_inbox(recipient_username: str, transmission_item: dict):
+    if not recipient_username:
+        return
+    if recipient_username not in peer_inbox_store:
+        peer_inbox_store[recipient_username] = []
+    peer_inbox_store[recipient_username].insert(0, transmission_item)
+    if len(peer_inbox_store[recipient_username]) > 50:
+        peer_inbox_store[recipient_username] = peer_inbox_store[recipient_username][:50]
+        
+    if recipient_username in user_inbox_sockets:
+        dead_sockets = []
+        for ws in user_inbox_sockets[recipient_username]:
+            try:
+                await ws.send_json({
+                    "type": "new_transmission",
+                    "transmission": transmission_item
+                })
+            except Exception:
+                dead_sockets.append(ws)
+        for dead in dead_sockets:
+            if dead in user_inbox_sockets[recipient_username]:
+                user_inbox_sockets[recipient_username].remove(dead)
+
 
 # --- REST Cryptographic Endpoints ---
 
@@ -236,7 +284,8 @@ async def encrypt_and_conceal(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     cover_image: Optional[UploadFile] = File(None),
-    recipient_kyber_pk_b64: str = Form(...),
+    recipient_kyber_pk_b64: Optional[str] = Form(None),
+    recipient_username: Optional[str] = Form(None),
     preferred_cipher: str = Form("chacha20"),
     override_type: Optional[str] = Form(None),
     intent_objective: Optional[str] = Form("full_hybrid"),
@@ -251,7 +300,12 @@ async def encrypt_and_conceal(
           1. 'dsa_only': Generates standalone signature receipt (.sig.json)
           2. 'direct_pqc': Generates direct quantum-safe ciphertext without stego
           3. 'full_hybrid': Full Kyber-768 + AEAD + Adaptive Edge Steganography
+      - Direct Peer Inbox Dispatch: When recipient_username is specified, automatically
+        deposits the transmission in the recipient's secure inbox and sends a real-time push.
     """
+    import uuid
+    import datetime
+
     filename = ""
     if file:
         data_bytes = await file.read()
@@ -297,8 +351,23 @@ async def encrypt_and_conceal(
             "filename": filename
         }
 
+    # Resolve Recipient ML-KEM-768 Public Key (Directly or from Public Directory)
+    effective_pk_b64 = recipient_kyber_pk_b64
+    if not effective_pk_b64 and recipient_username:
+        peer = public_directory_store.get(recipient_username)
+        if peer and peer.get("kyber_pk_b64"):
+            effective_pk_b64 = peer["kyber_pk_b64"]
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Recipient @{recipient_username} has not published their public key to the directory yet."
+            )
+
+    if not effective_pk_b64:
+        raise HTTPException(status_code=400, detail="Recipient Kyber-768 public key or valid directory peer username is required")
+
     try:
-        recipient_pk = KyberEngine.from_b64(recipient_kyber_pk_b64)
+        recipient_pk = KyberEngine.from_b64(effective_pk_b64)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Invalid Kyber public key format: {str(e)}")
 
@@ -315,12 +384,38 @@ async def encrypt_and_conceal(
             action="encrypt",
             title_ar="تشفير كمومي مباشر (Direct PQC)",
             title_en="Direct PQC Encryption",
-            details={"cipher": active_cipher, "payload_size": len(data_bytes), "filename": filename}
+            details={
+                "cipher": active_cipher,
+                "payload_size": len(data_bytes),
+                "filename": filename,
+                "recipient": recipient_username or "External"
+            }
         )
+
+        # Auto-dispatch to recipient's direct inbox if specified
+        tx_id = f"tx_{uuid.uuid4().hex[:8]}"
+        if recipient_username:
+            inbox_item = {
+                "id": tx_id,
+                "sender": username or "Anonymous",
+                "recipient": recipient_username,
+                "mode": "direct_pqc",
+                "pipeline_target": "direct_pqc",
+                "filename": filename,
+                "payload_size": len(data_bytes),
+                "direct_pqc_package": direct_res,
+                "cipher_used": active_cipher,
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            await dispatch_to_peer_inbox(recipient_username, inbox_item)
+
         return {
             "status": "success",
             "pipeline_target": "direct_pqc",
             "mode": "direct_pqc",
+            "tx_id": tx_id,
+            "recipient_username": recipient_username,
+            "dispatched_to_inbox": bool(recipient_username),
             "direct_result": direct_res,
             "direct_pqc_package": direct_res,
             "payload_size": len(data_bytes),
@@ -346,11 +441,34 @@ async def encrypt_and_conceal(
         raise HTTPException(status_code=400, detail=f"Encryption error: {str(e)}")
 
     stego_b64 = base64.b64encode(result["stego_image_bytes"]).decode('utf-8')
+    tx_id = f"tx_{uuid.uuid4().hex[:8]}"
+
+    # Auto-dispatch to recipient's direct inbox if specified
+    if recipient_username:
+        inbox_item = {
+            "id": tx_id,
+            "sender": username or "Anonymous",
+            "recipient": recipient_username,
+            "mode": "full_hybrid",
+            "pipeline_target": "full_hybrid",
+            "filename": filename,
+            "payload_size": result["payload_size"],
+            "stego_size": result["stego_size"],
+            "stego_image_b64": stego_b64,
+            "kyber_ciphertext_b64": result["kyber_ciphertext_b64"],
+            "signature_b64": result["signature_b64"],
+            "cipher_used": active_cipher,
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        }
+        await dispatch_to_peer_inbox(recipient_username, inbox_item)
 
     response_payload = {
         "status": "success",
         "pipeline_target": "full_hybrid",
         "mode": "full_hybrid",
+        "tx_id": tx_id,
+        "recipient_username": recipient_username,
+        "dispatched_to_inbox": bool(recipient_username),
         "classification": result["classification"],
         "intent_evaluation": intent_eval,
         "kyber_ciphertext_b64": result["kyber_ciphertext_b64"],
@@ -364,17 +482,18 @@ async def encrypt_and_conceal(
     add_audit_entry(
         username=username or "Guest",
         action="encrypt",
-        title_ar="تشفير هجين وإخفاء تكيفي",
-        title_en="Hybrid Encryption & Adaptive Stego",
+        title_ar="تشفير هجين وإرسال للنظير",
+        title_en="Hybrid Encryption & Peer Dispatch",
         details={
             "cipher": active_cipher,
             "payload_size": result["payload_size"],
             "stego_size": result["stego_size"],
-            "filename": filename
+            "filename": filename,
+            "recipient": recipient_username or "Broadcast/Manual"
         }
     )
 
-    # If channel room provided, broadcast live to receiver
+    # If legacy channel room provided, also broadcast
     if channel_room:
         await channel_manager.broadcast_transmission(channel_room, {
             "type": "new_transmission",
@@ -530,6 +649,186 @@ async def record_audit_log(
         details = {"raw": details_json}
     entry = add_audit_entry(username, action, title_ar, title_en, details, status)
     return {"status": "success", "entry": entry}
+
+
+# --- Public Identity Directory & Direct Peer Inbox Endpoints ---
+
+@app.post("/api/directory/publish")
+async def publish_public_identity(
+    username: str = Form(...),
+    kyber_pk_b64: str = Form(...),
+    dsa_pubkey_pem: Optional[str] = Form(None),
+    display_name: Optional[str] = Form(None)
+):
+    """
+    Publish user's public identity card to the in-memory public directory.
+    Zero-Database: No private keys ever leave the client.
+    """
+    import hashlib
+    import datetime
+    
+    try:
+        raw_pk = KyberEngine.from_b64(kyber_pk_b64)
+        if len(raw_pk) != 1184:
+            raise ValueError(f"Invalid ML-KEM-768 public key length: {len(raw_pk)}")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Invalid Kyber public key: {str(e)}")
+
+    fingerprint = hashlib.sha256(kyber_pk_b64.encode('utf-8')).hexdigest()[:12].upper()
+    
+    entry = {
+        "username": username,
+        "display_name": display_name or username,
+        "kyber_pk_b64": kyber_pk_b64,
+        "dsa_pubkey_pem": dsa_pubkey_pem or "",
+        "fingerprint": f"{fingerprint[:4]}-{fingerprint[4:8]}-{fingerprint[8:]}",
+        "registered_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "is_online": True
+    }
+    public_directory_store[username] = entry
+    
+    add_audit_entry(
+        username=username,
+        action="keygen",
+        title_ar="نشر الهوية العامة في دليل النظراء",
+        title_en="Public Identity Published to Peer Directory",
+        details={"fingerprint": entry["fingerprint"]}
+    )
+    return {
+        "status": "success",
+        "peer": entry,
+        "fingerprint": entry["fingerprint"],
+        "kyber_fingerprint": entry["fingerprint"]
+    }
+
+
+@app.get("/api/directory/peers")
+async def list_directory_peers(current_user: Optional[str] = None):
+    """
+    List registered peers in public directory (excluding private keys).
+    """
+    peers = []
+    for uname, data in public_directory_store.items():
+        if current_user and uname == current_user:
+            continue
+        peers.append({
+            "username": uname,
+            "display_name": data.get("display_name", uname),
+            "fingerprint": data.get("fingerprint", ""),
+            "kyber_pk_b64": data.get("kyber_pk_b64", ""),
+            "has_dsa": bool(data.get("dsa_pubkey_pem")),
+            "registered_at": data.get("registered_at", ""),
+            "online": data.get("is_online", True),
+            "is_online": data.get("is_online", True)
+        })
+    return {"status": "success", "peers": peers, "total": len(peers)}
+
+
+@app.get("/api/directory/peer/{username}")
+async def get_directory_peer(username: str):
+    """
+    Get a peer's public identity card (Kyber public key + DSA public key).
+    """
+    if username not in public_directory_store:
+        raise HTTPException(status_code=404, detail="Peer not found in directory")
+    return {"status": "success", "peer": public_directory_store[username]}
+
+
+@app.get("/api/directory/safety_number")
+async def get_safety_number(user_a: str, user_b: str):
+    """
+    Compute Short Authentication String (SAS) Safety Number between two users.
+    Derived deterministically from Hash(PK_A || PK_B).
+    """
+    peer_a = public_directory_store.get(user_a)
+    peer_b = public_directory_store.get(user_b)
+    if not peer_a or not peer_b:
+        raise HTTPException(status_code=404, detail="One or both users not found in public directory")
+    
+    sas = compute_sas_safety_number(peer_a["kyber_pk_b64"], peer_b["kyber_pk_b64"])
+    return {
+        "status": "success",
+        "user_a": user_a,
+        "user_b": user_b,
+        "safety_number": sas,
+        "digits": sas["digits"],
+        "emojis": sas["emojis"]
+    }
+
+
+# --- Direct Peer Inbox Endpoints ---
+
+@app.get("/api/inbox/list")
+async def get_user_inbox(username: str):
+    """
+    Retrieve incoming encrypted transmissions for logged-in user.
+    """
+    items = peer_inbox_store.get(username, [])
+    return {
+        "status": "success",
+        "username": username,
+        "items": items,
+        "inbox": items,
+        "total": len(items),
+        "unread_count": len(items)
+    }
+
+
+@app.post("/api/inbox/clear")
+async def clear_user_inbox(username: str = Form(...)):
+    """
+    Clear all items in user's direct inbox.
+    """
+    peer_inbox_store[username] = []
+    return {"status": "success", "message": "Inbox cleared"}
+
+
+@app.post("/api/inbox/delete")
+async def delete_inbox_item(
+    username: str = Form(...),
+    item_id: Optional[str] = Form(None),
+    transmission_id: Optional[str] = Form(None)
+):
+    """
+    Delete a specific transmission from user's inbox.
+    """
+    target_id = item_id or transmission_id
+    if username in peer_inbox_store and target_id:
+        peer_inbox_store[username] = [it for it in peer_inbox_store[username] if it.get("id") != target_id]
+    return {"status": "success", "message": "Item deleted"}
+
+
+@app.websocket("/ws/inbox/{username}")
+async def websocket_inbox_endpoint(websocket: WebSocket, username: str):
+    """
+    Real-time push notifications for user's direct encrypted inbox.
+    """
+    await websocket.accept()
+    if username not in user_inbox_sockets:
+        user_inbox_sockets[username] = []
+    user_inbox_sockets[username].append(websocket)
+    
+    if username in public_directory_store:
+        public_directory_store[username]["is_online"] = True
+        
+    try:
+        items = peer_inbox_store.get(username, [])
+        await websocket.send_json({
+            "type": "inbox_sync",
+            "unread_count": len(items),
+            "inbox": items
+        })
+        while True:
+            data = await websocket.receive_text()
+            try:
+                msg = json.loads(data)
+                if msg.get("action") == "ping":
+                    await websocket.send_json({"type": "pong"})
+            except Exception:
+                pass
+    except WebSocketDisconnect:
+        if username in user_inbox_sockets and websocket in user_inbox_sockets[username]:
+            user_inbox_sockets[username].remove(websocket)
 
 
 # --- WebSocket Channel Room for Real-Time Sender/Receiver ---

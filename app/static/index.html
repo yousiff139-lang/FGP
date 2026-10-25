@@ -60,16 +60,14 @@
         </svg>
         Extract & Decrypt
       </button>
-      <button class="nav-tab" data-target="section-channel">
+      <button class="nav-tab" data-target="section-channel" id="tab-channel">
         <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
-          <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-          <path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5" />
-          <circle cx="12" cy="12" r="2" />
-          <path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5" />
-          <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
-        Peer Channel <span id="channel-pulse" class="pulse-dot hidden"></span>
+        <span id="nav-channel-label" data-i18n="nav_inbox">صندوق البريد والنظراء</span>
+        <span id="inbox-unread-count" class="inbox-unread-badge hidden">0</span>
+        <span id="channel-pulse" class="pulse-dot hidden"></span>
       </button>
       <button class="nav-tab" data-target="section-audit" id="tab-audit">
         <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -246,6 +244,7 @@
           <button class="btn btn-primary btn-sm" id="btn-gen-keys">توليد زوج مفاتيح كايبر</button>
           <button class="btn btn-secondary btn-sm" id="btn-export-pk" disabled>حفظ المفتاح العام (.key)</button>
           <button class="btn btn-warning btn-sm" id="btn-export-sk" disabled>حفظ المفتاح السري (.key)</button>
+          <button class="btn btn-accent btn-sm" id="btn-publish-vault-pk" disabled>🌐 نشر في الدليل العام</button>
         </div>
 
         <div class="form-group mt-3">
@@ -963,8 +962,70 @@
           </div>
 
           <div id="input-file-container" class="form-group hidden">
-            <label>Upload File (Document, Binary, or Data):</label>
-            <input type="file" id="encrypt-file" class="form-input">
+            <label id="lbl-upload-payload">رفع ملف (مستندات، بيانات، أو ملفات ثنائية):</label>
+            <div class="cyber-dropzone" id="dropzone-encrypt-file" tabindex="0" role="button" aria-label="Dropzone for payload file">
+              <input type="file" id="encrypt-file" class="cyber-dropzone-input" tabindex="-1">
+              
+              <!-- Idle / Empty State -->
+              <div class="dropzone-empty-state" id="encrypt-file-empty-state">
+                <div class="dropzone-icon-halo">
+                  <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="17 8 12 3 7 8"/>
+                    <line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <div class="dropzone-primary-text">
+                  <strong class="dropzone-action-text" id="dropzone-payload-cta">اسحب وأفلت ملف البيانات هنا</strong>
+                  <span class="dropzone-separator">أو</span>
+                  <span class="dropzone-browse-btn" id="dropzone-payload-browse">تصفح من جهازك</span>
+                </div>
+                <p class="dropzone-hint" id="dropzone-payload-hint">يدعم المستندات، الملفات الثنائية، والبيانات بجميع الصيغ (PDF, DOCX, TXT, ZIP, BIN...) &bull; فحص وتشفير آلي</p>
+                <div class="dropzone-badges">
+                  <span class="dropzone-badge-tag"><span class="badge-dot"></span> PQC-Protected</span>
+                  <span class="dropzone-badge-tag">Zero-Leakage</span>
+                  <span class="dropzone-badge-tag">Auto-Classified</span>
+                </div>
+              </div>
+
+              <!-- Active File Loaded State -->
+              <div class="dropzone-file-state hidden" id="encrypt-file-loaded-state">
+                <div class="dropzone-file-card">
+                  <div class="dropzone-file-icon-wrap" id="encrypt-file-type-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                      <polyline points="14 2 14 8 20 8"/>
+                    </svg>
+                  </div>
+                  <div class="dropzone-file-info">
+                    <div class="dropzone-file-name" id="encrypt-file-name">filename.ext</div>
+                    <div class="dropzone-file-meta">
+                      <span id="encrypt-file-size">0 KB</span>
+                      <span class="meta-separator">&bull;</span>
+                      <span id="encrypt-file-type-badge" class="badge-subtle">DOCUMENT</span>
+                      <span class="meta-separator">&bull;</span>
+                      <span class="badge-ready" id="encrypt-file-ready-badge">جاهز للتشفير ✓</span>
+                    </div>
+                  </div>
+                  <div class="dropzone-file-actions">
+                    <button type="button" class="btn-dropzone-action" id="btn-clear-encrypt-file" title="إزالة أو تغيير الملف" aria-label="Remove file">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Dragover Overlay -->
+              <div class="dropzone-dragover-overlay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v13m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                </svg>
+                <span id="dropzone-payload-overlay-txt">أفلت الملف هنا فوراً للتحميل...</span>
+              </div>
+            </div>
           </div>
 
           <!-- Real-Time Classification Badge -->
@@ -1009,16 +1070,52 @@
                 <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
                 <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              2. Recipient ML-KEM-768 Public Key
+              <span id="title-step2-recipient">2. تحديد المستلم ومفتاح كايبر (Recipient PQC Identity)</span>
             </h3>
+
+            <!-- Direct Peer Contact Picker -->
+            <div class="peer-picker-card mb-3">
+              <div class="peer-picker-head">
+                <label for="encrypt-peer-select" class="peer-picker-label">
+                  <span id="lbl-select-peer">إرسال مباشر إلى مستخدم مسجل (دليل النظراء):</span>
+                  <span class="badge badge-accent badge-xs">PQC E2EE</span>
+                </label>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-refresh-peers-encrypt" title="تحديث قائمة النظراء">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                  <span id="btn-refresh-peers-txt">تحديث</span>
+                </button>
+              </div>
+              <div class="peer-select-wrap">
+                <select id="encrypt-peer-select" class="form-select">
+                  <option value="">-- اختر النظير المستلم من الدليل العام / Select Peer --</option>
+                </select>
+              </div>
+
+              <!-- Cryptographic Safety Number (Short Authentication String - SAS) -->
+              <div id="peer-safety-badge" class="peer-safety-badge hidden mt-2">
+                <div class="safety-badge-content">
+                  <div class="safety-number-info">
+                    <span class="safety-title" id="lbl-safety-title">الرقم الأمني المتبادل ضد هجمات الوسيط (Mutual SAS):</span>
+                    <strong class="safety-digits" id="peer-sas-digits">--- ---</strong>
+                    <span class="safety-emojis" id="peer-sas-emojis">🔒 🛡️ 🔑 ⚛️</span>
+                  </div>
+                  <div class="safety-verify-tag">
+                    <span class="badge badge-success badge-xs" id="lbl-sas-verified">✓ تطابق المفتاحين</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div class="form-group">
-              <label>Recipient Public Key (Base64 &bull; 1,184 Bytes):</label>
+              <div class="flex-between mb-1">
+                <label id="lbl-recipient-pk">المفتاح العام للمستلم (Kyber-768 PK &bull; 1,184 بايت):</label>
+                <span class="small text-muted" id="pk-source-badge">إدخال يدوي أو تلقائي</span>
+              </div>
               <textarea id="encrypt-recipient-pk" class="form-input code-font" rows="3"
-                placeholder="Paste 1,184-byte recipient public key or load from Key Vault..."></textarea>
+                placeholder="سيتم تحميل المفتاح تلقائياً عند اختيار المستلم، أو يمكنك لصق المفتاح يدوياً..."></textarea>
               <div class="btn-group mt-2">
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-pk">Load from Key Vault</button>
-                <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-pk">⚡ Generate Lattice
-                  Keypair</button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-pk">تحميل من خزنك المحلية</button>
+                <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-pk">⚡ توليد زوج مفاتيح جديد</button>
               </div>
             </div>
           </div>
@@ -1035,12 +1132,59 @@
             </h3>
             <div class="form-group">
               <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <label style="margin-bottom: 0;">Select Cover Image (Lossless PNG):</label>
-                <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-reset-cover">↺ Use Auto-Synthesized
-                  Carrier</button>
+                <label style="margin-bottom: 0;" id="lbl-cover-image">صورة الغلاف الحاملة (Carrier Cover Image):</label>
+                <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-reset-cover">↺ Use Auto-Synthesized Carrier</button>
               </div>
-              <input type="file" id="encrypt-cover-image" accept="image/png,image/jpeg,image/webp" class="form-input">
-              <p class="small text-muted mt-1">Leave empty to auto-synthesize an optimal carrier image.</p>
+
+              <div class="cyber-dropzone" id="dropzone-encrypt-cover" tabindex="0" role="button" aria-label="Dropzone for cover image">
+                <input type="file" id="encrypt-cover-image" accept="image/png,image/jpeg,image/webp" class="cyber-dropzone-input" tabindex="-1">
+                
+                <!-- Idle State -->
+                <div class="dropzone-empty-state" id="encrypt-cover-empty-state">
+                  <div class="dropzone-icon-halo">
+                    <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <div class="dropzone-primary-text">
+                    <strong class="dropzone-action-text" id="dropzone-cover-cta">اسحب وأفلت صورة الغلاف الحاملة</strong>
+                    <span class="dropzone-separator">أو</span>
+                    <span class="dropzone-browse-btn" id="dropzone-cover-browse">اختر صورة</span>
+                  </div>
+                  <p class="dropzone-hint" id="dropzone-cover-hint">صيغ مدعومة: PNG, JPG, WebP &bull; (اتركها فارغة للتوليد العشوائي المشفر تلقائياً)</p>
+                </div>
+
+                <!-- Loaded Image State -->
+                <div class="dropzone-image-state hidden" id="encrypt-cover-loaded-state">
+                  <div class="dropzone-image-preview-wrap">
+                    <img id="encrypt-cover-thumb" class="dropzone-image-thumb" alt="Cover Preview">
+                    <div class="dropzone-image-details">
+                      <div class="dropzone-file-name" id="encrypt-cover-name">cover.png</div>
+                      <div class="dropzone-file-meta">
+                        <span id="encrypt-cover-dim">0 × 0 px</span>
+                        <span class="meta-separator">&bull;</span>
+                        <span id="encrypt-cover-capacity">السعة: 0 KB</span>
+                      </div>
+                    </div>
+                    <button type="button" class="btn-dropzone-action" id="btn-clear-cover-image" title="إلغاء واستخدام التوليد التلقائي">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Dragover Overlay -->
+                <div class="dropzone-dragover-overlay">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 2v13m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                  </svg>
+                  <span id="dropzone-cover-overlay-txt">أفلت صورة الغلاف هنا</span>
+                </div>
+              </div>
 
               <!-- Simple Cover Size Indicator Message -->
               <div id="cover-size-msg" class="cover-size-msg mt-2">
@@ -1207,8 +1351,56 @@
             1. Steganographic Carrier
           </h3>
           <div class="form-group">
-            <label>Upload Stego-Image (PNG):</label>
-            <input type="file" id="decrypt-stego-file" accept="image/png" class="form-input">
+            <label id="lbl-decrypt-stego">رفع الصورة الحاملة المشفرة (Stego-Image PNG):</label>
+            <div class="cyber-dropzone" id="dropzone-decrypt-stego" tabindex="0" role="button" aria-label="Dropzone for stego image">
+              <input type="file" id="decrypt-stego-file" accept="image/png" class="cyber-dropzone-input" tabindex="-1">
+
+              <!-- Idle State -->
+              <div class="dropzone-empty-state" id="decrypt-stego-empty-state">
+                <div class="dropzone-icon-halo">
+                  <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                </div>
+                <div class="dropzone-primary-text">
+                  <strong class="dropzone-action-text" id="dropzone-stego-cta">اسحب وأفلت الصورة المشفرة هنا</strong>
+                  <span class="dropzone-separator">أو</span>
+                  <span class="dropzone-browse-btn" id="dropzone-stego-browse">اختر ملف PNG</span>
+                </div>
+                <p class="dropzone-hint" id="dropzone-stego-hint">صيغة PNG عديمة الفقد &bull; تحتوي على الحمولة المشفرة المخبأة بنظام Sobel LSB</p>
+              </div>
+
+              <!-- Loaded State -->
+              <div class="dropzone-image-state hidden" id="decrypt-stego-loaded-state">
+                <div class="dropzone-image-preview-wrap">
+                  <img id="decrypt-stego-thumb" class="dropzone-image-thumb" alt="Stego Preview">
+                  <div class="dropzone-image-details">
+                    <div class="dropzone-file-name" id="decrypt-stego-name">stego.png</div>
+                    <div class="dropzone-file-meta">
+                      <span id="decrypt-stego-size">0 KB</span>
+                      <span class="meta-separator">&bull;</span>
+                      <span class="badge-ready" id="decrypt-stego-ready-badge">جاهز للاستخراج والفك ✓</span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn-dropzone-action" id="btn-clear-decrypt-stego" title="إزالة الصورة">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="18" y1="6" x2="6" y2="18"></line>
+                      <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Dragover Overlay -->
+              <div class="dropzone-dragover-overlay">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 2v13m0 0l-4-4m4 4l4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+                </svg>
+                <span id="dropzone-stego-overlay-txt">أفلت صورة Stego PNG هنا</span>
+              </div>
+            </div>
           </div>
 
           <div id="decrypt-image-preview-box" class="stego-preview-container small-preview hidden mb-3">
@@ -1223,10 +1415,21 @@
             2. ML-KEM-768 Ciphertext Token
           </h3>
           <div class="form-group">
-            <label>Kyber-768 Ciphertext (1,088 Bytes Base64):</label>
+            <label id="lbl-decrypt-kyber-token">Kyber-768 Ciphertext (1,088 Bytes Base64):</label>
             <textarea id="decrypt-kyber-ct" class="form-input code-font" rows="3"
               placeholder="Paste 1,088-byte Kyber token or load file..."></textarea>
-            <input type="file" id="decrypt-token-file" class="form-input mt-2">
+            
+            <div class="cyber-dropzone cyber-dropzone-compact mt-2" id="dropzone-decrypt-token" tabindex="0" role="button" aria-label="Dropzone for Kyber token file">
+              <input type="file" id="decrypt-token-file" class="cyber-dropzone-input" tabindex="-1">
+              <div class="dropzone-compact-content" id="decrypt-token-dropzone-label">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <span id="dropzone-token-cta-txt">اسحب وأفلت ملف الرمز (Token File) هنا أو انقر لتصفحه</span>
+              </div>
+            </div>
           </div>
 
           <h3 class="card-title mt-4">
@@ -1333,95 +1536,132 @@
     <!-- ========================================================
          SECTION 4: LIVE SENDER <-> RECEIVER CHANNEL
          ======================================================== -->
+    <!-- ========================================================
+         SECTION 4: DIRECT PEER INBOX & PUBLIC DIRECTORY
+         ======================================================== -->
     <section id="section-channel" class="content-section">
       <div class="section-header">
-        <h2>Live Peer Transmission Channel</h2>
-        <p class="text-muted">Synchronize sender and receiver over a peer channel room for real-time quantum-safe
-          transmissions.</p>
+        <h2 id="channel-sec-title">صندوق البريد المشفر ودليل النظراء (Direct Peer Inbox & Directory)</h2>
+        <p class="text-muted" id="channel-sec-desc">منظومة اتصال طرف-إلى-طرف (E2EE) مباشرة تعتمد على شبكات كايبر (Kyber-768) المقاومة للكم والأرقام الأمنية (SAS) دون غرف يدوية أو قواعد بيانات مركزية.</p>
       </div>
 
-      <div class="grid-2-col">
-        <!-- Channel Setup Card -->
-        <div class="card">
-          <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9" />
-              <circle cx="12" cy="12" r="2" />
-              <path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1" />
-            </svg>
-            Channel Connection
-          </h3>
-          <div class="form-group">
-            <label>Channel Room ID:</label>
-            <div class="input-with-button">
-              <input type="text" id="channel-room-input" class="form-input" value="DEFENSE-ROOM-1"
-                placeholder="Enter channel name...">
-              <button class="btn btn-primary" id="btn-join-channel">Join Room</button>
-            </div>
-            <p class="small text-muted mt-1">Both sender and receiver enter the exact same Room ID to establish a live
-              pipeline.</p>
+      <!-- Active User Public Identity Card -->
+      <div class="user-identity-banner mb-4" id="user-identity-banner">
+        <div class="identity-info-left">
+          <div class="identity-avatar-ring">
+            <span class="identity-avatar-char" id="my-identity-avatar">U</span>
+            <span class="identity-online-dot" id="my-identity-online-dot"></span>
           </div>
-
-          <div class="channel-telemetry mt-3">
-            <div class="status-box">
-              <span>Status</span>
-              <strong id="room-status-badge" class="text-muted">Disconnected</strong>
+          <div>
+            <div class="identity-title-row">
+              <strong class="identity-username" id="my-identity-username">@loading...</strong>
+              <span class="badge badge-primary badge-xs">الهوية النشطة</span>
+              <span class="badge badge-success badge-xs" id="my-inbox-ws-status">متصل بالبث المباشر</span>
             </div>
-            <div class="status-box">
-              <span>Room ID</span>
-              <strong id="room-current-id">-</strong>
+            <div class="identity-fingerprint-row mt-1">
+              <span class="small text-muted" id="lbl-my-fp">بصمة مفتاح كايبر (Kyber Fingerprint):</span>
+              <code class="code-font fp-pill" id="my-identity-fingerprint">---- ---- ----</code>
             </div>
-          </div>
-
-          <div class="channel-instructions mt-4">
-            <h4>Live Channel Protocol</h4>
-            <ol class="small text-secondary">
-              <li><strong>Receiver:</strong> Join the channel room and keep this tab active.</li>
-              <li><strong>Sender:</strong> In the <em>Encrypt & Conceal</em> tab, set the Channel Room to the same ID
-                and execute.</li>
-              <li><strong>Live Sync:</strong> Stego-image and Kyber token transmit instantly across the channel.</li>
-              <li><strong>One-Click Extraction:</strong> Click "Transfer to Decryptor" to unpack the incoming payload.
-              </li>
-            </ol>
           </div>
         </div>
+        <div class="identity-actions-right">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-republish-identity">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            <span id="btn-republish-txt">تحديث ونشر المفتاح</span>
+          </button>
+        </div>
+      </div>
 
-        <!-- Live Feed Log Card -->
-        <div class="card">
-          <h3 class="card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <polyline points="4 17 10 11 4 5" />
-              <line x1="12" y1="19" x2="20" y2="19" />
-            </svg>
-            Live Transmission Feed
-          </h3>
-          <div id="channel-event-log" class="event-log-container">
-            <div class="log-entry">
-              <span class="log-time">[System]</span> Channel daemon ready. Join a room to begin listening.
-            </div>
-          </div>
-
-          <!-- Incoming Transmission Alert Box -->
-          <div id="incoming-alert-box" class="incoming-alert hidden mt-3">
-            <div class="incoming-header">
-              <svg class="alert-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+      <div class="inbox-directory-grid">
+        <!-- Column 1: Public Peer Directory -->
+        <div class="card directory-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
               </svg>
-              <div>
-                <strong>Incoming Quantum-Safe Stego Package</strong>
-                <p id="incoming-desc" class="small text-muted">Package received from remote peer.</p>
-              </div>
-            </div>
-            <button class="btn btn-primary btn-block mt-3" id="btn-load-incoming-to-decrypt">
-              Transfer to Decryptor & Unpack
+              <span id="title-peer-directory">دليل النظراء العام (Peer Directory)</span>
+            </h3>
+            <button class="btn btn-secondary btn-xs" id="btn-refresh-peers-dir" title="تحديث القائمة">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
             </button>
           </div>
+          <p class="small text-muted mb-3" id="desc-peer-directory">قائمة النظراء المسجلين بالمفتاح العام المقاوم للكم (Kyber-768). يمكنك اختيار أي نظير للإرسال المشفر الفوري.</p>
+
+          <div class="search-input-wrap mb-3">
+            <input type="text" id="peer-search-input" class="form-input" placeholder="بحث باسم المستخدم أو البصمة...">
+          </div>
+
+          <div id="peer-directory-list" class="peer-directory-list">
+            <div class="loading-placeholder small text-muted">جاري تحميل دليل النظراء...</div>
+          </div>
+        </div>
+
+        <!-- Column 2: Direct Encrypted Inbox -->
+        <div class="card inbox-card">
+          <div class="card-header-flex">
+            <h3 class="card-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+              </svg>
+              <span id="title-inbox">صندوق الرسائل المشفرة المستلمة</span>
+              <span id="inbox-header-count" class="badge badge-accent badge-xs">0 رسائل</span>
+            </h3>
+            <div class="inbox-actions">
+              <button class="btn btn-secondary btn-xs" id="btn-refresh-inbox" title="تحديث الصندوق">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
+              <button class="btn btn-secondary btn-xs btn-danger-hover" id="btn-clear-inbox" title="مسح الصندوق">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+          </div>
+          <p class="small text-muted mb-3" id="desc-inbox">الحزم المشفرة المستلمة مباشرة إلى حسابك. اضغط فك التشفير للاستخراج التلقائي بمفتاحك السري المخزن محلياً.</p>
+
+          <div id="inbox-transmissions-list" class="inbox-transmissions-list">
+            <!-- Populated dynamically via app.js -->
+            <div class="inbox-empty-box" id="inbox-empty-box">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <h4 id="inbox-empty-title">صندوق البريد فارغ</h4>
+              <p id="inbox-empty-desc">لم تصلك أي حزم مشفرة بعد. عندما يرسل إليك أي مستخدم حزمة ستظهر هنا وتنبيهك فوراً عبر البث المباشر.</p>
+            </div>
+          </div>
         </div>
       </div>
+
+      <!-- Legacy Room Channel Accordion (For backwards compatibility) -->
+      <details class="legacy-channel-accordion mt-4">
+        <summary id="legacy-accordion-summary">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <span id="legacy-summary-txt">⚡ غرف القنوات التزامنية السابقة (Legacy Channel Rooms - Room ID Mode)</span>
+        </summary>
+        <div class="legacy-channel-body mt-3">
+          <div class="grid-2-col">
+            <div class="form-group">
+              <label id="lbl-legacy-room">Channel Room ID:</label>
+              <div class="input-with-button">
+                <input type="text" id="channel-room-input" class="form-input" value="DEFENSE-ROOM-1" placeholder="Enter channel name...">
+                <button class="btn btn-secondary" id="btn-join-channel">Join Room</button>
+              </div>
+              <div class="channel-telemetry mt-2">
+                <span class="small text-muted">Status: <strong id="room-status-badge">Disconnected</strong> | Room: <strong id="room-current-id">-</strong></span>
+              </div>
+            </div>
+            <div>
+              <label id="lbl-legacy-feed">Live Room Log:</label>
+              <div id="channel-event-log" class="event-log-container small-log">
+                <div class="log-entry"><span class="log-time">[System]</span> Legacy room channel ready.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </details>
     </section>
 
 

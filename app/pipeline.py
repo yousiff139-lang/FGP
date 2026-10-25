@@ -284,6 +284,7 @@ class SecurityPipeline:
             "nonce_b64": base64.b64encode(nonce).decode('utf-8'),
             "kyber_ciphertext_b64": KyberEngine.to_b64(kyber_ct),
             "cipher": preferred_cipher,
+            "cipher_used": preferred_cipher,
             "filename": filename or "payload.enc",
             "filesize": len(data_bytes)
         }
