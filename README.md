@@ -9,17 +9,18 @@
   <img src="https://img.shields.io/badge/Signatures-ECDSA%20P--256-007ACC?style=for-the-badge&logo=key&logoColor=white" alt="ECDSA">
   <img src="https://img.shields.io/badge/Steganography-Sobel%20Edge%20Adaptive-4CAF50?style=for-the-badge&logo=image&logoColor=white" alt="Stego">
   <img src="https://img.shields.io/badge/Zero--Database-Client--Side%20Vault-00B0FF?style=for-the-badge&logo=security&logoColor=white" alt="Zero-DB">
-  <img src="https://img.shields.io/badge/Tests-51%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-52%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests">
 </p>
 
 > **Graduation Capstone Project — Mustansiriyah University, College of Engineering**  
 > An enterprise-grade, zero-database post-quantum cryptographic workstation integrating:
+> - **Home Page Guided Decision Hub (Interactive Questionnaire):** User-guided smart routing matching user intent to isolated digital signatures, confidential hybrid encryption, or technical architecture exploration.
 > - **NIST FIPS 203 ML-KEM-768** (CRYSTALS-Kyber) lattice key encapsulation against quantum adversaries.
 > - **Argon2id memory-hard password hashing & KDF derivation** with 100% client-side zero-database key storage.
 > - **Public Identity Directory & Direct Peer E2EE Inbox** with 14-character fingerprints and Symmetrical Mutual SAS Safety Numbers.
 > - **Constant-time AEAD symmetric ciphers** (ChaCha20-Poly1305 & AES-256-GCM) with automated financial policy enforcement.
 > - **Content-adaptive Sobel edge steganography** embedding encrypted payloads exclusively inside high-gradient image textures.
-> - **Modular execution pipelines** for Direct PQC, Standalone ECDSA digital signature receipts, or Full Hybrid Stego.
+> - **Modular execution pipelines:** Isolated Kyber-bound digital signatures (`/api/sign`), Full Hybrid Stego (`/api/encrypt`), Direct PQC, and Standalone DSA receipts.
 
 ---
 
@@ -41,6 +42,15 @@
 
 ## 🌟 Core Features & Upgrades
 
+- 🧭 **Home Page Guided Decision Hub (Interactive Questionnaire):**
+  A smart user-facing advisor that analyzes user intent and guides them directly to the appropriate cryptographic pipeline:
+  - **Question 1 (Digital Signature):** Directly launches the isolated digital signature pipeline (`ECDSA P-256 + ML-KEM-768`).
+  - **Question 2 (Confidential Messaging & Encryption):** Directly launches the multi-layer hybrid encryption pipeline (`AEAD + Kyber-768 + Steganography`).
+  - **Question 3 (Technical Details & Insights):** Direct navigation to the 4-phase interactive architecture simulator and performance comparisons.
+  - Features 4 quick actions per question: *Proceed*, *Show more options*, *What does this mean?*, and *Contact engineer/support*.
+- 🔀 **Architecture-Routed Operation Modes (`/api/sign` vs `/api/encrypt`):**
+  - **Isolated Digital Signature Mode (`operation_mode="signature"`):** Payload is signed via ECDSA P-256, cryptographically bound to a CRYSTALS-Kyber shared secret via HMAC-SHA256, and concealed into a carrier image without symmetric payload obfuscation overhead.
+  - **Standard Data Encryption Mode (`operation_mode="encryption"`):** Full multi-level pipeline executing classification, Kyber-768 key encapsulation, constant-time AEAD symmetric encryption, and steganographic embedding.
 - 🛡️ **Zero-Database Client Vault & Argon2id Gateway:** 
   Zero credentials or private keys ever touch the server database. Passwords are processed using **Argon2id** (64MB memory cost, 3 iterations, 4 parallelism threads), resisting GPU/ASIC brute-force attacks.
 - 👥 **Public Identity Directory & Direct Peer Inbox:** 
@@ -417,20 +427,19 @@ Execute pytest across all test suites:
 python -m pytest tests/ -v
 ```
 
-### Test Suite Execution Output (51 / 51 Passed):
+### Test Suite Execution Output (52 / 52 Passed):
 ```text
-tests/test_api.py ......                                                 [ 11%]
-tests/test_architecture_a_to_z.py .                                      [ 13%]
-tests/test_auth_security.py .......                                      [ 27%]
-tests/test_classifier.py .....                                           [ 37%]
-tests/test_crypto.py .......                                             [ 50%]
-tests/test_kyber.py .....                                                [ 60%]
-tests/test_pipeline.py ........                                          [ 76%]
-tests/test_stego.py .....                                                [ 86%]
+tests/test_api.py .......                                                [ 13%]
+tests/test_architecture_a_to_z.py .                                      [ 15%]
+tests/test_auth_security.py .......                                      [ 28%]
+tests/test_classifier.py .....                                           [ 38%]
+tests/test_crypto.py .......                                             [ 51%]
+tests/test_kyber.py .....                                                [ 61%]
+tests/test_pipeline.py .......                                           [ 75%]
+tests/test_stego.py .....                                                [ 84%]
 tests/test_v3_upgrades.py ........                                       [100%]
 
-============================= 51 passed in 22.88s =============================
-```
+============================= 52 passed in 22.02s =============================
 ```
 
 ---
@@ -448,8 +457,9 @@ tests/test_v3_upgrades.py ........                                       [100%]
 | `GET` | `/api/directory/peers` | Lists all registered peers in public directory | Query (`current_user`) | `peers`, `total` |
 | `GET` | `/api/directory/peer/{uname}` | Retrieves specific peer's public identity | Path param | `peer` card |
 | `GET` | `/api/directory/safety_number` | Computes symmetrical mutual SAS safety number | Query (`user_a`, `user_b`) | `digits`, `emojis`, `raw_hex` |
+| `POST` | `/api/sign` | Isolated Digital Signature & Kyber-768 KEM carrier | Multipart Form (`text`/`file`, `recipient_kyber_pk_b64`) | `stego_image_b64`, `signature_b64`, `kyber_ciphertext_b64`, `sha256_digest` |
 | `POST` | `/api/encrypt` | Multi-path encryption (Direct PQC, DSA, or Hybrid Stego) | Multipart Form | `stego_image_b64`, tokens |
-| `POST` | `/api/decrypt` | Decapsulates and extracts from stego carrier | Form + File | `text_preview`, `data_b64` |
+| `POST` | `/api/decrypt` | Decapsulates and extracts from stego carrier (verifies Kyber binding & signatures) | Form + File | `text_preview`, `data_b64`, `signature_verified`, `kyber_binding_verified` |
 | `POST` | `/api/decrypt_direct` | Fast decapsulation/decryption without stego | Form (`ciphertext_b64`, tokens) | `plaintext`, `size` |
 | `POST` | `/api/sign_only` | Standalone ECDSA document signing | Multipart Form | Verifiable `.sig.json` receipt |
 | `POST` | `/api/verify_signature` | Verifies standalone ECDSA digital signature | Multipart Form | `verified: true/false` |
