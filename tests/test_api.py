@@ -90,3 +90,53 @@ def test_api_encrypt_and_decrypt_roundtrip(client):
 def test_api_encrypt_missing_key(client):
     response = client.post("/api/encrypt", data={"text": "Test"})
     assert response.status_code in (400, 422)
+
+
+def test_api_sign_and_verify_roundtrip(client):
+    # 1. Keygen
+    keygen_resp = client.post("/api/keygen")
+    assert keygen_resp.status_code == 200
+    keys = keygen_resp.json()
+    pk_b64 = keys["public_key_b64"]
+    sk_b64 = keys["secret_key_b64"]
+
+    # 2. Sign via /api/sign
+    test_doc = "Official engineering graduation document with isolated ECDSA + Kyber KEM."
+    sign_resp = client.post(
+        "/api/sign",
+        data={
+            "text": test_doc,
+            "recipient_kyber_pk_b64": pk_b64,
+            "username": "Engineer"
+        }
+    )
+    assert sign_resp.status_code == 200
+    sign_data = sign_resp.json()
+    assert sign_data["status"] == "success"
+    assert sign_data["operation_mode"] == "signature"
+    assert "stego_image_b64" in sign_data
+    assert "kyber_ciphertext_b64" in sign_data
+    assert sign_data["signature_b64"] is not None
+    assert sign_data["sha256_digest"] is not None
+    assert sign_data["signer_pub_fingerprint"] is not None
+
+    # 3. Decrypt and verify via /api/decrypt
+    dec_resp = client.post(
+        "/api/decrypt",
+        data={
+            "stego_image_b64": sign_data["stego_image_b64"],
+            "kyber_ciphertext_b64": sign_data["kyber_ciphertext_b64"],
+            "recipient_kyber_sk_b64": sk_b64,
+            "username": "Receiver"
+        }
+    )
+    assert dec_resp.status_code == 200
+    dec_data = dec_resp.json()
+    assert dec_data["status"] == "success"
+    assert dec_data["operation_mode"] == "signature"
+    assert dec_data["signature_verified"] is True
+    assert dec_data["kyber_binding_verified"] is True
+    assert dec_data["text_preview"] == test_doc
+    assert dec_data["sha256_digest"] == sign_data["sha256_digest"]
+    assert dec_data["signer_pub_fingerprint"] == sign_data["signer_pub_fingerprint"]
+

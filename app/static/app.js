@@ -10,6 +10,8 @@ const state = {
     pk: null,
     sk: null,
   },
+  operationMode: "encryption",
+  selectedQuestionnaireService: "signature",
   activeRoom: null,
   socket: null,
   lastIncomingTransmission: null,
@@ -23,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initThemeController();
   initAuthGateway();
   initNavigation();
+  initRoutingQuestionnaire();
   initKeyVault();
   initInteractiveArchitecture();
   initClassifier();
@@ -279,6 +282,192 @@ function initNavigation() {
       });
     });
   });
+}
+
+/* ==========================================================================
+   1B. INTERACTIVE ROUTING QUESTIONNAIRE (HOME PAGE GUIDED DECISION HUB)
+   ========================================================================== */
+function updateQuestionnaireSelectionUI(service, notify = false) {
+  state.selectedQuestionnaireService = service;
+
+  const services = ["signature", "encryption", "info"];
+  services.forEach((srv) => {
+    const card = document.getElementById(`q-card-${srv}`);
+    const pill = document.getElementById(`q-pill-${srv}`);
+    if (card) {
+      card.classList.toggle("active", srv === service);
+      const yesBtn = card.querySelector('[data-q-action="select"]');
+      if (yesBtn) yesBtn.classList.toggle("active", srv === service);
+    }
+    if (pill) {
+      pill.classList.toggle("hidden", srv !== service);
+    }
+  });
+
+  const selectedLabelEl = document.getElementById("q-proceed-selected-text");
+  if (selectedLabelEl) {
+    const keyMap = {
+      signature: "q_sel_sig",
+      encryption: "q_sel_enc",
+      info: "q_sel_info",
+    };
+    const i18nKey = keyMap[service] || "q_sel_sig";
+    selectedLabelEl.setAttribute("data-i18n", i18nKey);
+    const dict = I18N_DATA[currentLang] || I18N_DATA.ar;
+    if (dict[i18nKey]) {
+      selectedLabelEl.textContent = dict[i18nKey];
+    }
+  }
+
+  if (notify) {
+    const dict = I18N_DATA[currentLang] || I18N_DATA.ar;
+    const keyMap = {
+      signature: "q_sel_sig",
+      encryption: "q_sel_enc",
+      info: "q_sel_info",
+    };
+    const label = dict[keyMap[service]] || service;
+    showToast(
+      currentLang === "ar"
+        ? `تم اختيار الخدمة: ${label}. اضغط على زر الانتقال للمتابعة.`
+        : `Selected service: ${label}. Click Proceed to launch.`,
+      "info"
+    );
+  }
+}
+
+function executeQuestionnaireProceed(serviceOverride = null) {
+  const targetService = serviceOverride || state.selectedQuestionnaireService || "signature";
+
+  if (targetService === "signature") {
+    switchToSection("section-encrypt");
+    if (typeof setOperationMode === "function") {
+      setOperationMode("signature", true);
+    }
+    setTimeout(() => {
+      const txt = document.getElementById("encrypt-text");
+      if (txt) txt.focus();
+    }, 250);
+  } else if (targetService === "encryption") {
+    switchToSection("section-encrypt");
+    if (typeof setOperationMode === "function") {
+      setOperationMode("encryption", true);
+    }
+    setTimeout(() => {
+      const txt = document.getElementById("encrypt-text");
+      if (txt) txt.focus();
+    }, 250);
+  } else if (targetService === "info") {
+    switchToSection("section-info");
+    const allTab = document.querySelector('.info-subtab[data-info-filter="all"]');
+    if (allTab) allTab.click();
+    showToast(
+      currentLang === "ar"
+        ? "تم فتح قسم التفاصيل التقنية والمعمارية الهندسية."
+        : "Opened Technical & Operational Process Details.",
+      "info"
+    );
+  }
+}
+
+function initRoutingQuestionnaire() {
+  const choiceBtns = document.querySelectorAll(".q-choice-btn");
+  choiceBtns.forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const action = btn.dataset.qAction;
+      const target = btn.dataset.qTarget;
+      if (!target) return;
+
+      if (action === "select") {
+        updateQuestionnaireSelectionUI(target, true);
+      } else if (action === "more" || action === "meaning" || action === "support") {
+        updateQuestionnaireSelectionUI(target, false);
+        const drawerId = `q-${action}-${target}`;
+        const targetDrawer = document.getElementById(drawerId);
+        const card = document.getElementById(`q-card-${target}`);
+
+        if (card && targetDrawer) {
+          const isCurrentlyHidden = targetDrawer.classList.contains("hidden");
+          // Hide all drawers in this card first
+          card.querySelectorAll(".q-drawer").forEach((d) => d.classList.add("hidden"));
+          card.querySelectorAll('.q-choice-btn:not([data-q-action="select"])').forEach((b) => {
+            b.classList.remove("drawer-open");
+          });
+
+          if (isCurrentlyHidden) {
+            targetDrawer.classList.remove("hidden");
+            btn.classList.add("drawer-open");
+          }
+        }
+      }
+    });
+  });
+
+  // Also allow clicking on a question card header/question to select it
+  document.querySelectorAll(".q-item-card").forEach((card) => {
+    card.addEventListener("click", (e) => {
+      if (e.target.closest("button") || e.target.closest(".q-drawer")) return;
+      const srv = card.dataset.qService;
+      if (srv) updateQuestionnaireSelectionUI(srv, false);
+    });
+  });
+
+  // Handle sub-option jump buttons inside "Show more options" and "Contact the Engineer / Support"
+  document.querySelectorAll(".q-subopt-btn").forEach((subBtn) => {
+    subBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const jump = subBtn.dataset.qJump;
+      if (jump === "signature-create") {
+        executeQuestionnaireProceed("signature");
+      } else if (jump === "signature-verify" || jump === "decrypt-extract") {
+        switchToSection("section-decrypt");
+      } else if (jump === "encryption-standard") {
+        executeQuestionnaireProceed("encryption");
+      } else if (jump === "live-channel") {
+        switchToSection("section-channel");
+      } else if (jump === "open-vault") {
+        const vaultModal = document.getElementById("vault-modal");
+        if (vaultModal) vaultModal.classList.remove("hidden");
+      } else if (jump === "info-arch") {
+        switchToSection("section-info");
+        const archTab = document.querySelector('.info-subtab[data-info-filter="arch"]');
+        if (archTab) archTab.click();
+      } else if (jump === "info-decisions") {
+        switchToSection("section-info");
+        const decTab = document.querySelector('.info-subtab[data-info-filter="decisions"]');
+        if (decTab) decTab.click();
+      } else if (jump === "view-team") {
+        switchToSection("section-info");
+        const teamTab = document.querySelector('.info-subtab[data-info-filter="team"]');
+        if (teamTab) teamTab.click();
+      } else if (jump === "contact-eng1") {
+        navigator.clipboard.writeText("abdulallah.ayad@student.uomustansiriyah.edu.iq");
+        showToast(
+          currentLang === "ar"
+            ? "تم نسخ بريد الباحث عبدالله إياد إلى الحافظة!"
+            : "Copied Engineer Abdulallah Ayad's email to clipboard!",
+          "success"
+        );
+      } else if (jump === "contact-eng2") {
+        navigator.clipboard.writeText("karrar mayaly@gmail.com");
+        showToast(
+          currentLang === "ar"
+            ? "تم نسخ بريد المهندس كرار حيدر إسماعيل إلى الحافظة!"
+            : "Copied Engineer Karrar Haider's contact to clipboard!",
+          "success"
+        );
+      }
+    });
+  });
+
+  // Main Proceed / Go Button
+  const btnProceed = document.getElementById("btn-questionnaire-proceed");
+  if (btnProceed) {
+    btnProceed.addEventListener("click", () => {
+      executeQuestionnaireProceed();
+    });
+  }
 }
 
 function showToast(message, type = "info") {
@@ -565,7 +754,9 @@ function updateStegoCapacity(forcedType = null) {
     rawBytes = new TextEncoder().encode(textVal).length;
   }
 
-  if (forcedType) {
+  if (state.operationMode === "signature") {
+    isDocType = true;
+  } else if (forcedType) {
     isDocType = forcedType === "document";
   } else if (overrideVal) {
     isDocType = overrideVal === "document";
@@ -757,153 +948,79 @@ async function triggerClassification() {
       }
 
       updateStegoCapacity(data.type);
-      scanAndEnforceFinancialPolicy();
     }
   } catch (e) {
     console.error("Classification error:", e);
   }
 }
 
-
 /* ==========================================================================
-   4.5. INTERACTIVE SECURITY INTENT WIZARD & SENSITIVITY POLICIES
+   5. ENCRYPTION & DIGITAL SIGNATURE PIPELINE (SENDER)
    ========================================================================== */
-function initInteractiveWizard() {
-  const objectiveRadios = document.querySelectorAll('input[name="wizard_objective"]');
-  const sensitivityRadios = document.querySelectorAll('input[name="wizard_sensitivity"]');
-  const banner = document.getElementById("smart-enforce-banner");
-  const secRecipient = document.getElementById("encrypt-section-recipient-pk");
-  const secCover = document.getElementById("encrypt-section-cover-image");
-  const secCipher = document.getElementById("encrypt-section-cipher-choice");
-  const btnEncrypt = document.getElementById("btn-execute-encrypt");
+function setOperationMode(mode, notify = false) {
+  state.operationMode = mode === "signature" ? "signature" : "encryption";
 
-  function updateObjectiveUI(val) {
-    objectiveRadios.forEach((r) => {
-      const box = r.closest(".wizard-radio-box");
-      if (box) box.classList.toggle("active", r.value === val);
-    });
+  document.querySelectorAll(".op-mode-option").forEach((opt) => {
+    const isActive = opt.dataset.opMode === state.operationMode;
+    opt.classList.toggle("active", isActive);
+    const radio = opt.querySelector('input[type="radio"]');
+    if (radio) radio.checked = isActive;
+  });
 
-    if (val === "dsa_only") {
-      if (secRecipient) secRecipient.classList.add("hidden");
-      if (secCover) secCover.classList.add("hidden");
-      if (secCipher) secCipher.classList.add("hidden");
-      if (btnEncrypt) {
-        btnEncrypt.textContent = currentLang === "ar"
-          ? "✍️ توليد توقيع رقمي فقط (ECDSA P-256)"
-          : "✍️ Generate Standalone DSA Signature";
-      }
-    } else if (val === "direct_pqc") {
-      if (secRecipient) secRecipient.classList.remove("hidden");
-      if (secCover) secCover.classList.add("hidden");
-      if (secCipher) secCipher.classList.remove("hidden");
-      if (btnEncrypt) {
-        btnEncrypt.textContent = currentLang === "ar"
-          ? "⚡ تشفير كايبر كمومي مباشر (Direct PQC)"
-          : "⚡ Direct PQC Encryption (Kyber-768)";
-      }
-    } else {
-      // full_hybrid
-      if (secRecipient) secRecipient.classList.remove("hidden");
-      if (secCover) secCover.classList.remove("hidden");
-      if (secCipher) secCipher.classList.remove("hidden");
-      if (btnEncrypt) {
-        btnEncrypt.textContent = currentLang === "ar"
+  const encControls = document.getElementById("encryption-mode-controls");
+  const sigControls = document.getElementById("signature-mode-controls");
+  const btnExecute = document.getElementById("btn-execute-encrypt");
+
+  if (state.operationMode === "signature") {
+    if (encControls) encControls.classList.add("hidden");
+    if (sigControls) sigControls.classList.remove("hidden");
+    if (btnExecute && !btnExecute.disabled) {
+      btnExecute.textContent =
+        currentLang === "ar"
+          ? "تنفيذ التوقيع الرقمي وتغليف كايبر والحجب"
+          : "Execute Digital Signature, Kyber KEM & Concealment";
+    }
+  } else {
+    if (encControls) encControls.classList.remove("hidden");
+    if (sigControls) sigControls.classList.add("hidden");
+    if (btnExecute && !btnExecute.disabled) {
+      btnExecute.textContent =
+        currentLang === "ar"
           ? "تنفيذ التشفير الهجين متعدد الطبقات والحجب"
           : "Execute Multi-Layer Encryption & Concealment";
-      }
     }
   }
 
-  function updateSensitivityUI(val, autoTriggered = false) {
-    sensitivityRadios.forEach((r) => {
-      const box = r.closest(".wizard-radio-box");
-      if (box) box.classList.toggle("active", r.value === val);
-    });
+  updateStegoCapacity();
 
-    if (val === "financial_critical") {
-      if (banner) banner.classList.remove("hidden");
-      const chachaRadio = document.querySelector('input[name="cipher_choice"][value="chacha20"]');
-      if (chachaRadio) chachaRadio.checked = true;
-      if (autoTriggered) {
-        showToast(
-          currentLang === "ar"
-            ? "تم تفعيل ChaCha20-Poly1305 تلقائياً للبيانات المالية لحمايتها من تسريبات المعالج."
-            : "Auto-selected ChaCha20-Poly1305 for financial data (side-channel protection).",
-          "info"
-        );
-      }
-    } else {
-      if (banner && !checkLiveFinancialContent()) {
-        banner.classList.add("hidden");
-      }
-    }
-  }
-
-  objectiveRadios.forEach((radio) => {
-    radio.addEventListener("change", (e) => {
-      updateObjectiveUI(e.target.value);
-    });
-  });
-
-  sensitivityRadios.forEach((radio) => {
-    radio.addEventListener("change", (e) => {
-      updateSensitivityUI(e.target.value, false);
-    });
-  });
-
-  // Initialize defaults
-  const initialObj = document.querySelector('input[name="wizard_objective"]:checked')?.value || "full_hybrid";
-  updateObjectiveUI(initialObj);
-  const initialSens = document.querySelector('input[name="wizard_sensitivity"]:checked')?.value || "confidential_text";
-  updateSensitivityUI(initialSens, false);
-}
-
-function checkLiveFinancialContent() {
-  const textVal = document.getElementById("encrypt-text")?.value || "";
-  const fileInput = document.getElementById("encrypt-file");
-  const fileName = (fileInput && fileInput.files && fileInput.files[0]) ? fileInput.files[0].name : "";
-  const combined = textVal + " " + fileName;
-
-  const FINANCIAL_REGEX = /\b(?:\d[ -]*?){13,19}\b|(?:credit[\s_-]?card|visa|mastercard|amex|cvv|iban|swift|pin\s*code|private[\s_-]?key|password|seed[\s_-]?phrase|حساب[\s_]?بنكي|بطاقة[\s_]?ائتمان|كلمة[\s_]?مرور)/i;
-  return FINANCIAL_REGEX.test(combined);
-}
-
-function scanAndEnforceFinancialPolicy() {
-  if (checkLiveFinancialContent()) {
-    const finRadio = document.querySelector('input[name="wizard_sensitivity"][value="financial_critical"]');
-    if (finRadio && !finRadio.checked) {
-      finRadio.checked = true;
-      const allSens = document.querySelectorAll('input[name="wizard_sensitivity"]');
-      allSens.forEach((r) => {
-        const box = r.closest(".wizard-radio-box");
-        if (box) box.classList.toggle("active", r.value === "financial_critical");
-      });
-    }
-    const banner = document.getElementById("smart-enforce-banner");
-    if (banner) banner.classList.remove("hidden");
-
-    const chachaRadio = document.querySelector('input[name="cipher_choice"][value="chacha20"]');
-    if (chachaRadio && !chachaRadio.checked) {
-      chachaRadio.checked = true;
-      showToast(
-        currentLang === "ar"
-          ? "تم اكتشاف بيانات حساسة! فرض تشفير ChaCha20-Poly1305 في الوقت الثابت."
-          : "Financial data detected! Auto-enforcing ChaCha20-Poly1305 (Constant-Time ARX).",
-        "info"
-      );
-    }
+  if (notify) {
+    showToast(
+      state.operationMode === "signature"
+        ? currentLang === "ar"
+          ? "تم التبديل إلى مسار التوقيع الرقمي المعزول (ECDSA P-256 + CRYSTALS-Kyber)"
+          : "Switched to Isolated Digital Signature Pipeline (ECDSA P-256 + CRYSTALS-Kyber)"
+        : currentLang === "ar"
+          ? "تم التبديل إلى مسار تشفير البيانات القياسي"
+          : "Switched to Standard Data Encryption Pipeline",
+      "info"
+    );
   }
 }
 
-/* ==========================================================================
-   5. ENCRYPTION PIPELINE (SENDER)
-   ========================================================================== */
 function initEncryptSection() {
-  initInteractiveWizard();
-
   const btnEncrypt = document.getElementById("btn-execute-encrypt");
   const coverInput = document.getElementById("encrypt-cover-image");
   const btnResetCover = document.getElementById("btn-reset-cover");
+
+  // Operation Mode Toggle (Encryption vs Digital Signature)
+  document.querySelectorAll(".op-mode-option").forEach((opt) => {
+    opt.addEventListener("click", () => {
+      const targetMode = opt.dataset.opMode;
+      if (targetMode && targetMode !== state.operationMode) {
+        setOperationMode(targetMode, true);
+      }
+    });
+  });
 
   if (coverInput) {
     coverInput.addEventListener("change", (e) => {
@@ -980,75 +1097,39 @@ function initEncryptSection() {
       const cipherChoice = document.querySelector('input[name="cipher_choice"]:checked')?.value || "chacha20";
       const overrideVal = document.getElementById("encrypt-override")?.value || "";
       const channelRoomVal = document.getElementById("encrypt-channel-room")?.value.trim() || "";
-      const wizardObjective = document.querySelector('input[name="wizard_objective"]:checked')?.value || "full_hybrid";
-      const wizardSensitivity = document.querySelector('input[name="wizard_sensitivity"]:checked')?.value || "confidential_text";
+      const isSignatureMode = state.operationMode === "signature";
 
-      if (isFile && (!fileInput || fileInput.files.length === 0)) {
-        showToast(currentLang === "ar" ? "يرجى اختيار ملف لتشفيره." : "Please select a file to encrypt.", "error");
-        return;
-      }
-
-      if (!isFile && !textVal.trim()) {
-        showToast(currentLang === "ar" ? "يرجى إدخال النص المطلوب تشفيره." : "Please enter text payload to encrypt.", "error");
-        return;
-      }
-
-      // Branch 1: Standalone Digital Signature Only (ECDSA P-256)
-      if (wizardObjective === "dsa_only") {
-        btnEncrypt.disabled = true;
-        btnEncrypt.textContent = currentLang === "ar" ? "جارٍ توليد التوقيع الرقمي (ECDSA P-256)..." : "Signing with ECDSA P-256...";
-
-        const formData = new FormData();
-        if (isFile) {
-          formData.append("file", fileInput.files[0]);
-        } else {
-          formData.append("text", textVal);
-        }
-        formData.append("username", getActiveUser());
-
-        try {
-          const res = await fetch("/api/sign_only", {
-            method: "POST",
-            body: formData,
-          });
-
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || "Signing failed");
-          }
-
-          const result = await res.json();
-          renderDsaResult(result);
-          showToast(
-            currentLang === "ar"
-              ? "تم توليد وتوثيق التوقيع الرقمي بنجاح!"
-              : "Digital signature generated successfully!",
-            "success"
-          );
-        } catch (e) {
-          showToast((currentLang === "ar" ? "خطأ: " : "Error: ") + e.message, "error");
-        } finally {
-          btnEncrypt.disabled = false;
-          btnEncrypt.textContent = currentLang === "ar"
-            ? "✍️ توليد توقيع رقمي فقط (ECDSA P-256)"
-            : "✍️ Generate Standalone DSA Signature";
-        }
-        return;
-      }
-
-      // Routes 2 & 3: Direct PQC and Full Hybrid require Recipient Kyber PK
       if (!pkVal) {
         showToast(
           currentLang === "ar"
-            ? "المفتاح العام للمستلم (Kyber-768) مطلوب لإتمام التشفير والتغليف!"
+            ? "المفتاح العام للمستلم (Kyber-768) مطلوب لإتمام العملية والتغليف!"
             : "Recipient Kyber-768 Public Key is required!",
           "error"
         );
         return;
       }
 
-      // Full Hybrid: Proactive Capacity Verification
-      if (wizardObjective === "full_hybrid" && currentUploadedCover && !lastCalculatedCapacity.isSufficient) {
+      if (isFile && (!fileInput || fileInput.files.length === 0)) {
+        showToast(
+          currentLang === "ar"
+            ? isSignatureMode ? "يرجى اختيار ملف لتوقيعه." : "يرجى اختيار ملف لتشفيره."
+            : isSignatureMode ? "Please select a file to sign." : "Please select a file to encrypt.",
+          "error"
+        );
+        return;
+      }
+
+      if (!isFile && !textVal.trim()) {
+        showToast(
+          currentLang === "ar"
+            ? isSignatureMode ? "يرجى إدخال النص المطلوب توقيعه." : "يرجى إدخال النص المطلوب تشفيره."
+            : isSignatureMode ? "Please enter text payload to sign." : "Please enter text payload to encrypt.",
+          "error"
+        );
+        return;
+      }
+
+      if (currentUploadedCover && !lastCalculatedCapacity.isSufficient) {
         showToast(
           currentLang === "ar"
             ? `الصورة المختارة صغيرة جداً! الأبعاد المطلوبة على الأقل: ${lastCalculatedCapacity.minDim} × ${lastCalculatedCapacity.minDim} بكسل.`
@@ -1071,59 +1152,56 @@ function initEncryptSection() {
         formData.append("text", textVal);
       }
 
-      if (wizardObjective === "full_hybrid" && coverInput && coverInput.files.length > 0) {
+      if (coverInput && coverInput.files.length > 0) {
         formData.append("cover_image", coverInput.files[0]);
       }
 
       formData.append("recipient_kyber_pk_b64", pkVal);
       formData.append("preferred_cipher", cipherChoice);
-      if (overrideVal) formData.append("override_type", overrideVal);
+      formData.append("operation_mode", state.operationMode);
+      if (overrideVal && !isSignatureMode) formData.append("override_type", overrideVal);
       if (channelRoomVal) formData.append("channel_room", channelRoomVal);
       formData.append("username", getActiveUser());
-      formData.append("intent_objective", wizardObjective);
-      formData.append("intent_sensitivity", wizardSensitivity);
-      formData.append("sensitivity_level", wizardSensitivity);
 
       btnEncrypt.disabled = true;
-      btnEncrypt.textContent = wizardObjective === "direct_pqc"
-        ? (currentLang === "ar" ? "جارٍ تشفير كايبر الكمومي المباشر..." : "Encapsulating Kyber-768 & Encrypting...")
-        : (currentLang === "ar" ? "جارٍ معالجة التشفير والتغليف..." : "Processing Multi-Level Pipeline...");
+      btnEncrypt.textContent = isSignatureMode
+        ? currentLang === "ar"
+          ? "جارٍ التوقيع الرقمي وتغليف كايبر..."
+          : "Executing Digital Signature & Kyber KEM..."
+        : currentLang === "ar"
+          ? "جارٍ معالجة التشفير والتغليف..."
+          : "Processing Multi-Level Pipeline...";
+
+      const endpoint = isSignatureMode ? "/api/sign" : "/api/encrypt";
 
       try {
-        const res = await fetch("/api/encrypt", {
+        const res = await fetch(endpoint, {
           method: "POST",
           body: formData,
         });
 
         if (!res.ok) {
           const err = await res.json();
-          throw new Error(err.detail || "Encryption failed");
+          throw new Error(err.detail || "Operation failed");
         }
 
         const result = await res.json();
-
-        if (wizardObjective === "direct_pqc" || result.mode === "direct_pqc") {
-          renderDirectPqcResult(result);
-          showToast(
-            currentLang === "ar"
-              ? "تم توليد حزمة التشفير الكمومي المباشر (Direct PQC) بنجاح!"
-              : "Direct PQC ciphertext package generated!",
-            "success"
-          );
-        } else {
-          renderEncryptionResult(result);
-          showToast(
-            currentLang === "ar"
+        renderEncryptionResult(result);
+        showToast(
+          isSignatureMode
+            ? currentLang === "ar"
+              ? "اكتمل التوقيع الرقمي وتغليف كايبر والتضمين الستيجانوغرافي بنجاح!"
+              : "Digital signature, Kyber encapsulation & stego embedding completed!"
+            : currentLang === "ar"
               ? "اكتمل التشفير الهجين والتضمين الستيجانوغرافي بنجاح!"
               : "Encryption and steganographic embedding completed!",
-            "success"
-          );
-        }
+          "success"
+        );
 
         if (channelRoomVal) {
           showToast(
             currentLang === "ar"
-              ? `تم بث الحزمة المشفرة مباشرة إلى غرفة القناة: ${channelRoomVal}`
+              ? `تم بث الحزمة مباشرة إلى غرفة القناة: ${channelRoomVal}`
               : `Payload broadcasted to channel room: ${channelRoomVal}`,
             "info"
           );
@@ -1132,24 +1210,16 @@ function initEncryptSection() {
         showToast((currentLang === "ar" ? "خطأ: " : "Error: ") + e.message, "error");
       } finally {
         btnEncrypt.disabled = false;
-        if (wizardObjective === "direct_pqc") {
-          btnEncrypt.textContent = currentLang === "ar"
-            ? "⚡ تشفير كايبر كمومي مباشر (Direct PQC)"
-            : "⚡ Direct PQC Encryption (Kyber-768)";
-        } else {
-          btnEncrypt.textContent = currentLang === "ar"
-            ? "تنفيذ التشفير الهجين متعدد الطبقات والحجب"
-            : "Execute Multi-Layer Encryption & Concealment";
-        }
+        setOperationMode(state.operationMode, false);
       }
     });
   }
 
-  // Copy token button
+  // Copy token button ONLY (raw token hidden, download disabled)
   const btnCopyToken = document.getElementById("btn-copy-kyber-ct");
   if (btnCopyToken) {
     btnCopyToken.addEventListener("click", () => {
-      const text = document.getElementById("output-kyber-ct").value;
+      const text = document.getElementById("output-kyber-ct")?.value;
       if (!text) return;
       navigator.clipboard.writeText(text);
       showToast(
@@ -1158,27 +1228,12 @@ function initEncryptSection() {
       );
     });
   }
-
-  // Download token button
-  const btnDlToken = document.getElementById("btn-download-kyber-ct");
-  if (btnDlToken) {
-    btnDlToken.addEventListener("click", () => {
-      const text = document.getElementById("output-kyber-ct").value;
-      if (!text) return;
-      downloadBlob(text, "kyber_ciphertext.token", "text/plain");
-      showToast(currentLang === "ar" ? "تم تحميل ملف الرمز بنجاح!" : "Token file saved!", "success");
-    });
-  }
 }
 
 function renderEncryptionResult(result) {
   const placeholder = document.getElementById("encrypt-placeholder");
   const container = document.getElementById("encrypt-results-container");
-  const dsaCard = document.getElementById("result-dsa-card");
-  const pqcCard = document.getElementById("result-direct-pqc-card");
   if (placeholder) placeholder.classList.add("hidden");
-  if (dsaCard) dsaCard.classList.add("hidden");
-  if (pqcCard) pqcCard.classList.add("hidden");
   if (container) container.classList.remove("hidden");
 
   // Stego Preview
@@ -1189,100 +1244,55 @@ function renderEncryptionResult(result) {
   const btnDl = document.getElementById("btn-download-stego");
   if (btnDl) btnDl.href = imgUrl;
 
-  // Kyber Ciphertext
+  // Hidden Kyber Ciphertext Vault Input
   const tokenEl = document.getElementById("output-kyber-ct");
   if (tokenEl) tokenEl.value = result.kyber_ciphertext_b64;
 
   // Telemetry
+  const telMode = document.getElementById("telem-op-mode");
   const telPayload = document.getElementById("telem-payload-size");
   const telStego = document.getElementById("telem-stego-size");
   const telRoute = document.getElementById("telem-route");
   const telSig = document.getElementById("telem-signature");
+  const telDigestRow = document.getElementById("telem-digest-row");
+  const telDigest = document.getElementById("telem-digest");
+
+  const isSigMode = result.operation_mode === "signature";
+  if (telMode) {
+    telMode.textContent = isSigMode
+      ? currentLang === "ar"
+        ? "مسار التوقيع الرقمي المعزول (ECDSA + Kyber-768)"
+        : "Isolated Digital Signature (ECDSA + Kyber-768)"
+      : currentLang === "ar"
+        ? "التشفير الهجين للبيانات (Encryption + Kyber-768)"
+        : "Standard Data Encryption (AEAD + Kyber-768)";
+  }
 
   if (telPayload) telPayload.textContent = `${result.payload_size.toLocaleString()} Bytes`;
   if (telStego) telStego.textContent = `${result.stego_size.toLocaleString()} Bytes`;
   if (telRoute) telRoute.textContent = result.classification ? result.classification.route : "-";
   if (telSig) {
     telSig.textContent = result.signature_b64
-      ? currentLang === "ar"
-        ? "مرفق توقيع ECDSA P-256 موثق ✓"
-        : "ECDSA P-256 Attached ✓"
+      ? isSigMode
+        ? currentLang === "ar"
+          ? "مُوقّع ومرتبط بتغليف كايبر (Kyber-Bound ECDSA) ✓"
+          : "Kyber-Bound ECDSA P-256 Attached ✓"
+        : currentLang === "ar"
+          ? "مرفق توقيع ECDSA P-256 موثق ✓"
+          : "ECDSA P-256 Attached ✓"
       : currentLang === "ar"
         ? "غير مطلوب لهذا النوع"
         : "Not Required";
   }
-}
 
-function renderDsaResult(result) {
-  const placeholder = document.getElementById("encrypt-placeholder");
-  if (placeholder) placeholder.classList.add("hidden");
-  const container = document.getElementById("encrypt-results-container");
-  if (container) container.classList.add("hidden");
-  const pqcCard = document.getElementById("result-direct-pqc-card");
-  if (pqcCard) pqcCard.classList.add("hidden");
-
-  const dsaCard = document.getElementById("result-dsa-card");
-  if (dsaCard) dsaCard.classList.remove("hidden");
-
-  const shaEl = document.getElementById("dsa-sha256-val");
-  if (shaEl) shaEl.value = result.data_sha256 || "";
-  const sigEl = document.getElementById("dsa-sig-val");
-  if (sigEl) sigEl.value = result.dsa_signature_b64 || "";
-  const pkEl = document.getElementById("dsa-pubkey-val");
-  if (pkEl) pkEl.value = result.public_key_pem || "";
-
-  const receiptJson = JSON.stringify(result.audit_receipt || result, null, 2);
-  const btnDl = document.getElementById("btn-download-sig-receipt");
-  if (btnDl) {
-    btnDl.onclick = (e) => {
-      e.preventDefault();
-      downloadBlob(receiptJson, "signature_receipt.sig.json", "application/json");
-      showToast(currentLang === "ar" ? "تم تحميل إيصال التوقيع الرقمي!" : "Signature receipt downloaded!", "success");
-    };
-  }
-
-  const btnCopy = document.getElementById("btn-copy-sig");
-  if (btnCopy) {
-    btnCopy.onclick = () => {
-      navigator.clipboard.writeText(result.dsa_signature_b64 || "");
-      showToast(currentLang === "ar" ? "تم نسخ التوقيع الرقمي إلى الحافظة!" : "Digital Signature copied to clipboard!", "success");
-    };
-  }
-}
-
-function renderDirectPqcResult(result) {
-  const placeholder = document.getElementById("encrypt-placeholder");
-  if (placeholder) placeholder.classList.add("hidden");
-  const container = document.getElementById("encrypt-results-container");
-  if (container) container.classList.add("hidden");
-  const dsaCard = document.getElementById("result-dsa-card");
-  if (dsaCard) dsaCard.classList.add("hidden");
-
-  const pqcCard = document.getElementById("result-direct-pqc-card");
-  if (pqcCard) pqcCard.classList.remove("hidden");
-
-  const pkg = result.direct_pqc_package || result;
-  const ctEl = document.getElementById("direct-ct-val");
-  if (ctEl) ctEl.value = pkg.data_ciphertext_b64 || "";
-  const kyberEl = document.getElementById("direct-kyber-val");
-  if (kyberEl) kyberEl.value = pkg.kyber_ciphertext_b64 || "";
-
-  const pkgJson = JSON.stringify(pkg, null, 2);
-  const btnDl = document.getElementById("btn-download-direct-pqc");
-  if (btnDl) {
-    btnDl.onclick = (e) => {
-      e.preventDefault();
-      downloadBlob(pkgJson, "direct_pqc_package.json", "application/json");
-      showToast(currentLang === "ar" ? "تم تحميل حزمة التشفير الكمومي!" : "Direct PQC package downloaded!", "success");
-    };
-  }
-
-  const btnCopy = document.getElementById("btn-copy-direct-pqc");
-  if (btnCopy) {
-    btnCopy.onclick = () => {
-      navigator.clipboard.writeText(pkg.data_ciphertext_b64 || "");
-      showToast(currentLang === "ar" ? "تم نسخ النص المشفر إلى الحافظة!" : "Direct PQC Ciphertext copied to clipboard!", "success");
-    };
+  const digestVal = result.sha256_digest || result.payload_sha256;
+  const fpVal = result.signer_pub_fingerprint || result.signer_key_fingerprint || "P-256";
+  if (digestVal && telDigest) {
+    if (telDigestRow) telDigestRow.classList.remove("hidden");
+    telDigest.textContent = `${digestVal.substring(0, 24)}... (${fpVal})`;
+    telDigest.title = `SHA-256: ${digestVal}`;
+  } else if (telDigestRow) {
+    telDigestRow.classList.add("hidden");
   }
 }
 
@@ -1292,7 +1302,6 @@ function renderDirectPqcResult(result) {
 function initDecryptSection() {
   const btnDecrypt = document.getElementById("btn-execute-decrypt");
   const stegoInput = document.getElementById("decrypt-stego-file");
-  const tokenInput = document.getElementById("decrypt-token-file");
   const skBrowse = document.getElementById("btn-browse-sk");
   const skInput = document.getElementById("decrypt-sk-file");
 
@@ -1304,17 +1313,6 @@ function initDecryptSection() {
         const previewImg = document.getElementById("decrypt-image-preview");
         if (previewImg) previewImg.src = URL.createObjectURL(file);
         if (previewBox) previewBox.classList.remove("hidden");
-      }
-    });
-  }
-
-  if (tokenInput) {
-    tokenInput.addEventListener("change", async () => {
-      if (tokenInput.files.length > 0) {
-        const text = await tokenInput.files[0].text();
-        const input = document.getElementById("decrypt-kyber-ct");
-        if (input) input.value = text.trim();
-        showToast(currentLang === "ar" ? "تم تحميل رمز كايبر من الملف." : "Kyber token loaded from file.", "info");
       }
     });
   }
@@ -1408,10 +1406,27 @@ function renderDecryptionResult(result) {
   // Verification Banner
   const title = document.getElementById("verif-title");
   const desc = document.getElementById("verif-desc");
+  const isSigMode = result.operation_mode === "signature";
 
   if (result.signature_verified === true) {
-    if (title) title.textContent = currentLang === "ar" ? "تم التحقق من النزاهة والموثوقية بنجاح" : "Integrity & Authenticity Verified";
-    if (desc) desc.textContent = currentLang === "ar" ? "تم توثيق التوقيع الرقمي ECDSA P-256 بنجاح بمطابقته مع المفتاح العام للمرسل." : "ECDSA P-256 digital signature verified against sender's public key.";
+    if (title) {
+      title.textContent = isSigMode
+        ? currentLang === "ar"
+          ? "تم التحقق من التوقيع الرقمي المرتبط بكايبر بنجاح ✓"
+          : "Kyber-Bound Digital Signature Verified ✓"
+        : currentLang === "ar"
+          ? "تم التحقق من النزاهة والموثوقية بنجاح"
+          : "Integrity & Authenticity Verified";
+    }
+    if (desc) {
+      desc.textContent = isSigMode
+        ? currentLang === "ar"
+          ? "تم التحقق من بصمة SHA-256 وتوقيع ECDSA P-256 المرتبط بتغليف CRYSTALS-Kyber (ML-KEM-768) بنجاح."
+          : "SHA-256 digest and Kyber-bound ECDSA P-256 signature authenticated against sender's public key."
+        : currentLang === "ar"
+          ? "تم توثيق التوقيع الرقمي ECDSA P-256 بنجاح بمطابقته مع المفتاح العام للمرسل."
+          : "ECDSA P-256 digital signature verified against sender's public key.";
+    }
   } else if (result.signature_verified === false) {
     if (title) title.textContent = currentLang === "ar" ? "فشل التحقق من التوقيع الرقمي!" : "Signature Verification FAILED";
     if (desc) desc.textContent = currentLang === "ar" ? "التوقيع الرقمي لا يتطابق مع محتوى المستند أو تم التلاعب به!" : "The signature did not match the document content!";
@@ -1449,16 +1464,39 @@ function renderDecryptionResult(result) {
   }
 
   // Metadata
+  const recOpMode = document.getElementById("rec-op-mode");
   const recData = document.getElementById("rec-data-type");
   const recCiph = document.getElementById("rec-cipher");
   const recSig = document.getElementById("rec-sig-status");
+  const recDigestRow = document.getElementById("rec-digest-row");
+  const recDigest = document.getElementById("rec-digest");
 
+  if (recOpMode) {
+    recOpMode.textContent = isSigMode
+      ? currentLang === "ar"
+        ? "توقيع رقمي معزول (DIGITAL SIGNATURE)"
+        : "ISOLATED DIGITAL SIGNATURE"
+      : currentLang === "ar"
+        ? "تشفير البيانات القياسي (DATA ENCRYPTION)"
+        : "STANDARD DATA ENCRYPTION";
+  }
   if (recData) recData.textContent = result.data_type ? result.data_type.toUpperCase() : "-";
   if (recCiph) recCiph.textContent = result.cipher_used ? result.cipher_used.toUpperCase() : "-";
   if (recSig) {
     recSig.textContent = result.signature_verified === true
-      ? currentLang === "ar" ? "موثق وصحيح ✓" : "Verified (Valid) ✓"
+      ? isSigMode
+        ? currentLang === "ar" ? "توقيع مرتبط بكايبر وموثق ✓" : "Kyber-Bound Verified ✓"
+        : currentLang === "ar" ? "موثق وصحيح ✓" : "Verified (Valid) ✓"
       : currentLang === "ar" ? "غير مطلوب / غير مرفق" : "N/A";
+  }
+  const recDigestVal = result.sha256_digest || result.payload_sha256;
+  const recFpVal = result.signer_pub_fingerprint || result.signer_key_fingerprint || "P-256";
+  if (recDigestVal && recDigest) {
+    if (recDigestRow) recDigestRow.classList.remove("hidden");
+    recDigest.textContent = `${recDigestVal.substring(0, 24)}... (${recFpVal})`;
+    recDigest.title = `SHA-256: ${recDigestVal}`;
+  } else if (recDigestRow) {
+    recDigestRow.classList.add("hidden");
   }
 }
 
@@ -2435,13 +2473,75 @@ const I18N_DATA = {
     credit_st2_title: "مهندس النظم • التوجيه والمفاتيح والخوارزميات",
     credit_st2_name: "كرار حيدر إسماعيل",
 
-    // Section 2: Encrypt & Conceal
-    enc_sec_title: "سير عمل المرسل: التشفير، التغليف، والإخفاء",
-    enc_sec_desc: "أدخل النص أو ارفع ملفاً، وسيقوم المصنف الذكي بتوجيهه نحو البروتوكولات التناظرية والكمومية المثلى.",
+    // Section 2: Encrypt & Conceal + Digital Signature + Questionnaire
+    q_badge: "المستشار الذكي لتوجيه الخدمات",
+    q_welcome_title: "مرحباً بك عميلنا العزيز! هل تبحث عن أفضل تجربة لتأمين وحماية معلوماتك؟",
+    q_welcome_sub: "اختر الخدمة الأنسب لاحتياجك من الاستبيان التفاعلي أدناه، أو استكشف معنى كل خدمة وخياراتها الإضافية، ثم اضغط على زر المتابعة للانتقال الفوري.",
+    q_selected_tag: "✓ محدد حالياً",
+    q1_cat: "التوقيع الرقمي (Digital Signature)",
+    q1_question: "هل ترغب في إنشاء توقيع رقمي لحماية بياناتك من التلاعب والتزوير؟",
+    q1_tooltip: "توثيق البيانات عبر ECDSA P-256 وتغليف المفاتيح عبر CRYSTALS-Kyber",
+    q1_meaning_title: "💡 ما هو التوقيع الرقمي المعزول (Kyber + ECDSA)؟",
+    q1_meaning_text: "يقوم التوقيع الرقمي بإنشاء بصمة رياضية فريدة (SHA-256) وتوقيعها عبر منحنى ECDSA P-256، مع تغليف وتبادل مفتاح التحقق عبر خوارزمية CRYSTALS-Kyber المقاومة للكم. يضمن ذلك للمستلم أن بياناتك أو مستنداتك لم تتعرض لأي تعديل أو تزوير ويثبت هويتك بشكل قاطع.",
+    q1_sub1: "✒️ إنشاء توقيع رقمي معزول جديد (ECDSA + Kyber)",
+    q1_sub2: "🔍 التحقق من صحة توقيع رقمي مستلم",
+    q1_sub3: "🔑 فتح خزنة مفاتيح كايبر المحلية",
+    q2_cat: "التراسل السري والتشفير (Confidential Encryption)",
+    q2_question: "هل ترغب في إرسال رسالة مشفرة لا يمكن الاطلاع عليها إلا من قِبل المستلم المخول؟",
+    q2_tooltip: "تشفير سري عبر ChaCha20 / AES-GCM مع تغليف مفاتيح CRYSTALS-Kyber",
+    q2_meaning_title: "💡 ما هي خدمة التشفير السري الهجين والإخفاء؟",
+    q2_meaning_text: "تحول هذه الخدمة رسالتك النصية أو ملفك إلى نص مشفر غير قابل للقراءة باستخدام ChaCha20-Poly1305 أو AES-256-GCM، وتغلف مفتاح فك التشفير عبر CRYSTALS-Kyber (ML-KEM-768) ثم تخفي الحزمة داخل صورة PNG عادية بحيث لا يستطيع فتحها إلا المستلم الذي يملك المفتاح السري.",
+    q2_sub1: "🔒 تشفير رسالة أو ملف سري وإخفاؤه في صورة",
+    q2_sub2: "🔓 فك تشفير واستخراج رسالة من صورة مستلمة",
+    q2_sub3: "📡 إرسال واستقبال فوري عبر قناة البث المباشر",
+    q3_cat: "التفاصيل التقنية والآليات (Process Details & Insights)",
+    q3_question: "هل تود التعرف على التفاصيل التقنية والتشغيلية لعملية التشفير؟",
+    q3_tooltip: "استعراض المعمارية الهندسية ومحاكي المراحل الأربع والمقارنات",
+    q3_meaning_title: "💡 ماذا يتضمن قسم التفاصيل التقنية والمعمارية؟",
+    q3_meaning_text: "يوفر هذا القسم محاكياً تفاعلياً للمراحل الأربع (التصنيف الذكي، التشفير التناظري، تغليف كايبر الكمومي، والإخفاء الستيجانوغرافي)، بالإضافة إلى جداول المقارنات الرياضية والهندسية بين الخوارزميات وتوثيق فريق مشروع التخرج.",
+    q3_sub1: "🔬 تشغيل محاكي المعمارية التفاعلي (4 مراحل)",
+    q3_sub2: "📊 استعراض مقارنات الخوارزميات والقرارات الهندسية",
+    q3_sub3: "🎓 التعرف على فريق مشروع التخرج والإشراف",
+    q_choice_yes: "نعم، المتابعة بهذه الخدمة",
+    q_choice_more: "عرض المزيد من الخيارات",
+    q_choice_meaning: "ماذا تعني هذه الخدمة؟",
+    q_choice_support: "تواصل مع المهندس / الدعم",
+    q_more_header: "⚡ خيارات سريعة مرتبطة بهذه الخدمة:",
+    q_support_header: "👨‍💻 التواصل مع مهندسي النظام والدعم الفني:",
+    q_support_desc: "تواصل مباشرة مع فريق تطوير مشروع التخرج للاستفسارات التقنية أو الدعم:",
+    q_support_eng1: "📧 الباحث عبدالله إياد (أبحاث كايبر والتغليف الكمومي)",
+    q_support_eng2: "📧 المهندس كرار حيدر (هندسة التشفير والتوقيع الرقمي)",
+    q_support_team: "👥 عرض بطاقات فريق العمل والإشراف الأكاديمي",
+    q_proceed_lbl: "الخدمة المختارة للانتقال:",
+    q_sel_sig: "مسار التوقيع الرقمي المعزول (ECDSA P-256 + CRYSTALS-Kyber)",
+    q_sel_enc: "التراسل السري وتشفير البيانات للمستلم المخول (AEAD + Kyber-768)",
+    q_sel_info: "التفاصيل التقنية والتشغيلية ومحاكي المعمارية",
+    q_btn_proceed: "الانتقال إلى الخدمة الآن (Proceed)",
+
+    enc_sec_title: "سير عمل المرسل: التشفير، التوقيع الرقمي، والحجب",
+    enc_sec_desc: "اختر نمط العملية (تشفير البيانات القياسي أو مسار التوقيع الرقمي المعزول)، وكلاهما يعتمد تغليف مفاتيح CRYSTALS-Kyber (ML-KEM-768) المقاوم للكم.",
+    enc_mode_badge: "اختيار مسار المعالجة",
+    enc_mode_heading: "حدد نمط العملية التشفيرية للمرسل",
+    enc_mode_kyber_pill: "🛡️ تغليف المفاتيح: CRYSTALS-Kyber (ML-KEM-768)",
+    enc_mode_enc_title: "تشفير البيانات القياسي (Data Encryption)",
+    enc_mode_enc_tag: "AEAD + Kyber-768",
+    enc_mode_enc_desc: "تشفير سري عالي السرعة عبر ChaCha20-Poly1305 أو AES-256-GCM مع التوجيه الذكي وتغليف المفاتيح عبر CRYSTALS-Kyber.",
+    enc_mode_sig_title: "مسار التوقيع الرقمي المعزول (Digital Signature)",
+    enc_mode_sig_tag: "ECDSA + Kyber-768",
+    enc_mode_sig_desc: "مسار توقيع رقمي مستقل لإثبات الموثوقية وعدم الإنكار عبر ECDSA P-256 و SHA-256 مع تبادل وتغليف المفاتيح عبر CRYSTALS-Kyber.",
+    enc_step2_enc_title: "2. إعدادات التشفير والتصنيف الذكي",
+    enc_step2_sig_title: "2. مسار التوقيع الرقمي المعزول (Kyber + ECDSA)",
+    enc_sig_pipe_title: "ECDSA P-256 + SHA-256 + CRYSTALS-Kyber (ML-KEM-768)",
+    enc_sig_pipe_badge: "مسار توقيع رقمي مستقل",
+    enc_sig_pipe_desc: "يعمل هذا المسار بمعزل عن خيارات التشفير التناظري التقليدية: يتم حساب بصمة SHA-256 وتوقيع البيانات بمنحنى ECDSA P-256، ثم يُغلَّف مفتاح التحقق العام والتوقيع الرقمي حصرياً عبر سر مشترك مشتق من CRYSTALS-Kyber (ML-KEM-768) لضمان عدم الإنكار والحماية الكمومية.",
+    enc_sig_chip1: "1. بصمة SHA-256",
+    enc_sig_chip2: "2. توقيع ECDSA P-256",
+    enc_sig_chip3: "3. تغليف مفاتيح CRYSTALS-Kyber",
+    enc_sig_chip4: "4. إخفاء PNG LSB",
     enc_card1_title: "1. إدخال البيانات والتصنيف الذكي",
     enc_tab_text: "إدخال نصي",
     enc_tab_file: "رفع ملف",
-    enc_lbl_plaintext: "البيانات الصريحة المراد تشفيرها:",
+    enc_lbl_plaintext: "البيانات الصريحة المراد تشفيرها أو توقيعها:",
     enc_ph_plaintext: "ادخل النص السري، محتوى المستند، أو بيانات الاعتماد...",
     enc_lbl_file: "رفع ملف (مستند، ملف ثنائي، أو بيانات):",
     enc_diag_title: "تشخيص المصنف الذكي:",
@@ -2473,17 +2573,20 @@ const I18N_DATA = {
     enc_hint_channel: "عند التحديد، سيتلقى المستلم المتصل بالقناة حزمة التشفير فوراً وبشكل متزامن.",
     enc_btn_execute: "تنفيذ التشفير الهجين متعدد الطبقات والحجب",
     enc_output_title: "حزمة المخرجات المشفرة والمحجوبة",
-    enc_output_ph: "ستظهر صورة الإخفاء ورموز كايبر المقاومة للكم هنا فور اكتمال التشفير.",
+    enc_output_ph: "ستظهر صورة الإخفاء ورموز كايبر المقاومة للكم هنا فور اكتمال العملية.",
     enc_stego_badge: "تم تضمين البيانات المحجوبة بنجاح &bull; صورة PNG نقية",
     enc_btn_dl_stego: "تحميل صورة الإخفاء (PNG)",
     enc_lbl_token: "رمز كايبر المشفر المقاوم للحوسبة الكمومية (1,088 بايت):",
-    enc_btn_copy_token: "نسخ الرمز",
-    enc_btn_save_token: "حفظ ملف الرمز (.token)",
+    enc_token_hidden_badge: "الرمز الخام مخفي أمنياً &bull; 1,088 بايت محمي",
+    enc_token_security_hint: "تم إخفاء الرمز الخام وتعطيل تحميله كملف لحمايته من الانكشاف المباشر. استخدم زر النسخ إلى الحافظة فقط.",
+    enc_btn_copy_token: "نسخ إلى الحافظة (Copy to Clipboard)",
     enc_telem_title: "تقرير القياسات والأدلة الرقمية",
+    enc_telem_mode_lbl: "وضع العملية المنفذة:",
     enc_telem_payload_lbl: "حجم البيانات الصافية:",
     enc_telem_carrier_lbl: "حجم الصورة الناقلة:",
     enc_telem_route_lbl: "مسار التشفير المتبع:",
     enc_telem_sig_lbl: "التوقيع الرقمي ECDSA P-256:",
+    enc_telem_digest_lbl: "بصمة SHA-256 ومفتاح الموقّع:",
 
     // Section 3: Decrypt & Extract
     dec_sec_title: "سير عمل المستلم: فك التغليف، الاستخراج، والتحقق",
@@ -2492,7 +2595,7 @@ const I18N_DATA = {
     dec_lbl_carrier: "رفع صورة الإخفاء (PNG):",
     dec_card2_title: "2. رمز التغليف المشفر (ML-KEM-768)",
     dec_lbl_token: "النص المشفر لكايبر (1,088 بايت Base64):",
-    dec_ph_token: "الصق رمز كايبر (1,088 بايت) أو اختر ملف الرمز...",
+    dec_ph_token: "الصق رمز كايبر المنسوخ من الحافظة (1,088 بايت)...",
     dec_card3_title: "3. المفتاح السري المحلي للمستلم",
     dec_lbl_sk: "المفتاح السري للمستلم (2,400 بايت Base64):",
     dec_ph_sk: "الصق المفتاح السري لفك التغليف أو قم بتحميله من الخزنة...",
@@ -2507,9 +2610,11 @@ const I18N_DATA = {
     dec_lbl_msg: "الرسالة الصريحة المستخرجة:",
     dec_btn_dl_prefix: "تحميل الملف المستخرج",
     dec_telem_title: "بيان التدقيق الأمني",
+    dec_telem_mode_lbl: "وضع العملية المكتشف:",
     dec_telem_dtype_lbl: "نوع البيانات المصنف:",
     dec_telem_cipher_lbl: "خوارزمية التشفير التناظري:",
     dec_telem_sig_lbl: "التوقيع الرقمي (ECDSA):",
+    dec_telem_digest_lbl: "بصمة SHA-256 ومفتاح الموقّع:",
     dec_telem_pqc_lbl: "تبادل المفاتيح المقاوم للكم:",
     dec_telem_pqc_val: "تم التحقق بنجاح وفق معيار NIST FIPS 203",
 
@@ -2559,41 +2664,6 @@ const I18N_DATA = {
     th_details: "تفاصيل الحزمة والتشفير",
     th_status: "الحالة والتحقق",
     audit_empty: "لا توجد عمليات مسجلة حتى الآن لهذا الحساب.",
-    // Security Intent Questionnaire & Dynamic Results
-    wizard_badge: "مساعد التوجيه الذكي",
-    wizard_title: "استبيان الهدف الأمني ونوع البيانات",
-    wizard_sub: "حدد الغاية من العملية ونوع البيانات لتفعيل المسار المشفر الأمثل وتطبيق السياسات التلقائية.",
-    wizard_lbl_q1: "1. ما هو الهدف الأمني المطلوب للعملية؟",
-    wizard_opt_hybrid: "حماية هجينة متكاملة (شاملة)",
-    wizard_sub_hybrid: "تشفير كايبر الكمومي + تشفير متماثل + إخفاء تكيفي (Sobel Stego)",
-    wizard_opt_dsa: "توقيع رقمي فقط (DSA / Digital Signature)",
-    wizard_sub_dsa: "توليد إثبات النزاهة وعدم الإنكار دون تشفير أو دمج في صور",
-    wizard_opt_pqc: "نص مشفر كمومياً مباشر (Direct PQC)",
-    wizard_sub_pqc: "تشفير Kyber-768 مباشر دون إخفائه في صورة حاملة",
-    wizard_lbl_q2: "2. ما هي طبيعة وحساسية البيانات المرفوعة؟",
-    wizard_opt_fin: "💳 بيانات مالية / بطاقات مصرفية / كلمات سر",
-    wizard_sub_fin: "حسابات، بطاقات بنكية، مفاتيح سرية (تفرض تشفير ChaCha20 في الوقت الثابت)",
-    wizard_opt_doc: "📄 وثيقة قانونية / مستند رسمي",
-    wizard_sub_doc: "عقود رسمية وتقارير تتطلب توثيق النزاهة عبر التوقيع الرقمي",
-    wizard_opt_msg: "💬 رسالة أو محادثة سرية",
-    wizard_sub_msg: "نصوص ورسائل متبادلة تتطلب سرية تامة",
-    wizard_opt_bulk: "📦 ملفات كبيرة أو وسائط",
-    wizard_sub_bulk: "أرشيفات، قواعد بيانات، وسائط بحجم كبير",
-    banner_title: "تم تفعيل التوجيه الأمني التلقائي: ChaCha20-Poly1305",
-    banner_desc: "نظراً لوجود بيانات مالية أو مصرفية حساسة، تم تحديد خوارزمية ChaCha20 لحماية البيانات من هجمات التوقيت وقنوات التسريب (Cache-Timing Attacks) على المعالج.",
-    dsa_receipt_badge: "✓ تم التوقيع الرقمي بنجاح",
-    dsa_receipt_title: "إيصال التوقيع الرقمي المعتمد (ECDSA P-256)",
-    dsa_lbl_sha256: "بصمة الوثيقة (SHA-256 Digest):",
-    dsa_lbl_sig: "رمز التوقيع الرقمي (Signature Token):",
-    dsa_lbl_pubkey: "المفتاح العام للموقّع (Public Key PEM):",
-    dsa_btn_dl_receipt: "تحميل إيصال التوقيع (.sig.json)",
-    dsa_btn_copy_sig: "نسخ التوقيع",
-    pqc_direct_badge: "⚡ تشفير كمومي مباشر بدون إخفاء",
-    pqc_direct_title: "حزمة التشفير الكمومي (Direct Kyber-768 Ciphertext)",
-    pqc_lbl_ct: "النص المشفر (AEAD Ciphertext Token):",
-    pqc_lbl_kyber: "رمز كايبر المحصور (Kyber-768 Encapsulation Token):",
-    pqc_btn_dl_pkg: "تحميل الحزمة المشفرة (.json)",
-    pqc_btn_copy_ct: "نسخ النص المشفر",
   },
 
   en: {
@@ -2867,13 +2937,75 @@ const I18N_DATA = {
     credit_st2_title: "Systems Architect • RSA, DSA, Routing & Keys",
     credit_st2_name: "Karrar Haider Ismail",
 
-    // Section 2: Encrypt & Conceal
-    enc_sec_title: "Sender Workflow: Encrypt, Encapsulate & Conceal",
-    enc_sec_desc: "Supply plaintext or upload a file. The classifier will route to the optimal classical and post-quantum protocols.",
+    // Section 2: Encrypt & Conceal + Digital Signature + Questionnaire
+    q_badge: "Guided Service Routing Questionnaire",
+    q_welcome_title: "Welcome, Valued Client! Looking for the best experience to secure and protect your information?",
+    q_welcome_sub: "Select the service that matches your security goal below, explore what each service means, and click Proceed to jump directly into your workflow.",
+    q_selected_tag: "✓ Selected",
+    q1_cat: "Digital Signature",
+    q1_question: "Do you want to create a digital signature to protect your data from tampering and forgery?",
+    q1_tooltip: "Authenticate data via ECDSA P-256 with CRYSTALS-Kyber key encapsulation",
+    q1_meaning_title: "💡 What is the Isolated Digital Signature Pipeline (Kyber + ECDSA)?",
+    q1_meaning_text: "Computes a cryptographic SHA-256 digest of your file or message, signs it with ECDSA P-256, and encapsulates the verification key & signature using quantum-resistant CRYSTALS-Kyber (ML-KEM-768)—proving authenticity and preventing any forgery or tampering.",
+    q1_sub1: "✒️ Create a New Isolated Digital Signature (ECDSA + Kyber)",
+    q1_sub2: "🔍 Verify a Received Digital Signature Package",
+    q1_sub3: "🔑 Open Local ML-KEM-768 Key Vault",
+    q2_cat: "Confidential Messaging / Encryption",
+    q2_question: "Do you want to send an encrypted message that can only be viewed by an authorized recipient?",
+    q2_tooltip: "Authenticated encryption via ChaCha20 / AES-GCM with CRYSTALS-Kyber KEM",
+    q2_meaning_title: "💡 What is Confidential Hybrid Encryption & Concealment?",
+    q2_meaning_text: "Encrypts your text message or file using constant-time ChaCha20-Poly1305 or AES-256-GCM, encapsulates the decryption key via post-quantum CRYSTALS-Kyber (ML-KEM-768), and conceals the package inside a lossless PNG carrier so only the authorized recipient can read it.",
+    q2_sub1: "🔒 Encrypt & Conceal a Confidential Message or File",
+    q2_sub2: "🔓 Decrypt & Extract a Received Stego Image",
+    q2_sub3: "📡 Real-Time Transmission over Live Peer Channel",
+    q3_cat: "Process Details & Insights",
+    q3_question: "Would you like to learn the technical and operational details behind the encryption process?",
+    q3_tooltip: "Explore the 4-stage interactive architecture simulator and cryptographic proofs",
+    q3_meaning_title: "💡 What is inside Process Details & Insights?",
+    q3_meaning_text: "Explore the interactive 4-stage pipeline simulator (Smart Classification, Symmetric Routing, ML-KEM-768 Key Encapsulation, and PNG Steganography), mathematical proofs, and side-by-side comparisons of ChaCha20 vs. AES, ECC vs. RSA, and NIST FIPS 203 lattices.",
+    q3_sub1: "🔬 Launch Interactive 4-Stage Pipeline Simulator",
+    q3_sub2: "📊 Inspect Cryptographic Comparisons & Decisions",
+    q3_sub3: "🎓 Meet the Graduation Project Team & Advisors",
+    q_choice_yes: "Yes, proceed with this",
+    q_choice_more: "Show more options",
+    q_choice_meaning: "What does this service mean?",
+    q_choice_support: "Contact the Engineer / Support",
+    q_more_header: "⚡ Quick Options for this Service:",
+    q_support_header: "👨‍💻 Contact the Engineers & Technical Support:",
+    q_support_desc: "Reach out directly to the graduation project engineering team for technical assistance:",
+    q_support_eng1: "📧 Abdulallah Ayad (Lead Presenter & Kyber ML-KEM-768 Research)",
+    q_support_eng2: "📧 Karrar Haider Ismail (Systems Architect & Cryptographic Engine)",
+    q_support_team: "👥 View Full Project Team & Academic Advisor Dossiers",
+    q_proceed_lbl: "Selected Service Route:",
+    q_sel_sig: "Isolated Digital Signature Pipeline (ECDSA P-256 + CRYSTALS-Kyber)",
+    q_sel_enc: "Confidential Messaging & Encryption (AEAD + Kyber-768)",
+    q_sel_info: "Process Details, Architecture Simulator & Technical Insights",
+    q_btn_proceed: "Proceed / Go",
+
+    enc_sec_title: "Sender Workflow: Encrypt, Digitally Sign & Conceal",
+    enc_sec_desc: "Choose between Standard Data Encryption or the Isolated Digital Signature pipeline—both secured by CRYSTALS-Kyber (ML-KEM-768) key encapsulation.",
+    enc_mode_badge: "Pipeline Mode Selection",
+    enc_mode_heading: "Select Sender Cryptographic Operation Mode",
+    enc_mode_kyber_pill: "🛡️ Key Exchange / KEM: CRYSTALS-Kyber (ML-KEM-768)",
+    enc_mode_enc_title: "Standard Data Encryption",
+    enc_mode_enc_tag: "AEAD + Kyber-768",
+    enc_mode_enc_desc: "High-speed authenticated encryption via ChaCha20-Poly1305 or AES-256-GCM with smart routing and CRYSTALS-Kyber key encapsulation.",
+    enc_mode_sig_title: "Isolated Digital Signature Pipeline",
+    enc_mode_sig_tag: "ECDSA + Kyber-768",
+    enc_mode_sig_desc: "Dedicated digital signing pipeline for authenticity and non-repudiation via ECDSA P-256 and SHA-256 with CRYSTALS-Kyber key encapsulation.",
+    enc_step2_enc_title: "2. Encryption Settings & Smart Classifier",
+    enc_step2_sig_title: "2. Isolated Digital Signature Pipeline (Kyber + ECDSA)",
+    enc_sig_pipe_title: "ECDSA P-256 + SHA-256 + CRYSTALS-Kyber (ML-KEM-768)",
+    enc_sig_pipe_badge: "Isolated Signature Pipeline",
+    enc_sig_pipe_desc: "Operates as an isolated signing pipeline: computes a SHA-256 digest and ECDSA P-256 signature, then encapsulates the verification key and signature envelope exclusively using a CRYSTALS-Kyber (ML-KEM-768) shared secret for quantum-resistant non-repudiation.",
+    enc_sig_chip1: "1. SHA-256 Digest",
+    enc_sig_chip2: "2. ECDSA P-256 Sign",
+    enc_sig_chip3: "3. CRYSTALS-Kyber KEM",
+    enc_sig_chip4: "4. PNG LSB Conceal",
     enc_card1_title: "1. Payload Input & Classification",
     enc_tab_text: "Text Input",
     enc_tab_file: "File Upload",
-    enc_lbl_plaintext: "Plaintext Payload:",
+    enc_lbl_plaintext: "Plaintext Payload (to Encrypt or Sign):",
     enc_ph_plaintext: "Enter sensitive secret, document text, or credentials...",
     enc_lbl_file: "Upload File (Document, Binary, or Data):",
     enc_diag_title: "Classifier Diagnostic:",
@@ -2909,13 +3041,16 @@ const I18N_DATA = {
     enc_stego_badge: "Concealed Payload Embedded &bull; Lossless PNG",
     enc_btn_dl_stego: "Download Stego-Image (PNG)",
     enc_lbl_token: "Post-Quantum Kyber-768 Ciphertext Token (1,088 Bytes):",
-    enc_btn_copy_token: "Copy Token",
-    enc_btn_save_token: "Save Token File",
+    enc_token_hidden_badge: "Raw Token Hidden &bull; 1,088 Bytes Protected",
+    enc_token_security_hint: "The raw token is masked from view and file downloads are disabled for security. Use Copy to Clipboard only.",
+    enc_btn_copy_token: "Copy to Clipboard",
     enc_telem_title: "Telemetry & Proof Manifest",
+    enc_telem_mode_lbl: "Operation Mode:",
     enc_telem_payload_lbl: "Payload Size:",
     enc_telem_carrier_lbl: "Carrier PNG Size:",
     enc_telem_route_lbl: "Cryptographic Route:",
     enc_telem_sig_lbl: "ECDSA P-256 Signature:",
+    enc_telem_digest_lbl: "SHA-256 & Signer Key:",
 
     // Section 3: Decrypt & Extract
     dec_sec_title: "Receiver Workflow: Decapsulate, Extract & Verify",
@@ -2924,7 +3059,7 @@ const I18N_DATA = {
     dec_lbl_carrier: "Upload Stego-Image (PNG):",
     dec_card2_title: "2. ML-KEM-768 Ciphertext Token",
     dec_lbl_token: "Kyber-768 Ciphertext (1,088 Bytes Base64):",
-    dec_ph_token: "Paste 1,088-byte Kyber token or load file...",
+    dec_ph_token: "Paste 1,088-byte Kyber token from clipboard...",
     dec_card3_title: "3. Local Receiver Secret Key",
     dec_lbl_sk: "Recipient Secret Key (2,400 Bytes Base64):",
     dec_ph_sk: "Paste private decapsulation key or load from vault...",
@@ -2939,9 +3074,11 @@ const I18N_DATA = {
     dec_lbl_msg: "Extracted Plaintext Message:",
     dec_btn_dl_prefix: "Download Recovered File",
     dec_telem_title: "Security Audit Manifest",
+    dec_telem_mode_lbl: "Detected Operation Mode:",
     dec_telem_dtype_lbl: "Classified Data Type:",
     dec_telem_cipher_lbl: "Symmetric Cipher:",
     dec_telem_sig_lbl: "Digital Signature (ECDSA):",
+    dec_telem_digest_lbl: "SHA-256 & Signer Key:",
     dec_telem_pqc_lbl: "Post-Quantum Key Exchange:",
     dec_telem_pqc_val: "NIST FIPS 203 ML-KEM-768 Verified",
 
@@ -2991,41 +3128,6 @@ const I18N_DATA = {
     th_details: "Package & Cipher Details",
     th_status: "Status & Verification",
     audit_empty: "No operations recorded yet for this account.",
-    // Security Intent Questionnaire & Dynamic Results
-    wizard_badge: "Smart Routing Assistant",
-    wizard_title: "Security Intent & Data Sensitivity Questionnaire",
-    wizard_sub: "Select your objective and data sensitivity to activate optimal cryptographic pipeline and policies.",
-    wizard_lbl_q1: "1. What is the required security objective?",
-    wizard_opt_hybrid: "Full Hybrid Protection (Comprehensive)",
-    wizard_sub_hybrid: "Quantum Kyber + Symmetric AEAD + Adaptive Steganography (Sobel LSB)",
-    wizard_opt_dsa: "Digital Signature Only (DSA / Integrity Proof)",
-    wizard_sub_dsa: "Generate non-repudiation integrity proof without stego or encryption overhead",
-    wizard_opt_pqc: "Direct Quantum-Safe Ciphertext (Direct PQC)",
-    wizard_sub_pqc: "Direct Kyber-768 ciphertext token package without carrier image",
-    wizard_lbl_q2: "2. What is the nature and sensitivity of the data?",
-    wizard_opt_fin: "💳 Financial Data / Bank Cards / Passwords",
-    wizard_sub_fin: "Banking accounts, credentials, private secrets (Auto-enforces Constant-Time ChaCha20)",
-    wizard_opt_doc: "📄 Legal Document / Official Contract",
-    wizard_sub_doc: "Contracts, reports, and evidence requiring verifiable digital signature",
-    wizard_opt_msg: "💬 Confidential Message / Chat",
-    wizard_sub_msg: "Confidential messages and exchanges requiring full privacy",
-    wizard_opt_bulk: "📦 Bulk Data / Large Media",
-    wizard_sub_bulk: "Archives, database dumps, and large media files",
-    banner_title: "Smart Security Policy Enforced: ChaCha20-Poly1305",
-    banner_desc: "Due to financial or critical sensitivity, ChaCha20-Poly1305 is enforced to prevent cache-timing side-channel leaks on the CPU.",
-    dsa_receipt_badge: "✓ Digital Signature Certified",
-    dsa_receipt_title: "Certified Digital Signature Receipt (ECDSA P-256)",
-    dsa_lbl_sha256: "Document Digest (SHA-256):",
-    dsa_lbl_sig: "Signature Token:",
-    dsa_lbl_pubkey: "Signer Public Key (PEM):",
-    dsa_btn_dl_receipt: "Download Signature Receipt (.sig.json)",
-    dsa_btn_copy_sig: "Copy Signature",
-    pqc_direct_badge: "⚡ Direct Quantum Ciphertext (No Stego)",
-    pqc_direct_title: "Quantum Ciphertext Package (Direct Kyber-768)",
-    pqc_lbl_ct: "AEAD Ciphertext Token:",
-    pqc_lbl_kyber: "Kyber-768 Encapsulation Token:",
-    pqc_btn_dl_pkg: "Download Package (.json)",
-    pqc_btn_copy_ct: "Copy Ciphertext",
   }
 };
 
@@ -3121,6 +3223,16 @@ function setLanguage(lang, notify = false) {
   // Update stego capacity message in current language
   if (typeof updateStegoCapacity === "function") {
     updateStegoCapacity();
+  }
+
+  // Update operation mode labels in current language
+  if (typeof setOperationMode === "function") {
+    setOperationMode(state.operationMode, false);
+  }
+
+  // Update questionnaire selection label in current language
+  if (typeof updateQuestionnaireSelectionUI === "function") {
+    updateQuestionnaireSelectionUI(state.selectedQuestionnaireService);
   }
 
   // Update channel status indicator text

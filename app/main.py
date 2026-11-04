@@ -288,6 +288,7 @@ async def encrypt_and_conceal(
     recipient_username: Optional[str] = Form(None),
     preferred_cipher: str = Form("chacha20"),
     override_type: Optional[str] = Form(None),
+    operation_mode: str = Form("encryption"),
     intent_objective: Optional[str] = Form("full_hybrid"),
     sensitivity_level: Optional[str] = Form("auto"),
     channel_room: Optional[str] = Form(None),
@@ -312,7 +313,7 @@ async def encrypt_and_conceal(
         filename = file.filename
     elif text:
         data_bytes = text.encode('utf-8')
-        filename = "secret_message.txt"
+        filename = "signed_message.txt" if (operation_mode or "").lower() == "signature" else "secret_message.txt"
     else:
         raise HTTPException(status_code=400, detail="No payload data provided")
 
@@ -435,7 +436,8 @@ async def encrypt_and_conceal(
             recipient_kyber_pk=recipient_pk,
             cover_image_bytes=cover_bytes,
             preferred_cipher=active_cipher,
-            override_type=override_type or intent_eval["type"]
+            override_type=override_type or intent_eval["type"],
+            operation_mode=operation_mode or "encryption"
         )
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Encryption error: {str(e)}")
@@ -464,6 +466,7 @@ async def encrypt_and_conceal(
 
     response_payload = {
         "status": "success",
+        "operation_mode": result.get("operation_mode", operation_mode or "encryption"),
         "pipeline_target": "full_hybrid",
         "mode": "full_hybrid",
         "tx_id": tx_id,
@@ -474,6 +477,8 @@ async def encrypt_and_conceal(
         "kyber_ciphertext_b64": result["kyber_ciphertext_b64"],
         "stego_image_b64": stego_b64,
         "signature_b64": result["signature_b64"],
+        "sha256_digest": result.get("sha256_digest"),
+        "signer_pub_fingerprint": result.get("signer_pub_fingerprint"),
         "payload_size": result["payload_size"],
         "stego_size": result["stego_size"],
         "filename": filename
@@ -499,6 +504,7 @@ async def encrypt_and_conceal(
             "type": "new_transmission",
             "room_id": channel_room,
             "filename": filename,
+            "operation_mode": result.get("operation_mode", operation_mode or "encryption"),
             "kyber_ciphertext_b64": result["kyber_ciphertext_b64"],
             "stego_image_b64": stego_b64,
             "classification": result["classification"],
@@ -506,6 +512,36 @@ async def encrypt_and_conceal(
         })
 
     return response_payload
+
+@app.post("/api/sign")
+async def sign_and_conceal_endpoint(
+    text: Optional[str] = Form(None),
+    file: Optional[UploadFile] = File(None),
+    cover_image: Optional[UploadFile] = File(None),
+    recipient_kyber_pk_b64: Optional[str] = Form(None),
+    recipient_username: Optional[str] = Form(None),
+    channel_room: Optional[str] = Form(None),
+    username: Optional[str] = Form(None)
+):
+    """
+    Isolated Digital Signature Pipeline Endpoint:
+      - Signs payload with ECDSA P-256 (SHA-256)
+      - Encapsulates key exchange & signature verification envelope via CRYSTALS-Kyber (ML-KEM-768)
+      - Conceals package inside a lossless PNG carrier using Kyber-derived stego seed
+    """
+    return await encrypt_and_conceal(
+        text=text,
+        file=file,
+        cover_image=cover_image,
+        recipient_kyber_pk_b64=recipient_kyber_pk_b64,
+        recipient_username=recipient_username,
+        preferred_cipher="kyber_ecdsa_p256",
+        override_type="signature",
+        operation_mode="signature",
+        channel_room=channel_room,
+        username=username
+    )
+
 
 
 @app.post("/api/decrypt")
@@ -549,12 +585,17 @@ async def extract_and_decrypt(
 
     return {
         "status": "success",
+        "operation_mode": decrypted.get("operation_mode", "encryption"),
         "metadata": decrypted["metadata"],
         "data_b64": data_b64,
         "text_preview": decrypted["text_preview"],
         "is_text": decrypted["is_text"],
         "filename": decrypted["filename"],
         "signature_verified": decrypted["signature_verified"],
+        "signature_b64": decrypted.get("signature_b64"),
+        "sha256_digest": decrypted.get("sha256_digest"),
+        "signer_pub_fingerprint": decrypted.get("signer_pub_fingerprint"),
+        "kyber_binding_verified": decrypted.get("kyber_binding_verified", True),
         "cipher_used": decrypted["cipher_used"],
         "data_type": decrypted["data_type"]
     }
