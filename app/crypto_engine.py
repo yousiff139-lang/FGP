@@ -14,6 +14,9 @@ Implements:
 """
 
 import os
+import hmac
+import hashlib
+import base64
 from cryptography.hazmat.primitives.ciphers.aead import ChaCha20Poly1305, AESGCM
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import hashes, serialization
@@ -151,6 +154,100 @@ class ECDSAEngine:
             return True
         except (InvalidSignature, Exception):
             return False
+
+    @staticmethod
+    def compute_sha256_digest(document_bytes: bytes) -> str:
+        """
+        Compute hexadecimal SHA-256 digest of the payload bytes.
+        """
+        return hashlib.sha256(document_bytes).hexdigest()
+
+    @staticmethod
+    def compute_key_fingerprint(public_pem: bytes) -> str:
+        """
+        Compute a compact SHA-256 fingerprint of the ECDSA P-256 public key.
+        """
+        digest = hashlib.sha256(public_pem).hexdigest().upper()
+        return ":".join(digest[i:i+4] for i in range(0, 32, 4))
+
+    @staticmethod
+    def create_kyber_bound_signature_envelope(
+        document_bytes: bytes,
+        integrity_key: bytes,
+        private_pem: bytes = None
+    ) -> dict:
+        """
+        Isolated Digital Signature Envelope bound to CRYSTALS-Kyber:
+          1. Generates an ephemeral ECDSA P-256 signing keypair (or uses provided private_pem).
+          2. Signs the document with ECDSA-SHA256.
+          3. Computes the SHA-256 document digest and signer public key fingerprint.
+          4. Binds the signature, verification public key, and digest to the
+             Kyber-derived integrity_key via HMAC-SHA256 so key exchange cannot be tampered with.
+        """
+        if private_pem:
+            priv_key = serialization.load_pem_private_key(private_pem, password=None)
+            ecdsa_priv_pem = private_pem
+            ecdsa_pub_pem = priv_key.public_key().public_bytes(
+                encoding=serialization.Encoding.PEM,
+                format=serialization.PublicFormat.SubjectPublicKeyInfo
+            )
+        else:
+            ecdsa_priv_pem, ecdsa_pub_pem = ECDSAEngine.generate_keypair()
+
+        signature = ECDSAEngine.sign_document(document_bytes, ecdsa_priv_pem)
+        sha256_digest = ECDSAEngine.compute_sha256_digest(document_bytes)
+        signer_fingerprint = ECDSAEngine.compute_key_fingerprint(ecdsa_pub_pem)
+
+        # Cryptographically bind the ECDSA public key and signature to the Kyber shared secret
+        binding_mac = hmac.new(
+            integrity_key,
+            signature + ecdsa_pub_pem + sha256_digest.encode("utf-8"),
+            hashlib.sha256
+        ).hexdigest()
+
+        return {
+            "body": base64.b64encode(document_bytes).decode("utf-8"),
+            "sig": base64.b64encode(signature).decode("utf-8"),
+            "ecdsa_pub": base64.b64encode(ecdsa_pub_pem).decode("utf-8"),
+            "sha256_digest": sha256_digest,
+            "signer_pub_fingerprint": signer_fingerprint,
+            "kyber_binding_mac": binding_mac,
+        }
+
+    @staticmethod
+    def verify_kyber_bound_signature_envelope(
+        document_bytes: bytes,
+        envelope: dict,
+        integrity_key: bytes
+    ) -> tuple[bool, bool]:
+        """
+        Verify both the CRYSTALS-Kyber HMAC key-binding and the ECDSA P-256 signature.
+        Returns:
+            (signature_valid, kyber_binding_valid)
+        """
+        try:
+            sig = base64.b64decode(envelope["sig"])
+            ecdsa_pub_pem = base64.b64decode(envelope["ecdsa_pub"])
+            expected_digest = envelope.get("sha256_digest", "")
+            provided_mac = envelope.get("kyber_binding_mac", "")
+
+            actual_digest = ECDSAEngine.compute_sha256_digest(document_bytes)
+            if expected_digest and actual_digest != expected_digest:
+                return False, False
+
+            kyber_binding_valid = True
+            if provided_mac:
+                expected_mac = hmac.new(
+                    integrity_key,
+                    sig + ecdsa_pub_pem + actual_digest.encode("utf-8"),
+                    hashlib.sha256
+                ).hexdigest()
+                kyber_binding_valid = hmac.compare_digest(provided_mac, expected_mac)
+
+            sig_valid = ECDSAEngine.verify_document(document_bytes, sig, ecdsa_pub_pem)
+            return (sig_valid and kyber_binding_valid), kyber_binding_valid
+        except Exception:
+            return False, False
 
 
 # --- 4. Post-Quantum Key Derivation (HKDF & Argon2id) ---

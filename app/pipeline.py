@@ -328,3 +328,89 @@ class SecurityPipeline:
             "is_text": is_text,
             "size": len(plaintext)
         }
+
+    @staticmethod
+    def sign_and_conceal(
+        data_bytes: bytes,
+        filename: str,
+        recipient_kyber_pk: bytes,
+        cover_image_bytes: bytes = None
+    ) -> dict:
+        """
+        Isolated Digital Signature Pipeline bound with CRYSTALS-Kyber:
+          1. Kyber-768 encapsulate -> shared secret + kyber ciphertext
+          2. Derive integrity_key & stego_seed from shared secret
+          3. Create Kyber-bound ECDSA signature envelope
+          4. Embed envelope into stego cover image using stego_seed
+        """
+        if not cover_image_bytes:
+            estimated_pkg = int(len(data_bytes) * 1.5) + 2000
+            needed_pixels = ((estimated_pkg + 36) * 8 + 2) // 3
+            side = max(800, int(math.ceil(math.sqrt(needed_pixels) * 1.15)))
+            cover_image_bytes = StegoEngine.create_default_cover(width=side, height=side)
+
+        shared_secret, kyber_ct = KyberEngine.encapsulate(recipient_kyber_pk)
+        subkeys = derive_subkeys_from_kyber(shared_secret)
+        integrity_key = subkeys["integrity_key"]
+        stego_seed = subkeys["stego_seed"]
+
+        envelope = ECDSAEngine.create_kyber_bound_signature_envelope(data_bytes, integrity_key)
+
+        package_bytes = json.dumps({
+            "operation_mode": "signature",
+            "type": "signature",
+            "filename": filename or "signature_payload",
+            "envelope": envelope
+        }).encode("utf-8")
+
+        stego_image_bytes = StegoEngine.embed(cover_image_bytes, package_bytes, stego_seed)
+
+        return {
+            "operation_mode": "signature",
+            "classification": {"type": "signature", "reason": "Isolated Digital Signature Envelope"},
+            "stego_image_bytes": stego_image_bytes,
+            "kyber_ciphertext_b64": KyberEngine.to_b64(kyber_ct),
+            "signature_b64": envelope["sig"],
+            "sha256_digest": envelope["sha256_digest"],
+            "signer_pub_fingerprint": envelope["signer_pub_fingerprint"],
+            "payload_size": len(data_bytes),
+            "stego_size": len(stego_image_bytes)
+        }
+
+    @staticmethod
+    def extract_and_verify(
+        stego_image_bytes: bytes,
+        kyber_ciphertext_bytes: bytes,
+        recipient_kyber_sk: bytes
+    ) -> dict:
+        """
+        Receiver workflow for isolated digital signature envelope:
+          1. Decapsulate Kyber-768 ciphertext -> recover shared secret
+          2. Derive integrity_key & stego_seed via HKDF
+          3. Extract package from stego image using stego_seed
+          4. Verify Kyber HMAC binding and ECDSA signature
+        """
+        shared_secret = KyberEngine.decapsulate(recipient_kyber_sk, kyber_ciphertext_bytes)
+        subkeys = derive_subkeys_from_kyber(shared_secret)
+        integrity_key = subkeys["integrity_key"]
+        stego_seed = subkeys["stego_seed"]
+
+        extracted_bytes = StegoEngine.extract(stego_image_bytes, stego_seed)
+        pkg = json.loads(extracted_bytes.decode("utf-8"))
+
+        envelope = pkg["envelope"]
+        data_bytes = base64.b64decode(envelope["body"])
+
+        sig_valid, kyber_valid = ECDSAEngine.verify_kyber_bound_signature_envelope(
+            data_bytes, envelope, integrity_key
+        )
+
+        return {
+            "operation_mode": pkg.get("operation_mode", "signature"),
+            "data_type": pkg.get("type", "signature"),
+            "data_bytes": data_bytes,
+            "signature_verified": sig_valid,
+            "kyber_binding_verified": kyber_valid,
+            "sha256_digest": envelope.get("sha256_digest", ""),
+            "signer_pub_fingerprint": envelope.get("signer_pub_fingerprint", "")
+        }

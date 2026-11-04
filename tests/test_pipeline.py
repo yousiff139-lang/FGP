@@ -163,3 +163,37 @@ def test_pipeline_wrong_recipient_sk(recipient_keypair):
             kyber_ciphertext_bytes=kyber_ct,
             recipient_kyber_sk=wrong_sk
         )
+
+
+def test_isolated_digital_signature_pipeline_with_kyber(recipient_keypair):
+    pk, sk = recipient_keypair
+    signed_doc = b"Authenticated engineering specification signed via isolated ECDSA + CRYSTALS-Kyber pipeline."
+
+    result = SecurityPipeline.sign_and_conceal(
+        data_bytes=signed_doc,
+        filename="spec_signed.txt",
+        recipient_kyber_pk=pk
+    )
+
+    assert result["operation_mode"] == "signature"
+    assert result["classification"]["type"] == "signature"
+    assert result["signature_b64"] is not None
+    assert result["sha256_digest"] is not None
+    assert result["signer_pub_fingerprint"] is not None
+
+    stego_img = result["stego_image_bytes"]
+    kyber_ct = KyberEngine.from_b64(result["kyber_ciphertext_b64"])
+
+    verified = SecurityPipeline.extract_and_verify(
+        stego_image_bytes=stego_img,
+        kyber_ciphertext_bytes=kyber_ct,
+        recipient_kyber_sk=sk
+    )
+
+    assert verified["operation_mode"] == "signature"
+    assert verified["data_type"] == "signature"
+    assert verified["data_bytes"] == signed_doc
+    assert verified["signature_verified"] is True
+    assert verified["kyber_binding_verified"] is True
+    assert verified["sha256_digest"] == result["sha256_digest"]
+

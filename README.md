@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Signatures-ECDSA%20P--256-007ACC?style=for-the-badge&logo=key&logoColor=white" alt="ECDSA">
   <img src="https://img.shields.io/badge/Steganography-Sobel%20Edge%20Adaptive-4CAF50?style=for-the-badge&logo=image&logoColor=white" alt="Stego">
   <img src="https://img.shields.io/badge/Zero--Database-Client--Side%20Vault-00B0FF?style=for-the-badge&logo=security&logoColor=white" alt="Zero-DB">
-  <img src="https://img.shields.io/badge/Tests-43%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests">
+  <img src="https://img.shields.io/badge/Tests-51%20Passed%20(100%25)-brightgreen?style=for-the-badge&logo=pytest&logoColor=white" alt="Tests">
 </p>
 
 > **Graduation Capstone Project — Mustansiriyah University, College of Engineering**  
@@ -417,53 +417,20 @@ Execute pytest across all test suites:
 python -m pytest tests/ -v
 ```
 
-### Test Suite Execution Output (43 / 43 Passed):
+### Test Suite Execution Output (51 / 51 Passed):
 ```text
-tests/test_api.py::test_api_home_page PASSED                             [  2%]
-tests/test_api.py::test_api_keygen PASSED                                [  4%]
-tests/test_api.py::test_api_classify_text PASSED                         [  6%]
-tests/test_api.py::test_api_classify_file PASSED                         [  9%]
-tests/test_api.py::test_api_encrypt_and_decrypt_roundtrip PASSED         [ 11%]
-tests/test_api.py::test_api_encrypt_missing_key PASSED                   [ 13%]
-tests/test_architecture_a_to_z.py::test_a_to_z_architecture PASSED       [ 16%]
-tests/test_classifier.py::test_classifier_manual_overrides PASSED        [ 18%]
-tests/test_classifier.py::test_classifier_binary_extension PASSED        [ 20%]
-tests/test_classifier.py::test_classifier_small_sensitive_data PASSED    [ 23%]
-tests/test_classifier.py::test_classifier_large_document PASSED          [ 25%]
-tests/test_classifier.py::test_classifier_large_binary_payload PASSED    [ 27%]
-tests/test_crypto.py::test_chacha20_poly1305_roundtrip PASSED            [ 30%]
-tests/test_crypto.py::test_chacha20_tamper_detection PASSED              [ 32%]
-tests/test_crypto.py::test_aes_gcm_roundtrip PASSED                      [ 34%]
-tests/test_crypto.py::test_aes_gcm_tamper_detection PASSED               [ 37%]
-tests/test_crypto.py::test_ecdh_key_agreement PASSED                     [ 39%]
-tests/test_crypto.py::test_ecdsa_signature_verification PASSED           [ 41%]
-tests/test_crypto.py::test_ecdsa_tamper_fails PASSED                     [ 44%]
-tests/test_kyber.py::test_kyber_keypair_generation PASSED                [ 46%]
-tests/test_kyber.py::test_kyber_encapsulation_and_decapsulation PASSED   [ 48%]
-tests/test_kyber.py::test_kyber_base64_helpers PASSED                    [ 51%]
-tests/test_kyber.py::test_kyber_invalid_key_lengths PASSED               [ 53%]
-tests/test_kyber.py::test_derive_subkeys_from_kyber PASSED               [ 55%]
-tests/test_pipeline.py::test_pipeline_bulk_chacha20 PASSED               [ 58%]
-tests/test_pipeline.py::test_pipeline_bulk_aes_gcm PASSED                [ 60%]
-tests/test_pipeline.py::test_pipeline_sensitive_route PASSED             [ 62%]
-tests/test_pipeline.py::test_pipeline_document_ecdsa_signature PASSED    [ 65%]
-tests/test_pipeline.py::test_pipeline_custom_cover_image PASSED          [ 67%]
-tests/test_pipeline.py::test_pipeline_wrong_recipient_sk PASSED          [ 69%]
-tests/test_stego.py::test_stego_capacity_calculation PASSED              [ 72%]
-tests/test_stego.py::test_stego_create_default_cover PASSED              [ 74%]
-tests/test_stego.py::test_stego_embed_and_extract_roundtrip PASSED       [ 76%]
-tests/test_stego.py::test_stego_wrong_seed_fails PASSED                  [ 79%]
-tests/test_stego.py::test_stego_capacity_overflow PASSED                 [ 81%]
-tests/test_v3_upgrades.py::test_argon2id_password_hashing PASSED         [ 83%]
-tests/test_v3_upgrades.py::test_argon2id_kdf_raw_derivation PASSED       [ 86%]
-tests/test_v3_upgrades.py::test_content_adaptive_edge_stego_roundtrip PASSED [ 88%]
-tests/test_v3_upgrades.py::test_financial_sensitivity_and_chacha20_enforcement PASSED [ 90%]
-tests/test_v3_upgrades.py::test_modular_dsa_only_pipeline PASSED         [ 93%]
-tests/test_v3_upgrades.py::test_modular_direct_pqc_pipeline PASSED       [ 95%]
-tests/test_v3_upgrades.py::test_public_directory_and_sas_safety_numbers PASSED [ 97%]
-tests/test_v3_upgrades.py::test_peer_inbox_e2e_dispatch PASSED           [100%]
+tests/test_api.py ......                                                 [ 11%]
+tests/test_architecture_a_to_z.py .                                      [ 13%]
+tests/test_auth_security.py .......                                      [ 27%]
+tests/test_classifier.py .....                                           [ 37%]
+tests/test_crypto.py .......                                             [ 50%]
+tests/test_kyber.py .....                                                [ 60%]
+tests/test_pipeline.py ........                                          [ 76%]
+tests/test_stego.py .....                                                [ 86%]
+tests/test_v3_upgrades.py ........                                       [100%]
 
-============================= 43 passed in 24.30s =============================
+============================= 51 passed in 22.88s =============================
+```
 ```
 
 ---
