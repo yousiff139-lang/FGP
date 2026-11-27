@@ -49,6 +49,8 @@ const state = {
     pk: null,
     sk: null,
   },
+  sessionToken: sessionStorage.getItem("fgp_session_token") || null,
+  lastOutputKyberCt: null,
   operationMode: "encryption",
   selectedQuestionnaireService: "signature",
   activeRoom: null,
@@ -60,6 +62,24 @@ const state = {
   lastLoadedDirectFile: null,
   lastDirectDownloadUrl: null,
 };
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
+  }[ch]));
+}
+
+function authHeaders(extra = {}) {
+  const headers = { ...extra };
+  if (state.sessionToken) {
+    headers["X-Session-Token"] = state.sessionToken;
+  }
+  return headers;
+}
 
 let currentActiveStage = 1;
 
@@ -1639,8 +1659,8 @@ async function generateLatticeKeys(autoApply = true, notify = true) {
 
       const vaultPk = document.getElementById("vault-pk");
       const vaultSk = document.getElementById("vault-sk");
-      if (vaultPk) vaultPk.value = data.public_key_b64;
-      if (vaultSk) vaultSk.value = data.secret_key_b64;
+      if (vaultPk) vaultPk.value = "";
+      if (vaultSk) vaultSk.value = "";
 
       const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
       const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
@@ -1749,22 +1769,32 @@ function initKeyVault() {
 
 function saveKeysToStorage() {
   try {
-    localStorage.setItem("kyber_pk", state.localKeys.pk || "");
-    localStorage.setItem("kyber_sk", state.localKeys.sk || "");
+    localStorage.removeItem("kyber_pk");
+    localStorage.removeItem("kyber_sk");
+    sessionStorage.setItem("kyber_pk", state.localKeys.pk || "");
+    sessionStorage.setItem("kyber_sk", state.localKeys.sk || "");
   } catch (e) { }
 }
 
 function loadKeysFromStorage() {
   try {
-    const pk = localStorage.getItem("kyber_pk");
-    const sk = localStorage.getItem("kyber_sk");
+    // Migrate any legacy persistent keys out of localStorage immediately
+    const legacyPk = localStorage.getItem("kyber_pk");
+    const legacySk = localStorage.getItem("kyber_sk");
+    if (legacyPk || legacySk) {
+      if (legacyPk && legacySk && !sessionStorage.getItem("kyber_sk")) {
+        sessionStorage.setItem("kyber_pk", legacyPk);
+        sessionStorage.setItem("kyber_sk", legacySk);
+      }
+      localStorage.removeItem("kyber_pk");
+      localStorage.removeItem("kyber_sk");
+    }
+
+    const pk = sessionStorage.getItem("kyber_pk");
+    const sk = sessionStorage.getItem("kyber_sk");
     if (pk && sk) {
       state.localKeys.pk = pk;
       state.localKeys.sk = sk;
-      const vaultPk = document.getElementById("vault-pk");
-      const vaultSk = document.getElementById("vault-sk");
-      if (vaultPk) vaultPk.value = pk;
-      if (vaultSk) vaultSk.value = sk;
       const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
       const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
       if (btnCopyVaultPk) btnCopyVaultPk.disabled = false;
@@ -1935,12 +1965,12 @@ function renderDefaultCoverTiers() {
         : "";
       return `
         <button type="button" class="cover-tier-card ${isActive ? "active" : ""} ${!fits ? "insufficient" : ""}"
-          data-tier-id="${tier.id}">
+          data-tier-id="${escapeHtml(tier.id)}">
           ${pill}
-          <img class="cover-tier-thumb" src="${tier.url}" alt="${label}">
+          <img class="cover-tier-thumb" src="${escapeHtml(tier.url)}" alt="${escapeHtml(label)}">
           <div class="cover-tier-meta">
-            <strong>${label}</strong>
-            <span>${tier.width}×${tier.height} &bull; ${capText}</span>
+            <strong>${escapeHtml(label)}</strong>
+            <span>${Number(tier.width)}×${Number(tier.height)} &bull; ${escapeHtml(capText)}</span>
           </div>
         </button>
       `;
@@ -2884,11 +2914,11 @@ function initEncryptSection() {
     });
   }
 
-  // Copy token button ONLY (raw token hidden, download disabled)
+  // Copy token button ONLY (raw token kept in JS memory only, download disabled)
   const btnCopyToken = document.getElementById("btn-copy-kyber-ct");
   if (btnCopyToken) {
     btnCopyToken.addEventListener("click", () => {
-      const text = document.getElementById("output-kyber-ct")?.value;
+      const text = state.lastOutputKyberCt || document.getElementById("output-kyber-ct")?.value;
       if (!text) return;
       navigator.clipboard.writeText(text);
       showToast(
@@ -2985,7 +3015,8 @@ function renderEncryptionResult(result) {
       btnDlDirect.classList.remove("hidden");
     }
 
-    if (tokenEl) tokenEl.value = dir.kyber_ciphertext_b64;
+    state.lastOutputKyberCt = dir.kyber_ciphertext_b64;
+    if (tokenEl) tokenEl.value = "";
     if (decTokenEl) decTokenEl.value = dir.kyber_ciphertext_b64;
 
     const telMode = document.getElementById("telem-op-mode");
@@ -3028,8 +3059,9 @@ function renderEncryptionResult(result) {
         : `Concealed in ${tierName} • Lossless PNG`;
   }
 
-  // Hidden Kyber Ciphertext Vault Input
-  if (tokenEl) tokenEl.value = result.kyber_ciphertext_b64;
+  // Store ciphertext token in JS memory rather than hidden DOM attribute
+  state.lastOutputKyberCt = result.kyber_ciphertext_b64;
+  if (tokenEl) tokenEl.value = "";
   if (decTokenEl) decTokenEl.value = result.kyber_ciphertext_b64;
 
   // Telemetry
@@ -3587,8 +3619,11 @@ function appendChannelLog(message, type = "normal") {
   if (!logBox) return;
   const entry = document.createElement("div");
   entry.className = `log-entry ${type}-entry`;
-  const time = new Date().toLocaleTimeString();
-  entry.innerHTML = `<span class="log-time">[${time}]</span> ${message}`;
+  const timeSpan = document.createElement("span");
+  timeSpan.className = "log-time";
+  timeSpan.textContent = `[${new Date().toLocaleTimeString()}]`;
+  entry.appendChild(timeSpan);
+  entry.appendChild(document.createTextNode(` ${String(message ?? "")}`));
   logBox.appendChild(entry);
   logBox.scrollTop = logBox.scrollHeight;
 }
@@ -3906,12 +3941,17 @@ function initAuthGateway() {
           const fd = new FormData();
           fd.append("password", p);
           fd.append("argon2_hash", stored.argon2_hash);
+          fd.append("username", u);
           const res = await fetch("/api/auth/verify-password", { method: "POST", body: fd });
           if (!res.ok) throw new Error(currentLang === "ar" ? "تعذر التحقق عبر الخادم" : "Verification request failed");
           const data = await res.json();
           if (!data.valid) throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
-        } else if (stored.password !== p) {
-          throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+          if (data.session_token) {
+            state.sessionToken = data.session_token;
+            sessionStorage.setItem("fgp_session_token", data.session_token);
+          }
+        } else {
+          throw new Error(currentLang === "ar" ? "يرجى إعادة إنشاء الحساب بالحماية الحديثة" : "Legacy plaintext credentials are disabled; please register a new account");
         }
 
         localStorage.setItem("fgp_auth_user", u);
@@ -3947,12 +3987,17 @@ function initAuthGateway() {
       try {
         const fd = new FormData();
         fd.append("password", p);
+        if (u) fd.append("username", u);
         const res = await fetch("/api/auth/hash-password", { method: "POST", body: fd });
         if (!res.ok) throw new Error(currentLang === "ar" ? "فشل التشفير عبر Argon2id" : "Argon2id hashing failed");
         const data = await res.json();
 
         localStorage.setItem(`fgp_user_${u}`, JSON.stringify({ argon2_hash: data.argon2_hash }));
         localStorage.setItem("fgp_auth_user", u);
+        if (data.session_token) {
+          state.sessionToken = data.session_token;
+          sessionStorage.setItem("fgp_session_token", data.session_token);
+        }
         updateUserDisplay(u);
         showToast(currentLang === "ar" ? `تم إنشاء الحساب وحمايته عبر Argon2id! أهلاً بك ${u}` : `Account created & Argon2id-protected! Welcome, ${u}`, "success");
         if (typeof loadAuditLogs === "function") loadAuditLogs();
@@ -3971,6 +4016,8 @@ function initAuthGateway() {
     btnGuest.addEventListener("click", () => {
       const guestName = "Guest_" + Math.floor(1000 + Math.random() * 9000);
       localStorage.setItem("fgp_auth_user", guestName);
+      state.sessionToken = null;
+      sessionStorage.removeItem("fgp_session_token");
       updateUserDisplay(guestName);
       showToast(currentLang === "ar" ? `تم الدخول كضيف تجريبي: ${guestName}` : `Logged in as: ${guestName}`, "info");
       if (typeof loadAuditLogs === "function") loadAuditLogs();
@@ -3978,12 +4025,27 @@ function initAuthGateway() {
     });
   }
 
-  // Logout
+  // Logout (Wipe session tokens, private keys, and sensitive form/audit state)
   if (btnLogout) {
     btnLogout.addEventListener("click", () => {
       localStorage.removeItem("fgp_auth_user");
+      localStorage.removeItem("kyber_pk");
+      localStorage.removeItem("kyber_sk");
+      sessionStorage.removeItem("kyber_pk");
+      sessionStorage.removeItem("kyber_sk");
+      sessionStorage.removeItem("fgp_session_token");
+      state.sessionToken = null;
+      state.localKeys = { pk: null, sk: null };
+      state.lastOutputKyberCt = null;
+      allAuditLogs = [];
+      ["encrypt-recipient-pk", "decrypt-kyber-sk", "decrypt-kyber-ct", "vault-pk", "vault-sk", "output-kyber-ct"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
+      const tbody = document.getElementById("audit-table-body");
+      if (tbody) tbody.innerHTML = "";
       updateUserDisplay(null);
-      showToast(currentLang === "ar" ? "تم تسجيل الخروج بنجاح" : "Logged out successfully", "info");
+      showToast(currentLang === "ar" ? "تم تسجيل الخروج ومسح المفاتيح من الجلسة" : "Logged out & session keys wiped", "info");
     });
   }
 }
@@ -3998,7 +4060,9 @@ async function loadAuditLogs() {
   const username = getActiveUser();
 
   try {
-    const res = await fetch(`/api/audit/logs?username=${encodeURIComponent(username)}`);
+    const res = await fetch(`/api/audit/logs?username=${encodeURIComponent(username)}`, {
+      headers: authHeaders(),
+    });
     if (!res.ok) return;
     const data = await res.json();
     allAuditLogs = data.logs || [];
@@ -4059,17 +4123,17 @@ function renderAuditTable() {
       iconSvg = "⚛️";
     }
 
-    const titleText = currentLang === "ar" ? log.title_ar : log.title_en;
+    const titleText = escapeHtml(currentLang === "ar" ? log.title_ar : log.title_en);
 
     let detailsHtml = "";
-    if (typeof log.details === "object") {
+    if (typeof log.details === "object" && log.details !== null) {
       const parts = [];
-      if (log.details.filename) parts.push(`<strong>${log.details.filename}</strong>`);
-      if (log.details.cipher) parts.push(`<span class="badge badge-accent">${log.details.cipher}</span>`);
-      if (log.details.payload_size) parts.push(currentLang === "ar" ? `حجم: ${log.details.payload_size}` : `Size: ${log.details.payload_size}`);
-      if (log.details.kyber_token_id) parts.push(currentLang === "ar" ? `رمز كايبر: <code>${log.details.kyber_token_id}</code>` : `Kyber ID: <code>${log.details.kyber_token_id}</code>`);
-      if (log.details.algorithm) parts.push(`<code>${log.details.algorithm}</code>`);
-      if (log.details.pk_length) parts.push(currentLang === "ar" ? `مفتاح عام: ${log.details.pk_length}B` : `Public Key: ${log.details.pk_length}B`);
+      if (log.details.filename) parts.push(`<strong>${escapeHtml(log.details.filename)}</strong>`);
+      if (log.details.cipher) parts.push(`<span class="badge badge-accent">${escapeHtml(log.details.cipher)}</span>`);
+      if (log.details.payload_size !== undefined) parts.push(escapeHtml(currentLang === "ar" ? `حجم: ${log.details.payload_size}` : `Size: ${log.details.payload_size}`));
+      if (log.details.kyber_token_id) parts.push(`${currentLang === "ar" ? "رمز كايبر: " : "Kyber ID: "}<code>${escapeHtml(log.details.kyber_token_id)}</code>`);
+      if (log.details.algorithm) parts.push(`<code>${escapeHtml(log.details.algorithm)}</code>`);
+      if (log.details.pk_length !== undefined) parts.push(escapeHtml(currentLang === "ar" ? `مفتاح عام: ${log.details.pk_length}B` : `Public Key: ${log.details.pk_length}B`));
       if (log.details.signature_verified !== undefined) {
         if (log.details.signature_verified) {
           parts.push(currentLang === "ar" ? '<span class="text-success">توقيع رقمي موثق ✓</span>' : '<span class="text-success">ECDSA Signature Verified ✓</span>');
@@ -4077,9 +4141,9 @@ function renderAuditTable() {
           parts.push(currentLang === "ar" ? 'بدون توقيع' : 'No Signature');
         }
       }
-      detailsHtml = parts.join(" &bull; ") || JSON.stringify(log.details);
+      detailsHtml = parts.join(" &bull; ") || escapeHtml(JSON.stringify(log.details));
     } else {
-      detailsHtml = String(log.details);
+      detailsHtml = escapeHtml(String(log.details ?? ""));
     }
 
     const statusBadge =
@@ -4092,9 +4156,9 @@ function renderAuditTable() {
           : '<span class="badge badge-warning">Failed ⚠</span>';
 
     tr.innerHTML = `
-      <td style="white-space: nowrap; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">${log.created_at || "-"}</td>
+      <td style="white-space: nowrap; font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted);">${escapeHtml(log.created_at || "-")}</td>
       <td>
-        <span class="audit-badge ${badgeClass}">${iconSvg} ${titleText}</span>
+        <span class="audit-badge ${escapeHtml(badgeClass)}">${iconSvg} ${titleText}</span>
       </td>
       <td style="font-size: 0.82rem;">${detailsHtml}</td>
       <td style="white-space: nowrap;">${statusBadge}</td>
@@ -4144,7 +4208,7 @@ function initAuditLogSection() {
       }
       const fd = new FormData();
       fd.append("username", getActiveUser());
-      await fetch("/api/audit/clear", { method: "POST", body: fd });
+      await fetch("/api/audit/clear", { method: "POST", body: fd, headers: authHeaders() });
       await loadAuditLogs();
       showToast(currentLang === "ar" ? "تم مسح سجل العمليات" : "Audit log cleared", "info");
     });

@@ -4,10 +4,15 @@ FastAPI Application & Real-Time Communication Hub
 """
 
 import os
+import re
+import hmac
+import time
 import json
 import base64
+import hashlib
+import secrets
 from typing import Optional
-from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, WebSocket, WebSocketDisconnect, HTTPException, Request
 from fastapi.responses import HTMLResponse, Response, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,19 +23,113 @@ from app.kyber_pqc import KyberEngine
 from app.pipeline import SecurityPipeline
 from app.stego_engine import StegoEngine
 
+MAX_PAYLOAD_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MiB upload ceiling
+MAX_IMAGE_UPLOAD_BYTES = 30 * 1024 * 1024    # 30 MiB carrier image ceiling
+_SESSION_SECRET = secrets.token_bytes(32)
+registered_auth_sessions: set[str] = set()
+
+
+def sanitize_filename(filename: Optional[str], fallback: str = "payload.bin") -> str:
+    """Strip directory traversal and unsafe HTML characters from uploaded filenames."""
+    raw = os.path.basename((filename or "").strip())
+    cleaned = re.sub(r'[\x00-\x1f<>:"\'/\\|?*]+', "_", raw).strip()
+    return cleaned[:160] if cleaned else fallback
+
+
+async def read_upload_bounded(upload_file: UploadFile, max_bytes: int, label: str = "Uploaded file") -> bytes:
+    """Read an uploaded file in chunks while enforcing a strict maximum size."""
+    chunks: list[bytes] = []
+    total = 0
+    chunk_size = 1024 * 1024
+    while True:
+        chunk = await upload_file.read(chunk_size)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > max_bytes:
+            raise HTTPException(
+                status_code=413,
+                detail=f"{label} exceeds maximum allowed size ({max_bytes // (1024 * 1024)} MB)."
+            )
+        chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def issue_session_token(username: str, ttl_seconds: int = 86400) -> str:
+    """Issue a process-scoped HMAC-SHA256 session token bound to username."""
+    exp = int(time.time()) + ttl_seconds
+    payload = f"{username}|{exp}".encode("utf-8")
+    sig = hmac.new(_SESSION_SECRET, payload, hashlib.sha256).hexdigest()
+    token_raw = f"{username}|{exp}|{sig}".encode("utf-8")
+    return base64.urlsafe_b64encode(token_raw).decode("ascii")
+
+
+def verify_session_token(token: Optional[str], expected_username: Optional[str]) -> bool:
+    """Verify session token signature, expiration, and exact username match."""
+    if not token or not expected_username:
+        return False
+    try:
+        decoded = base64.urlsafe_b64decode(token.strip().encode("ascii")).decode("utf-8")
+        user_part, exp_str, sig = decoded.rsplit("|", 2)
+        if user_part != expected_username or int(exp_str) < int(time.time()):
+            return False
+        payload = f"{user_part}|{exp_str}".encode("utf-8")
+        expected_sig = hmac.new(_SESSION_SECRET, payload, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(sig, expected_sig)
+    except Exception:
+        return False
+
+
+def extract_bearer_or_session_token(headers) -> Optional[str]:
+    token = headers.get("x-session-token")
+    if token:
+        return token
+    auth_hdr = headers.get("authorization") or ""
+    if auth_hdr.lower().startswith("bearer "):
+        return auth_hdr[7:].strip()
+    return None
+
+
+def require_session_if_registered(username: Optional[str], request: Request) -> None:
+    """Enforce session verification for accounts authenticated via the auth gateway."""
+    if not username or username not in registered_auth_sessions:
+        return
+    token = extract_bearer_or_session_token(request.headers)
+    if not verify_session_token(token, username):
+        raise HTTPException(status_code=401, detail="Valid authentication session token is required for this account.")
+
+
 app = FastAPI(
     title="Hybrid Multi-Level Quantum-Resistant Security System",
     description="Post-Quantum Lattice KEM + Symmetric AEAD + Adaptive Edge Steganography",
     version="3.0.0"
 )
 
+ALLOWED_CORS_ORIGINS = [
+    "http://127.0.0.1:8000",
+    "http://localhost:8000",
+    "http://127.0.0.1:8080",
+    "http://localhost:8080",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "X-Session-Token", "Authorization"],
 )
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    if request.url.path.startswith("/api/"):
+        response.headers["Cache-Control"] = "no-store"
+    return response
 
 # In-memory storage for transmission channels (rooms)
 class ChannelManager:
@@ -117,25 +216,42 @@ async def dispatch_to_peer_inbox(recipient_username: str, transmission_item: dic
 # --- REST Cryptographic Endpoints ---
 
 @app.post("/api/auth/hash-password")
-async def auth_hash_password(password: str = Form(...)):
+async def auth_hash_password(
+    password: str = Form(...),
+    username: Optional[str] = Form(None)
+):
     """
     Hash a user password using memory-hard Argon2id (64MB memory, 3 iterations, 4 parallelism).
     Used by the zero-database authentication gateway for client-side storage.
     """
     try:
         argon2_hash = Argon2Engine.hash_password(password)
-        return {"status": "success", "argon2_hash": argon2_hash}
+        resp = {"status": "success", "argon2_hash": argon2_hash}
+        if username and username.strip():
+            clean_user = username.strip()
+            registered_auth_sessions.add(clean_user)
+            resp["session_token"] = issue_session_token(clean_user)
+        return resp
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Argon2 hashing error: {str(e)}")
 
 
 @app.post("/api/auth/verify-password")
-async def auth_verify_password(password: str = Form(...), argon2_hash: str = Form(...)):
+async def auth_verify_password(
+    password: str = Form(...),
+    argon2_hash: str = Form(...),
+    username: Optional[str] = Form(None)
+):
     """
     Verify password against an Argon2id hash in constant time without any database.
     """
     valid = Argon2Engine.verify_password(argon2_hash, password)
-    return {"status": "success", "valid": valid}
+    resp = {"status": "success", "valid": valid}
+    if valid and username and username.strip():
+        clean_user = username.strip()
+        registered_auth_sessions.add(clean_user)
+        resp["session_token"] = issue_session_token(clean_user)
+    return resp
 
 
 @app.post("/api/security_intent")
@@ -154,14 +270,14 @@ async def assess_security_intent(
       - Decouples pipeline target based on user intent (DSA-only, Direct PQC, Full Hybrid).
     """
     if file:
-        data_bytes = await file.read()
-        fn = file.filename or filename or "uploaded_file"
+        data_bytes = await read_upload_bounded(file, MAX_PAYLOAD_UPLOAD_BYTES, "Payload file")
+        fn = sanitize_filename(file.filename or filename, "uploaded_file")
     elif text:
         data_bytes = text.encode('utf-8')
-        fn = filename or "message.txt"
+        fn = sanitize_filename(filename, "message.txt")
     else:
         data_bytes = b""
-        fn = filename or ""
+        fn = sanitize_filename(filename, "")
 
     evaluation = evaluate_security_intent(
         data_bytes=data_bytes,
@@ -211,11 +327,11 @@ async def standalone_sign(
     No steganography or symmetric encryption overhead.
     """
     if file:
-        data_bytes = await file.read()
-        fn = file.filename or filename or "document.bin"
+        data_bytes = await read_upload_bounded(file, MAX_PAYLOAD_UPLOAD_BYTES, "Payload file")
+        fn = sanitize_filename(file.filename or filename, "document.bin")
     elif text:
         data_bytes = text.encode('utf-8')
-        fn = filename or "document.txt"
+        fn = sanitize_filename(filename, "document.txt")
     else:
         raise HTTPException(status_code=400, detail="No payload data provided")
 
@@ -251,7 +367,7 @@ async def standalone_verify_signature(
     Verify standalone ECDSA digital signature against document bytes.
     """
     if file:
-        data_bytes = await file.read()
+        data_bytes = await read_upload_bounded(file, MAX_PAYLOAD_UPLOAD_BYTES, "Payload file")
     elif text:
         data_bytes = text.encode('utf-8')
     else:
@@ -275,8 +391,8 @@ async def classify_data(
     """
     filename = ""
     if file:
-        data_bytes = await file.read()
-        filename = file.filename
+        data_bytes = await read_upload_bounded(file, MAX_PAYLOAD_UPLOAD_BYTES, "Payload file")
+        filename = sanitize_filename(file.filename, "input.bin")
     elif text:
         data_bytes = text.encode('utf-8')
         filename = "input.txt"
@@ -333,8 +449,8 @@ async def encrypt_and_conceal(
 
     filename = ""
     if file:
-        data_bytes = await file.read()
-        filename = file.filename
+        data_bytes = await read_upload_bounded(file, MAX_PAYLOAD_UPLOAD_BYTES, "Payload file")
+        filename = sanitize_filename(file.filename, "payload.bin")
     elif text:
         data_bytes = text.encode('utf-8')
         filename = "signed_message.txt" if (operation_mode or "").lower() == "signature" else "secret_message.txt"
@@ -451,7 +567,7 @@ async def encrypt_and_conceal(
     # Modular Route 3: Full Multi-Level Hybrid Protection
     cover_bytes = None
     if cover_image:
-        cover_bytes = await cover_image.read()
+        cover_bytes = await read_upload_bounded(cover_image, MAX_IMAGE_UPLOAD_BYTES, "Cover image")
     elif default_cover_id and default_cover_id != "auto":
         for tier in StegoEngine.get_default_cover_tiers():
             if tier["id"] == default_cover_id:
@@ -594,8 +710,10 @@ async def extract_and_decrypt(
       - Decrypt payload and verify digital signatures
     """
     if stego_image:
-        stego_bytes = await stego_image.read()
+        stego_bytes = await read_upload_bounded(stego_image, MAX_IMAGE_UPLOAD_BYTES, "Stego image")
     elif stego_image_b64:
+        if len(stego_image_b64) > (MAX_IMAGE_UPLOAD_BYTES * 4) // 3 + 64:
+            raise HTTPException(status_code=413, detail="Encoded stego image exceeds maximum allowed size.")
         stego_bytes = base64.b64decode(stego_image_b64)
     else:
         raise HTTPException(status_code=400, detail="No stego-image provided")
@@ -711,18 +829,21 @@ def add_audit_entry(username: str, action: str, title_ar: str, title_en: str, de
     return entry
 
 @app.get("/api/audit/logs")
-async def get_audit_logs(username: str = "Guest"):
+async def get_audit_logs(request: Request, username: str = "Guest"):
+    require_session_if_registered(username, request)
     logs = audit_logs_store.get(username, [])
     return {"status": "success", "username": username, "logs": logs}
 
 @app.post("/api/audit/clear")
-async def clear_audit_logs(username: str = Form("Guest")):
+async def clear_audit_logs(request: Request, username: str = Form("Guest")):
+    require_session_if_registered(username, request)
     if username in audit_logs_store:
         audit_logs_store[username] = []
     return {"status": "success", "message": "Audit logs cleared"}
 
 @app.post("/api/audit/log")
 async def record_audit_log(
+    request: Request,
     username: str = Form("Guest"),
     action: str = Form("system"),
     title_ar: str = Form("عملية نظام"),
@@ -730,6 +851,7 @@ async def record_audit_log(
     details_json: str = Form("{}"),
     status: str = Form("success")
 ):
+    require_session_if_registered(username, request)
     try:
         details = json.loads(details_json)
     except Exception:
@@ -742,6 +864,7 @@ async def record_audit_log(
 
 @app.post("/api/directory/publish")
 async def publish_public_identity(
+    request: Request,
     username: str = Form(...),
     kyber_pk_b64: str = Form(...),
     dsa_pubkey_pem: Optional[str] = Form(None),
@@ -751,6 +874,7 @@ async def publish_public_identity(
     Publish user's public identity card to the in-memory public directory.
     Zero-Database: No private keys ever leave the client.
     """
+    require_session_if_registered(username, request)
     import hashlib
     import datetime
     
@@ -846,10 +970,11 @@ async def get_safety_number(user_a: str, user_b: str):
 # --- Direct Peer Inbox Endpoints ---
 
 @app.get("/api/inbox/list")
-async def get_user_inbox(username: str):
+async def get_user_inbox(request: Request, username: str):
     """
     Retrieve incoming encrypted transmissions for logged-in user.
     """
+    require_session_if_registered(username, request)
     items = peer_inbox_store.get(username, [])
     return {
         "status": "success",
@@ -862,16 +987,18 @@ async def get_user_inbox(username: str):
 
 
 @app.post("/api/inbox/clear")
-async def clear_user_inbox(username: str = Form(...)):
+async def clear_user_inbox(request: Request, username: str = Form(...)):
     """
     Clear all items in user's direct inbox.
     """
+    require_session_if_registered(username, request)
     peer_inbox_store[username] = []
     return {"status": "success", "message": "Inbox cleared"}
 
 
 @app.post("/api/inbox/delete")
 async def delete_inbox_item(
+    request: Request,
     username: str = Form(...),
     item_id: Optional[str] = Form(None),
     transmission_id: Optional[str] = Form(None)
@@ -879,6 +1006,7 @@ async def delete_inbox_item(
     """
     Delete a specific transmission from user's inbox.
     """
+    require_session_if_registered(username, request)
     target_id = item_id or transmission_id
     if username in peer_inbox_store and target_id:
         peer_inbox_store[username] = [it for it in peer_inbox_store[username] if it.get("id") != target_id]
@@ -890,6 +1018,11 @@ async def websocket_inbox_endpoint(websocket: WebSocket, username: str):
     """
     Real-time push notifications for user's direct encrypted inbox.
     """
+    if username in registered_auth_sessions:
+        ws_token = websocket.query_params.get("token") or extract_bearer_or_session_token(websocket.headers)
+        if not verify_session_token(ws_token, username):
+            await websocket.close(code=1008)
+            return
     await websocket.accept()
     if username not in user_inbox_sockets:
         user_inbox_sockets[username] = []
