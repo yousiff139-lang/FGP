@@ -229,9 +229,13 @@ async def auth_hash_password(
         resp = {"status": "success", "argon2_hash": argon2_hash}
         if username and username.strip():
             clean_user = username.strip()
+            if clean_user.lower() in {"guest", "anonymous"} or clean_user.lower().startswith("guest_"):
+                raise HTTPException(status_code=400, detail="Reserved username cannot be registered.")
             registered_auth_sessions.add(clean_user)
             resp["session_token"] = issue_session_token(clean_user)
         return resp
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Argon2 hashing error: {str(e)}")
 
@@ -249,8 +253,9 @@ async def auth_verify_password(
     resp = {"status": "success", "valid": valid}
     if valid and username and username.strip():
         clean_user = username.strip()
-        registered_auth_sessions.add(clean_user)
-        resp["session_token"] = issue_session_token(clean_user)
+        if clean_user.lower() not in {"guest", "anonymous"} and not clean_user.lower().startswith("guest_"):
+            registered_auth_sessions.add(clean_user)
+            resp["session_token"] = issue_session_token(clean_user)
     return resp
 
 

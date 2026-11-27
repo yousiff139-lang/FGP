@@ -61,7 +61,25 @@ const state = {
   maxSafeStegoBytes: 9749964,
   lastLoadedDirectFile: null,
   lastDirectDownloadUrl: null,
+  lastCoverThumbUrl: null,
+  lastDecryptThumbUrl: null,
+  lastRecoveredBlobUrl: null,
 };
+
+async function extractErrorDetail(res, fallback = "Operation failed") {
+  try {
+    const text = await res.text();
+    if (!text) return `${fallback} (HTTP ${res.status})`;
+    try {
+      const parsed = JSON.parse(text);
+      return parsed.detail || parsed.message || `${fallback} (HTTP ${res.status})`;
+    } catch (_) {
+      return text.slice(0, 200);
+    }
+  } catch (_) {
+    return `${fallback} (HTTP ${res.status})`;
+  }
+}
 
 function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (ch) => ({
@@ -2470,7 +2488,9 @@ async function triggerClassification() {
   if (overrideVal) formData.append("override_type", overrideVal);
 
   if (isFile && fileInput?.files?.length > 0) {
-    formData.append("file", fileInput.files[0]);
+    const selectedFile = fileInput.files[0];
+    const sampleBlob = selectedFile.size > 65536 ? selectedFile.slice(0, 65536) : selectedFile;
+    formData.append("file", sampleBlob, selectedFile.name);
   } else if (!isFile && textVal.trim().length > 0) {
     formData.append("text", textVal);
   } else {
@@ -2658,12 +2678,18 @@ function initEncryptSection() {
   const coverInput = document.getElementById("encrypt-cover-image");
   const btnResetCover = document.getElementById("btn-reset-cover");
 
-  // Operation Mode Toggle (Encryption vs Digital Signature)
+  // Operation Mode Toggle (Encryption vs Digital Signature vs Direct PQC)
   document.querySelectorAll(".op-mode-option").forEach((opt) => {
     opt.addEventListener("click", () => {
       const targetMode = opt.dataset.opMode;
       if (targetMode && targetMode !== state.operationMode) {
         setOperationMode(targetMode, true);
+      }
+    });
+    opt.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        opt.click();
       }
     });
   });
@@ -2690,6 +2716,10 @@ function initEncryptSection() {
     coverInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) {
+        if (state.lastCoverThumbUrl) {
+          URL.revokeObjectURL(state.lastCoverThumbUrl);
+          state.lastCoverThumbUrl = null;
+        }
         currentUploadedCover = null;
         syncCoverDropzoneUI(null);
         updateStegoCapacity();
@@ -2704,6 +2734,11 @@ function initEncryptSection() {
         const pixels = width * height;
         const totalBytes = Math.floor((pixels * 3) / 8);
         const capacityBytes = Math.max(0, totalBytes - 36);
+
+        if (state.lastCoverThumbUrl && state.lastCoverThumbUrl !== objectUrl) {
+          URL.revokeObjectURL(state.lastCoverThumbUrl);
+        }
+        state.lastCoverThumbUrl = objectUrl;
 
         currentUploadedCover = {
           file,
@@ -2726,6 +2761,7 @@ function initEncryptSection() {
       };
 
       img.onerror = () => {
+        if (coverInput) coverInput.value = "";
         currentUploadedCover = null;
         URL.revokeObjectURL(objectUrl);
         syncCoverDropzoneUI(null);
@@ -2876,8 +2912,7 @@ function initEncryptSection() {
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Operation failed");
+          throw new Error(await extractErrorDetail(res, "Operation failed"));
         }
 
         const result = await res.json();
@@ -3151,6 +3186,11 @@ function initDecryptSection() {
       e.stopPropagation();
       stegoInput.value = "";
       state.lastLoadedDirectFile = null;
+      state.lastIncomingTransmission = null;
+      if (state.lastDecryptThumbUrl) {
+        URL.revokeObjectURL(state.lastDecryptThumbUrl);
+        state.lastDecryptThumbUrl = null;
+      }
       syncDecryptDropzoneUI(null);
       const previewBox = document.getElementById("decrypt-image-preview-box");
       if (previewBox) previewBox.classList.add("hidden");
@@ -3193,7 +3233,11 @@ function initDecryptSection() {
 
       state.lastLoadedDirectFile = null;
       syncDecryptDropzoneUI(file, "PNG Carrier");
-      if (previewImg) previewImg.src = URL.createObjectURL(file);
+      if (state.lastDecryptThumbUrl) {
+        URL.revokeObjectURL(state.lastDecryptThumbUrl);
+      }
+      state.lastDecryptThumbUrl = URL.createObjectURL(file);
+      if (previewImg) previewImg.src = state.lastDecryptThumbUrl;
       if (previewBox) previewBox.classList.remove("hidden");
     });
   }
@@ -3283,8 +3327,7 @@ function initDecryptSection() {
         try {
           const res = await fetch("/api/decrypt_direct", { method: "POST", body: formData });
           if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.detail || "Direct decryption failed");
+            throw new Error(await extractErrorDetail(res, "Direct decryption failed"));
           }
           const result = await res.json();
           renderDecryptionResult({
@@ -3350,8 +3393,7 @@ function initDecryptSection() {
         });
 
         if (!res.ok) {
-          const err = await res.json();
-          throw new Error(err.detail || "Decryption failed");
+          throw new Error(await extractErrorDetail(res, "Decryption failed"));
         }
 
         const result = await res.json();
@@ -3433,7 +3475,11 @@ function renderDecryptionResult(result) {
       bytes[i] = binaryData.charCodeAt(i);
     }
     const blob = new Blob([bytes], { type: "application/octet-stream" });
-    btnDownloadFile.href = URL.createObjectURL(blob);
+    if (state.lastRecoveredBlobUrl) {
+      URL.revokeObjectURL(state.lastRecoveredBlobUrl);
+    }
+    state.lastRecoveredBlobUrl = URL.createObjectURL(blob);
+    btnDownloadFile.href = state.lastRecoveredBlobUrl;
     btnDownloadFile.download = result.filename;
     if (fileGroup) fileGroup.classList.remove("hidden");
   }
@@ -3897,11 +3943,16 @@ function initAuthGateway() {
     }
   }
 
-  // Check saved user
+  // Check saved user; require fresh session verification in new tabs for registered accounts
   const savedUser = localStorage.getItem("fgp_auth_user");
-  if (savedUser) {
+  const savedProfile = savedUser ? localStorage.getItem(`fgp_user_${savedUser}`) : null;
+  if (savedUser && (!savedProfile || state.sessionToken)) {
     updateUserDisplay(savedUser);
   } else {
+    if (savedUser && savedProfile) {
+      const loginUserInput = document.getElementById("login-username");
+      if (loginUserInput) loginUserInput.value = savedUser;
+    }
     updateUserDisplay(null);
   }
 
@@ -3984,6 +4035,17 @@ function initAuthGateway() {
         return;
       }
 
+      if (!u || /^(guest|anonymous)$/i.test(u) || /^guest_/i.test(u)) {
+        if (regErr) {
+          regErr.textContent =
+            currentLang === "ar"
+              ? "اسم المستخدم محجوز. يرجى اختيار اسم حساب آخر."
+              : "This username is reserved. Please choose another username.";
+          regErr.classList.remove("hidden");
+        }
+        return;
+      }
+
       try {
         const fd = new FormData();
         fd.append("password", p);
@@ -4025,7 +4087,7 @@ function initAuthGateway() {
     });
   }
 
-  // Logout (Wipe session tokens, private keys, and sensitive form/audit state)
+  // Logout (Wipe session tokens, private keys, object URLs, and sensitive form/audit state)
   if (btnLogout) {
     btnLogout.addEventListener("click", () => {
       localStorage.removeItem("fgp_auth_user");
@@ -4037,11 +4099,29 @@ function initAuthGateway() {
       state.sessionToken = null;
       state.localKeys = { pk: null, sk: null };
       state.lastOutputKyberCt = null;
+      state.lastIncomingTransmission = null;
+      state.lastLoadedDirectFile = null;
       allAuditLogs = [];
+      if (state.lastCoverThumbUrl) {
+        URL.revokeObjectURL(state.lastCoverThumbUrl);
+        state.lastCoverThumbUrl = null;
+      }
+      if (state.lastDecryptThumbUrl) {
+        URL.revokeObjectURL(state.lastDecryptThumbUrl);
+        state.lastDecryptThumbUrl = null;
+      }
+      if (state.lastRecoveredBlobUrl) {
+        URL.revokeObjectURL(state.lastRecoveredBlobUrl);
+        state.lastRecoveredBlobUrl = null;
+      }
       ["encrypt-recipient-pk", "decrypt-kyber-sk", "decrypt-kyber-ct", "vault-pk", "vault-sk", "output-kyber-ct"].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = "";
       });
+      const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
+      const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
+      if (btnCopyVaultPk) btnCopyVaultPk.disabled = true;
+      if (btnCopyVaultSk) btnCopyVaultSk.disabled = true;
       const tbody = document.getElementById("audit-table-body");
       if (tbody) tbody.innerHTML = "";
       updateUserDisplay(null);

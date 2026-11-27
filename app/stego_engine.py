@@ -268,6 +268,11 @@ class StegoEngine:
         """
         image = Image.open(io.BytesIO(stego_image_bytes)).convert("RGB")
         width, height = image.size
+        capacity = StegoEngine.calculate_capacity(width, height)
+        if width * height < 12 or capacity <= 0:
+            raise ValueError(
+                f"Invalid stego image ({width}x{height} px): carrier is too small to contain hidden data."
+            )
         img_array = np.array(image, dtype=np.uint8)
 
         traversal_order, mac_key = StegoEngine._compute_adaptive_traversal(img_array, stego_seed)
@@ -280,7 +285,6 @@ class StegoEngine:
         header_bytes = np.packbits(header_bits.astype(np.uint8)).tobytes()
         payload_len = struct.unpack(">I", header_bytes)[0]
 
-        capacity = StegoEngine.calculate_capacity(width, height)
         if payload_len <= 0 or payload_len > capacity:
             raise ValueError(
                 f"Invalid steganographic header ({payload_len} bytes). "

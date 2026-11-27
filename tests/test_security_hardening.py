@@ -110,3 +110,22 @@ def test_filename_sanitization_and_oversized_b64_guard():
         },
     )
     assert resp.status_code == 413
+
+
+def test_tiny_stego_image_extract_fails_cleanly_and_reserved_guest_blocked():
+    import pytest
+    from PIL import Image
+    from app.stego_engine import StegoEngine
+
+    buf = io.BytesIO()
+    Image.new("RGB", (3, 3), color=(10, 20, 30)).save(buf, format="PNG")
+    with pytest.raises(ValueError) as exc:
+        StegoEngine.extract(buf.getvalue(), b"0" * 32)
+    assert "too small" in str(exc.value)
+
+    client = TestClient(app)
+    res = client.post(
+        "/api/auth/hash-password",
+        data={"password": "ValidPassword#1", "username": "Guest"},
+    )
+    assert res.status_code == 400
