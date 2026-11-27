@@ -41,5 +41,8 @@ dist-ssr/
 /src/
 /public/
 
-# Local reference source
+# Local reference source & archives
 Zeta1/
+NZeta/
+__MACOSX/
+*.zip

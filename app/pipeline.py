@@ -25,13 +25,21 @@ from app.stego_engine import StegoEngine
 
 class SecurityPipeline:
     @staticmethod
+    def _ensure_cover_image_for_package(
+        package_bytes: bytes,
+        cover_image_bytes: bytes = None
+    ) -> tuple[bytes, dict]:
+        if cover_image_bytes:
+            return cover_image_bytes, {"source": "custom_upload"}
+        return StegoEngine.select_default_landscape_cover(len(package_bytes))
+
+    @staticmethod
     def _ensure_cover_image(data_bytes: bytes, cover_image_bytes: bytes = None) -> bytes:
         if cover_image_bytes:
             return cover_image_bytes
         estimated_pkg = int(len(data_bytes) * 1.5) + 1400
-        needed_pixels = ((estimated_pkg + 36) * 8 + 2) // 3
-        side = max(800, int(math.ceil(math.sqrt(needed_pixels) * 1.15)))
-        return StegoEngine.create_default_cover(width=side, height=side)
+        cover_bytes, _ = StegoEngine.select_default_landscape_cover(estimated_pkg)
+        return cover_bytes
 
     @staticmethod
     def process_and_conceal(
@@ -61,8 +69,6 @@ class SecurityPipeline:
                 recipient_kyber_pk=recipient_kyber_pk,
                 cover_image_bytes=cover_image_bytes
             )
-
-        cover_image_bytes = SecurityPipeline._ensure_cover_image(data_bytes, cover_image_bytes)
 
         # Step 1: Classification
         classification = classify_input(data_bytes, filename, override_type)
@@ -134,13 +140,17 @@ class SecurityPipeline:
         }
         package_bytes = json.dumps(payload_package).encode('utf-8')
 
-        # Step 4: Steganographic Concealment
-        stego_image_bytes = StegoEngine.embed(cover_image_bytes, package_bytes, stego_seed)
+        # Step 4: Select optimal cover image (custom or tiered landscape) & Stego Concealment
+        selected_cover_bytes, cover_meta = SecurityPipeline._ensure_cover_image_for_package(
+            package_bytes, cover_image_bytes
+        )
+        stego_image_bytes = StegoEngine.embed(selected_cover_bytes, package_bytes, stego_seed)
 
         return {
             "operation_mode": "encryption",
             "classification": classification,
             "stego_image_bytes": stego_image_bytes,
+            "cover_tier": cover_meta,
             "kyber_ciphertext_b64": KyberEngine.to_b64(kyber_ct),
             "signature_b64": signature_b64,
             "sha256_digest": sha256_digest,
@@ -405,8 +415,6 @@ class SecurityPipeline:
           4. Encapsulate the signed envelope using the Kyber-derived key.
           5. Conceal inside the PNG carrier using the Kyber-derived stego_seed.
         """
-        cover_image_bytes = SecurityPipeline._ensure_cover_image(data_bytes, cover_image_bytes)
-
         # Step 1: CRYSTALS-Kyber (ML-KEM-768) Post-Quantum Key Encapsulation
         shared_secret, kyber_ct = KyberEngine.encapsulate(recipient_kyber_pk)
         subkeys = derive_subkeys_from_kyber(shared_secret)
@@ -447,8 +455,11 @@ class SecurityPipeline:
         }
         package_bytes = json.dumps(payload_package).encode("utf-8")
 
-        # Step 4: Steganographic Concealment using Kyber-derived stego_seed
-        stego_image_bytes = StegoEngine.embed(cover_image_bytes, package_bytes, stego_seed)
+        # Step 4: Select optimal cover image (custom or tiered landscape) & Stego Concealment
+        selected_cover_bytes, cover_meta = SecurityPipeline._ensure_cover_image_for_package(
+            package_bytes, cover_image_bytes
+        )
+        stego_image_bytes = StegoEngine.embed(selected_cover_bytes, package_bytes, stego_seed)
 
         classification = {
             "type": "signature",
@@ -462,6 +473,7 @@ class SecurityPipeline:
             "operation_mode": "signature",
             "classification": classification,
             "stego_image_bytes": stego_image_bytes,
+            "cover_tier": cover_meta,
             "kyber_ciphertext_b64": KyberEngine.to_b64(kyber_ct),
             "signature_b64": signature_b64,
             "sha256_digest": sha256_digest,

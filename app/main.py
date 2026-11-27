@@ -174,12 +174,20 @@ async def assess_security_intent(
 
 
 @app.post("/api/keygen")
-async def generate_kyber_keys():
+async def generate_kyber_keys(username: Optional[str] = Form(None)):
     """
     Generate a new ML-KEM-768 (Kyber) key pair.
     Keys are returned to the user for 100% local, private storage.
     """
     pk, sk = KyberEngine.generate_keypair()
+    if username:
+        add_audit_entry(
+            username=username,
+            action="keygen",
+            title_ar="توليد زوج مفاتيح ML-KEM-768 (كايبر)",
+            title_en="ML-KEM-768 Keypair Generated",
+            details={"algorithm": "ML-KEM-768", "pk_length": len(pk)}
+        )
     return {
         "status": "success",
         "public_key_b64": KyberEngine.to_b64(pk),
@@ -279,11 +287,27 @@ async def classify_data(
     return result
 
 
+@app.get("/api/stego/default-covers")
+async def get_default_stego_covers():
+    """Return available high-texture default landscape carrier presets and safe stego limits."""
+    tiers = StegoEngine.get_default_cover_tiers()
+    max_safe_bytes = (
+        (StegoEngine.MAX_SAFE_STEGO_PIXELS * 3) // 8
+        - (StegoEngine.MAGIC_HEADER_SIZE + StegoEngine.HASH_SIZE)
+    )
+    return {
+        "status": "success",
+        "tiers": tiers,
+        "max_safe_stego_bytes": max_safe_bytes,
+    }
+
+
 @app.post("/api/encrypt")
 async def encrypt_and_conceal(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     cover_image: Optional[UploadFile] = File(None),
+    default_cover_id: Optional[str] = Form(None),
     recipient_kyber_pk_b64: Optional[str] = Form(None),
     recipient_username: Optional[str] = Form(None),
     preferred_cipher: str = Form("chacha20"),
@@ -428,6 +452,13 @@ async def encrypt_and_conceal(
     cover_bytes = None
     if cover_image:
         cover_bytes = await cover_image.read()
+    elif default_cover_id and default_cover_id != "auto":
+        for tier in StegoEngine.get_default_cover_tiers():
+            if tier["id"] == default_cover_id:
+                tier_path = os.path.join(StegoEngine.DEFAULT_COVERS_DIR, tier["filename"])
+                with open(tier_path, "rb") as tf:
+                    cover_bytes = tf.read()
+                break
 
     try:
         result = SecurityPipeline.process_and_conceal(
@@ -476,6 +507,7 @@ async def encrypt_and_conceal(
         "intent_evaluation": intent_eval,
         "kyber_ciphertext_b64": result["kyber_ciphertext_b64"],
         "stego_image_b64": stego_b64,
+        "cover_tier": result.get("cover_tier"),
         "signature_b64": result["signature_b64"],
         "sha256_digest": result.get("sha256_digest"),
         "signer_pub_fingerprint": result.get("signer_pub_fingerprint"),
@@ -518,6 +550,7 @@ async def sign_and_conceal_endpoint(
     text: Optional[str] = Form(None),
     file: Optional[UploadFile] = File(None),
     cover_image: Optional[UploadFile] = File(None),
+    default_cover_id: Optional[str] = Form(None),
     recipient_kyber_pk_b64: Optional[str] = Form(None),
     recipient_username: Optional[str] = Form(None),
     channel_room: Optional[str] = Form(None),
@@ -533,6 +566,7 @@ async def sign_and_conceal_endpoint(
         text=text,
         file=file,
         cover_image=cover_image,
+        default_cover_id=default_cover_id,
         recipient_kyber_pk_b64=recipient_kyber_pk_b64,
         recipient_username=recipient_username,
         preferred_cipher="kyber_ecdsa_p256",
@@ -582,6 +616,18 @@ async def extract_and_decrypt(
         raise HTTPException(status_code=400, detail=f"Decryption/Extraction failed: {str(e)}")
 
     data_b64 = base64.b64encode(decrypted["data_bytes"]).decode('utf-8')
+
+    add_audit_entry(
+        username=username or "Guest",
+        action="decrypt",
+        title_ar="فك التغليف واستخراج التوقيع" if decrypted.get("operation_mode") == "signature" else "استخراج وفك تشفير الحزمة",
+        title_en="Signature Decapsulated & Verified" if decrypted.get("operation_mode") == "signature" else "Stego Extraction & Decryption",
+        details={
+            "cipher": decrypted["cipher_used"],
+            "filename": decrypted["filename"],
+            "signature_verified": decrypted["signature_verified"],
+        }
+    )
 
     return {
         "status": "success",

@@ -5,6 +5,45 @@
  */
 
 // Application State
+const DEFAULT_LANDSCAPE_PRESETS_FALLBACK = [
+  {
+    id: "tier1_misty",
+    label_en: "Misty Ridge",
+    label_ar: "الجبال الضبابية",
+    width: 1200,
+    height: 800,
+    capacity_bytes: 359964,
+    url: "/static/default_covers/tier1_misty.jpg",
+  },
+  {
+    id: "tier2_peak",
+    label_en: "Snowy Summit",
+    label_ar: "القمة الثلجية",
+    width: 2400,
+    height: 1600,
+    capacity_bytes: 1439964,
+    url: "/static/default_covers/tier2_peak.jpg",
+  },
+  {
+    id: "tier3_lake",
+    label_en: "Alpine Lake 4K",
+    label_ar: "بحيرة الألب 4K",
+    width: 3840,
+    height: 2160,
+    capacity_bytes: 3110364,
+    url: "/static/default_covers/tier3_lake.jpg",
+  },
+  {
+    id: "tier4_alpine_uhd",
+    label_en: "Alpine 5K Max",
+    label_ar: "بانوراما 5K قصوى",
+    width: 5120,
+    height: 2880,
+    capacity_bytes: 5529564,
+    url: "/static/default_covers/tier4_alpine_uhd.jpg",
+  },
+];
+
 const state = {
   localKeys: {
     pk: null,
@@ -15,6 +54,11 @@ const state = {
   activeRoom: null,
   socket: null,
   lastIncomingTransmission: null,
+  selectedDefaultCoverId: "auto",
+  defaultCoverTiers: DEFAULT_LANDSCAPE_PRESETS_FALLBACK,
+  maxSafeStegoBytes: 9749964,
+  lastLoadedDirectFile: null,
+  lastDirectDownloadUrl: null,
 };
 
 let currentActiveStage = 1;
@@ -25,8 +69,11 @@ document.addEventListener("DOMContentLoaded", () => {
   initThemeController();
   initAuthGateway();
   initNavigation();
+  initCinematicIntro();
+  initPortfolioIntro();
   initRoutingQuestionnaire();
   initKeyVault();
+  initCapacityAlertModal();
   initInteractiveArchitecture();
   initClassifier();
   initEncryptSection();
@@ -34,10 +81,8 @@ document.addEventListener("DOMContentLoaded", () => {
   initChannelSection();
   initAuditLogSection();
 
-  // Try loading saved local keys from localStorage if any
   loadKeysFromStorage();
-
-  // Initialize steganography capacity indicator
+  loadDefaultCoverTiers();
   updateStegoCapacity();
 });
 
@@ -215,7 +260,1095 @@ function switchToSection(targetId) {
     if (typeof loadAuditLogs === "function") loadAuditLogs();
   }
 
+  // Play blueprint wireframe reveal animation when entering intro section
+  if (targetId === "section-intro") {
+    if (typeof playBlueprintRevealAnimation === "function") {
+      playBlueprintRevealAnimation();
+    }
+  }
+
   window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+/* ==========================================================================
+   0A. SLOW TOP-TO-BOTTOM TERMINOLOGY SWAPPER & CINEMATIC INTRO SHOWCASE
+   ========================================================================== */
+const INTRO_TERMS_DATA = {
+  en: [
+    {
+      badge: "01 / 05 • NIST FIPS 203 STANDARD",
+      title: "CRYSTALS-Kyber (ML-KEM-768)",
+      desc: "Quantum-resistant module-lattice key encapsulation protecting session keys against future quantum supercomputers.",
+      pill: "01. CRYSTALS-Kyber"
+    },
+    {
+      badge: "02 / 05 • DUAL-LAYER AEAD CIPHERS",
+      title: "ChaCha20-Poly1305 & AES-256-GCM",
+      desc: "High-speed authenticated symmetric encryption with 256-bit keys and 128-bit MAC tags to prevent data tampering.",
+      pill: "02. ChaCha20 & AES-256"
+    },
+    {
+      badge: "03 / 05 • AUTHENTICITY & NON-REPUDIATION",
+      title: "Isolated Digital Signatures (ECDSA P-256)",
+      desc: "Cryptographic SHA-256 hashing and elliptic-curve signing encapsulated via Kyber to guarantee document integrity.",
+      pill: "03. Digital Signatures"
+    },
+    {
+      badge: "04 / 05 • ZERO-LEAK EDGE CONCEALMENT",
+      title: "Content-Adaptive Sobel Edge Steganography (HBIG)",
+      desc: "Embeds ciphertext strictly inside high-gradient edge textures via Higher-Bit Invariant Gradients (HBIG), Argon2id key-stretching, and BLAKE2b MAC.",
+      pill: "04. Adaptive Sobel Stego"
+    },
+    {
+      badge: "05 / 05 • INTELLIGENT PAYLOAD ROUTING",
+      title: "Smart Content & Entropy Classifier",
+      desc: "Automatically inspects MIME signatures, payload size, and Shannon entropy to select the optimal encryption pipeline.",
+      pill: "05. Smart Classifier"
+    }
+  ],
+  ar: [
+    {
+      badge: "01 / 05 • معيار NIST FIPS 203 القياسي",
+      title: "CRYSTALS-Kyber (ML-KEM-768)",
+      desc: "تغليف المفاتيح القائم على التراكيب الشبكية المقاوم للحوسبة الكمومية لحماية مفاتيح الجلسات من الحواسيب الكمومية.",
+      pill: "01. كايبر ML-KEM"
+    },
+    {
+      badge: "02 / 05 • التشفير التناظري الموثق المزدوج",
+      title: "ChaCha20-Poly1305 & AES-256-GCM",
+      desc: "تشفير تناظري موثق فائق السرعة بمفاتيح 256-بت وعلامات مصادقة 128-بت لمنع أي تلاعب بالبيانات المشفرة.",
+      pill: "02. التشفير التناظري"
+    },
+    {
+      badge: "03 / 05 • الموثوقية الرقمية وعدم الإنكار",
+      title: "التوقيع الرقمي المعزول (ECDSA P-256)",
+      desc: "تجزئة SHA-256 وتوقيع المنحنيات الإهليلجية المغلف عبر كايبر لضمان أصالة المستندات وسلامتها من التزوير.",
+      pill: "03. التوقيع الرقمي"
+    },
+    {
+      badge: "04 / 05 • الإخفاء المتكيف غير الفاقد",
+      title: "إخفاء الحواف المتكيف Sobel (HBIG)",
+      desc: "يخفي البيانات داخل الحواف والتفاصيل المعقدة للصورة بتقنية HBIG وتمديد Argon2id وختم النزاهة BLAKE2b دون أثر بصري.",
+      pill: "04. إخفاء Sobel المتكيف"
+    },
+    {
+      badge: "05 / 05 • التوجيه الذكي للبيانات",
+      title: "المصنف الذكي للبيانات والإنتروبيا",
+      desc: "فحص تلقائي لنوع الملف وحجمه ومستوى الإنتروبيا لاختيار مسار التشفير الأنسب بأعلى كفاءة وأمان.",
+      pill: "05. المصنف الذكي"
+    }
+  ]
+};
+
+let introMasterTimeline = null;
+let introClockInterval = null;
+let inlineTermInterval = null;
+let processPulseInterval = null;
+let isIntroActive = false;
+let isIntroPaused = false;
+let currentOverlayTermIdx = 0;
+let currentInlineTermIdx = 0;
+let latticePulseWaves = [];
+let activeLatticeSceneColor = "#00f0ff";
+
+const SCENE_COLORS = ["#00f0ff", "#ff2a4b", "#10b981", "#38bdf8", "#eab308"];
+
+/**
+ * Synchronizes the 5-Node Cryptographic Pipeline Conduit & Holographic Scene Stage
+ * with the currently active terminology index (0..4) and fires a Quantum Lattice Wave.
+ */
+function updateSyncVisualizer(prefix, idx) {
+  const visualizer = document.getElementById(`${prefix}-sync-visualizer`);
+  const beam = document.getElementById(`${prefix}-sync-beam`);
+  if (visualizer) {
+    visualizer.setAttribute("data-active-scene", String(idx));
+
+    visualizer.querySelectorAll(".sync-node").forEach((node, i) => {
+      node.classList.toggle("active", i <= idx);
+    });
+
+    visualizer.querySelectorAll(".sync-scene").forEach((scene, i) => {
+      scene.classList.toggle("active", i === idx);
+    });
+  }
+
+  if (beam) {
+    const pct = (idx / 4) * 100;
+    beam.style.width = `${pct}%`;
+  }
+
+  // Trigger a synchronized radial quantum pulse wave on the background lattice canvas
+  activeLatticeSceneColor = SCENE_COLORS[idx % SCENE_COLORS.length] || "#00f0ff";
+  latticePulseWaves.push({
+    radius: 10,
+    maxRadius: 680,
+    alpha: 0.75,
+    color: activeLatticeSceneColor
+  });
+}
+
+/**
+ * 60fps Live Post-Quantum Module-LWE Lattice & Cipher Packet Stream Canvas Engine
+ */
+function initQuantumLatticeCanvas() {
+  const canvases = [
+    document.getElementById("overlay-quantum-canvas"),
+    document.getElementById("inline-quantum-canvas")
+  ].filter(Boolean);
+
+  if (canvases.length === 0) return;
+
+  const states = canvases.map((canvas) => {
+    const ctx = canvas.getContext("2d");
+    const nodes = [];
+    const packets = [];
+    const count = 34;
+
+    const resize = () => {
+      const rect = canvas.parentElement?.getBoundingClientRect();
+      canvas.width = rect && rect.width > 0 ? rect.width : window.innerWidth;
+      canvas.height = rect && rect.height > 0 ? rect.height : window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    for (let i = 0; i < count; i++) {
+      nodes.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.65,
+        vy: (Math.random() - 0.5) * 0.65,
+        r: 2 + Math.random() * 2,
+        hue: i % 3 === 0 ? "#ff2a4b" : "#00f0ff"
+      });
+    }
+
+    for (let p = 0; p < 10; p++) {
+      packets.push({
+        fromIdx: p % count,
+        toIdx: (p * 3 + 1) % count,
+        progress: Math.random(),
+        speed: 0.012 + Math.random() * 0.014
+      });
+    }
+
+    return { canvas, ctx, nodes, packets, resize };
+  });
+
+  function renderFrame() {
+    states.forEach((st) => {
+      const { canvas, ctx, nodes, packets } = st;
+      if (canvas.width === 0 || canvas.height === 0) st.resize();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Update & draw lattice nodes + edges
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > canvas.width) n.vx *= -1;
+        if (n.y < 0 || n.y > canvas.height) n.vy *= -1;
+
+        for (let j = i + 1; j < nodes.length; j++) {
+          const m = nodes[j];
+          const dx = n.x - m.x;
+          const dy = n.y - m.y;
+          const dist = Math.hypot(dx, dy);
+          if (dist < 175) {
+            const alpha = (1 - dist / 175) * 0.22;
+            ctx.strokeStyle = `rgba(0, 240, 255, ${alpha.toFixed(3)})`;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(n.x, n.y);
+            ctx.lineTo(m.x, m.y);
+            ctx.stroke();
+          }
+        }
+
+        ctx.fillStyle = n.hue;
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw encrypted data packets racing between lattice nodes
+      packets.forEach((pkt) => {
+        pkt.progress += pkt.speed;
+        if (pkt.progress >= 1) {
+          pkt.progress = 0;
+          pkt.fromIdx = pkt.toIdx;
+          pkt.toIdx = Math.floor(Math.random() * nodes.length);
+        }
+        const a = nodes[pkt.fromIdx];
+        const b = nodes[pkt.toIdx];
+        if (a && b) {
+          const px = a.x + (b.x - a.x) * pkt.progress;
+          const py = a.y + (b.y - a.y) * pkt.progress;
+          ctx.fillStyle = activeLatticeSceneColor;
+          ctx.shadowColor = activeLatticeSceneColor;
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(px, py, 2.8, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      });
+
+      // Draw synchronized radial quantum pulse waves triggered on term swaps
+      const cx = canvas.width / 2;
+      const cy = canvas.height * 0.36;
+      latticePulseWaves.forEach((wave) => {
+        ctx.strokeStyle = wave.color;
+        ctx.globalAlpha = Math.max(0, wave.alpha);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, wave.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      });
+    });
+
+    // Advance radial waves
+    for (let w = latticePulseWaves.length - 1; w >= 0; w--) {
+      latticePulseWaves[w].radius += 7.5;
+      latticePulseWaves[w].alpha -= 0.012;
+      if (latticePulseWaves[w].alpha <= 0 || latticePulseWaves[w].radius > latticePulseWaves[w].maxRadius) {
+        latticePulseWaves.splice(w, 1);
+      }
+    }
+
+    requestAnimationFrame(renderFrame);
+  }
+
+  requestAnimationFrame(renderFrame);
+}
+
+/**
+ * Synchronized sequential pulse across the 5-Step Encryption Process Cards
+ */
+function startProcessStepPulse() {
+  if (processPulseInterval) clearInterval(processPulseInterval);
+  let activeStepIdx = 0;
+
+  const updateCards = () => {
+    ["overlay-process-steps-grid", "inline-process-steps-grid"].forEach((gridId) => {
+      const grid = document.getElementById(gridId);
+      if (!grid) return;
+      const cards = grid.querySelectorAll(".intro-process-step-card");
+      cards.forEach((c, idx) => {
+        c.classList.toggle("step-pulse-active", idx === activeStepIdx);
+      });
+    });
+    activeStepIdx = (activeStepIdx + 1) % 5;
+  };
+
+  updateCards();
+  processPulseInterval = setInterval(updateCards, 950);
+}
+
+/**
+ * Crisp, top-to-bottom vertical swapper for terminology slides + synchronized scene update.
+ * Current slide glides downward (0% -> 110%) while incoming slide enters from top (-110% -> 0%).
+ */
+function swapTermTopToBottom(prefix, targetIdx, animate = true) {
+  const termsList = INTRO_TERMS_DATA[currentLang] || INTRO_TERMS_DATA.en;
+  const idx = ((targetIdx % termsList.length) + termsList.length) % termsList.length;
+  const item = termsList[idx];
+
+  const currentSlide = document.getElementById(`${prefix}-term-slide-current`);
+  const nextSlide = document.getElementById(`${prefix}-term-slide-next`);
+  const badgeCur = document.getElementById(`${prefix}-term-badge`);
+  const titleCur = document.getElementById(`${prefix}-term-title`);
+  const descCur = document.getElementById(`${prefix}-term-desc`);
+  const badgeNext = document.getElementById(`${prefix}-term-badge-next`);
+  const titleNext = document.getElementById(`${prefix}-term-title-next`);
+  const descNext = document.getElementById(`${prefix}-term-desc-next`);
+  const pillsContainer = document.getElementById(`${prefix}-term-pills`);
+
+  // Synchronize the 5-Scene Holographic Visualizer & Pipeline Conduit
+  updateSyncVisualizer(prefix, idx);
+
+  if (!currentSlide || !titleCur) return;
+
+  // Update active pill indicator
+  if (pillsContainer) {
+    pillsContainer.querySelectorAll(".term-pill-btn").forEach((btn, i) => {
+      btn.classList.toggle("active", i === idx);
+      if (termsList[i]) {
+        btn.textContent = termsList[i].pill;
+      }
+    });
+  }
+
+  if (!animate || !nextSlide || !window.gsap) {
+    if (badgeCur) badgeCur.textContent = item.badge;
+    if (titleCur) titleCur.textContent = item.title;
+    if (descCur) descCur.textContent = item.desc;
+    if (window.gsap) {
+      gsap.set(currentSlide, { yPercent: 0, opacity: 1, scale: 1 });
+      if (nextSlide) gsap.set(nextSlide, { yPercent: -110, opacity: 0, scale: 0.96 });
+    }
+    return;
+  }
+
+  // Prepare incoming slide at the top (-110%)
+  if (badgeNext) badgeNext.textContent = item.badge;
+  if (titleNext) titleNext.textContent = item.title;
+  if (descNext) descNext.textContent = item.desc;
+
+  gsap.killTweensOf([currentSlide, nextSlide]);
+  gsap.set(currentSlide, { yPercent: 0, opacity: 1, scale: 1 });
+  gsap.set(nextSlide, { yPercent: -110, opacity: 0, scale: 0.96 });
+
+  // Animate top-to-bottom vertical swap at a crisp, slightly faster 0.58s pace
+  gsap.to(currentSlide, {
+    yPercent: 110,
+    opacity: 0,
+    scale: 0.96,
+    duration: 0.58,
+    ease: "power3.inOut"
+  });
+
+  gsap.to(nextSlide, {
+    yPercent: 0,
+    opacity: 1,
+    scale: 1,
+    duration: 0.58,
+    ease: "power3.inOut",
+    onComplete: () => {
+      if (badgeCur) badgeCur.textContent = item.badge;
+      if (titleCur) titleCur.textContent = item.title;
+      if (descCur) descCur.textContent = item.desc;
+      gsap.set(currentSlide, { yPercent: 0, opacity: 1, scale: 1 });
+      gsap.set(nextSlide, { yPercent: -110, opacity: 0, scale: 0.96 });
+    }
+  });
+}
+
+function startInlineTermSwapper() {
+  if (inlineTermInterval) clearInterval(inlineTermInterval);
+  swapTermTopToBottom("inline", currentInlineTermIdx, false);
+
+  // Cycle every 2.8 seconds (snappier yet easily readable)
+  inlineTermInterval = setInterval(() => {
+    const introSec = document.getElementById("section-intro");
+    if (introSec && introSec.classList.contains("active") && !isIntroActive) {
+      currentInlineTermIdx = (currentInlineTermIdx + 1) % 5;
+      swapTermTopToBottom("inline", currentInlineTermIdx, true);
+    }
+  }, 2800);
+}
+
+function initCinematicIntro() {
+  const btnSkip = document.getElementById("btn-skip-intro");
+  const btnPause = document.getElementById("btn-pause-intro");
+  const btnLaunchHome = document.getElementById("btn-launch-home");
+  const btnInlineHome = document.getElementById("btn-inline-enter-home");
+  const btnOpenShowcase = document.getElementById("btn-open-fullscreen-showcase");
+  const viewport = document.getElementById("intro-cinema-viewport");
+
+  if (btnSkip) {
+    btnSkip.addEventListener("click", () => {
+      dismissCinematicIntro("section-home");
+    });
+  }
+
+  if (btnLaunchHome) {
+    btnLaunchHome.addEventListener("click", () => {
+      dismissCinematicIntro("section-home");
+    });
+  }
+
+  if (btnInlineHome) {
+    btnInlineHome.addEventListener("click", () => {
+      switchToSection("section-home");
+    });
+  }
+
+  if (btnOpenShowcase) {
+    btnOpenShowcase.addEventListener("click", () => {
+      openCinematicIntro();
+    });
+  }
+
+  if (btnPause) {
+    btnPause.addEventListener("click", () => {
+      togglePauseCinematicIntro();
+    });
+  }
+
+  // Pause auto-scroll if user manually scrolls with mouse wheel or touch
+  if (viewport) {
+    const pauseOnManualScroll = () => {
+      if (isIntroActive && !isIntroPaused && introMasterTimeline) {
+        togglePauseCinematicIntro(true);
+      }
+    };
+    viewport.addEventListener("wheel", pauseOnManualScroll, { passive: true });
+    viewport.addEventListener("touchmove", pauseOnManualScroll, { passive: true });
+  }
+
+  // Wire up interactive term selector pills AND pipeline nodes for both overlay and inline swapper
+  ["overlay", "inline"].forEach((prefix) => {
+    const pillsWrap = document.getElementById(`${prefix}-term-pills`);
+    if (pillsWrap) {
+      pillsWrap.querySelectorAll(".term-pill-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          const idx = parseInt(btn.getAttribute("data-term-idx"), 10) || 0;
+          if (prefix === "overlay") {
+            currentOverlayTermIdx = idx;
+            swapTermTopToBottom("overlay", idx, true);
+          } else {
+            currentInlineTermIdx = idx;
+            swapTermTopToBottom("inline", idx, true);
+            startInlineTermSwapper();
+          }
+        });
+      });
+    }
+
+    const syncVis = document.getElementById(`${prefix}-sync-visualizer`);
+    if (syncVis) {
+      syncVis.querySelectorAll(".sync-node").forEach((node) => {
+        node.addEventListener("click", () => {
+          const idx = parseInt(node.getAttribute("data-node"), 10) || 0;
+          if (prefix === "overlay") {
+            currentOverlayTermIdx = idx;
+            swapTermTopToBottom("overlay", idx, true);
+          } else {
+            currentInlineTermIdx = idx;
+            swapTermTopToBottom("inline", idx, true);
+            startInlineTermSwapper();
+          }
+        });
+      });
+    }
+  });
+
+  // Register ScrollToPlugin if available
+  if (window.gsap && window.ScrollToPlugin) {
+    gsap.registerPlugin(ScrollToPlugin);
+  }
+
+  // Initialize Live 60fps Post-Quantum Lattice Canvas & 5-Step Process Pulse
+  initQuantumLatticeCanvas();
+  startProcessStepPulse();
+
+  // Live UTC Clock
+  updateIntroClock();
+  if (!introClockInterval) {
+    introClockInterval = setInterval(updateIntroClock, 1000);
+  }
+
+  // Start inline top-to-bottom swapper
+  startInlineTermSwapper();
+
+  // Only auto-trigger cinematic intro on initial load if the user already has an active session;
+  // otherwise Auth Gateway triggers it cleanly right after Sign In / Guest Access.
+  if (localStorage.getItem("fgp_auth_user")) {
+    setTimeout(() => {
+      openCinematicIntro();
+    }, 150);
+  }
+}
+
+function togglePauseCinematicIntro(forcePause = null) {
+  if (!introMasterTimeline) return;
+  const btnPause = document.getElementById("btn-pause-intro");
+  const pauseLbl = document.getElementById("pause-intro-label");
+
+  isIntroPaused = forcePause !== null ? forcePause : !isIntroPaused;
+  if (isIntroPaused) {
+    introMasterTimeline.pause();
+    if (btnPause) btnPause.classList.add("paused");
+    if (pauseLbl) {
+      pauseLbl.textContent = currentLang === "ar"
+        ? "▶ استئناف العرض التلقائي (Resume Tour)"
+        : "▶ Resume Auto-Scroll";
+    }
+  } else {
+    introMasterTimeline.play();
+    if (btnPause) btnPause.classList.remove("paused");
+    if (pauseLbl) {
+      pauseLbl.textContent = currentLang === "ar"
+        ? "⏸ إيقاف مؤقت للقراءة (Pause Auto-Scroll)"
+        : "⏸ Pause Auto-Scroll";
+    }
+  }
+}
+
+function updateIntroClock() {
+  const clockEl = document.getElementById("intro-hud-clock");
+  if (!clockEl) return;
+  const now = new Date();
+  const utcStr = now.toUTCString().split(" ")[4] || "00:00:00";
+  clockEl.textContent = `${utcStr} UTC`;
+}
+
+function updateScrubber(pct, activeStep) {
+  const bar = document.getElementById("intro-scrubber-bar");
+  if (bar) bar.style.width = `${pct}%`;
+
+  [1, 2, 3].forEach(step => {
+    const el = document.getElementById(`step-mark-${step}`);
+    if (el) {
+      el.classList.toggle("active", step === activeStep);
+    }
+  });
+}
+
+function openCinematicIntro() {
+  const overlay = document.getElementById("cinematic-intro-overlay");
+  const viewport = document.getElementById("intro-cinema-viewport");
+  if (!overlay || !viewport) return;
+
+  isIntroActive = true;
+  isIntroPaused = false;
+  const btnPause = document.getElementById("btn-pause-intro");
+  const pauseLbl = document.getElementById("pause-intro-label");
+  if (btnPause) btnPause.classList.remove("paused");
+  if (pauseLbl) {
+    pauseLbl.textContent = currentLang === "ar"
+      ? "⏸ إيقاف مؤقت للقراءة (Pause Auto-Scroll)"
+      : "⏸ Pause Auto-Scroll";
+  }
+
+  overlay.classList.remove("dismissed");
+  overlay.style.display = "flex";
+  viewport.scrollTop = 0;
+
+  // Reset scrubber & first term
+  updateScrubber(10, 1);
+  currentOverlayTermIdx = 0;
+  swapTermTopToBottom("overlay", 0, false);
+
+  // Kill previous timeline if active
+  if (introMasterTimeline) {
+    introMasterTimeline.kill();
+    introMasterTimeline = null;
+  }
+
+  const wireRect = document.querySelector(".svg-wire-rect");
+  const teleFill = document.getElementById("telemetry-bar-fill");
+  const teleStatus = document.getElementById("tele-status-text");
+  const stage2El = document.getElementById("intro-stage-2");
+  const stage3El = document.getElementById("intro-stage-3");
+  const cards = document.querySelectorAll(".cyber-showcase-card");
+  const procCards = document.querySelectorAll("#intro-stage-2 .intro-process-step-card");
+  const creditsFrame = document.querySelector("#intro-stage-3 .credits-cyber-frame");
+
+  if (window.gsap) {
+    introMasterTimeline = gsap.timeline({
+      onComplete: () => {
+        setTimeout(() => {
+          if (isIntroActive && !isIntroPaused) {
+            dismissCinematicIntro("section-home");
+          }
+        }, 1200);
+      }
+    });
+
+    // Stage 1: Technical HUD Wireframe Drawing (0s - 1.2s)
+    if (wireRect) {
+      gsap.set(wireRect, { strokeDashoffset: 3600 });
+      introMasterTimeline.to(wireRect, {
+        strokeDashoffset: 0,
+        duration: 1.2,
+        ease: "power2.inOut"
+      }, 0);
+    }
+
+    // Telemetry Progress Bar Fill across Stage 1 (0.1s - 10.6s)
+    if (teleFill) {
+      gsap.set(teleFill, { width: "0%" });
+      introMasterTimeline.to(teleFill, {
+        width: "100%",
+        duration: 10.5,
+        ease: "none"
+      }, 0.1);
+    }
+
+    if (teleStatus) {
+      introMasterTimeline.to(teleStatus, {
+        duration: 0.1,
+        onStart: () => {
+          teleStatus.textContent = currentLang === "ar"
+            ? "مزامنة المحرك التشفيري والمصطلحات..."
+            : "SYNCHRONIZING CRYPTOGRAPHIC PIPELINE...";
+        }
+      }, 0.1);
+    }
+
+    // Balanced, Crisp Top-to-Bottom Term Swapping (2.2 seconds per term!)
+    const termStepDelay = 2.2;
+    for (let idx = 1; idx < 5; idx++) {
+      introMasterTimeline.add(() => {
+        currentOverlayTermIdx = idx;
+        swapTermTopToBottom("overlay", idx, true);
+      }, idx * termStepDelay);
+    }
+
+    // End of Stage 1 (~10.8s)
+    introMasterTimeline.add(() => {
+      if (teleStatus) {
+        teleStatus.textContent = currentLang === "ar"
+          ? "اكتملت مزامنة المصطلحات (100%)"
+          : "PIPELINE_SYNCHRONIZED (100%)";
+      }
+      updateScrubber(38, 1);
+    }, 10.6);
+
+    // Stage 2: Smooth Glide to Key Features (11.0s -> 12.5s)
+    introMasterTimeline.add(() => {
+      updateScrubber(68, 2);
+    }, 11.0);
+
+    const s2TargetY = stage2El ? stage2El.offsetTop : viewport.clientHeight;
+
+    introMasterTimeline.to(viewport, {
+      scrollTop: s2TargetY,
+      duration: 1.5,
+      ease: "power3.inOut"
+    }, 11.0);
+
+    // Staggered entrance for the 4 Key Feature cards
+    if (cards.length > 0) {
+      introMasterTimeline.fromTo(cards,
+        { opacity: 0, y: 30, scale: 0.96 },
+        {
+          opacity: 1,
+          y: 0,
+          scale: 1,
+          duration: 0.65,
+          stagger: 0.16,
+          ease: "power2.out"
+        },
+        11.6
+      );
+    }
+
+    // Glide to the 5-Step Encryption Processes inside Stage 2 (15.5s -> 16.9s)
+    const procWrapper = document.querySelector("#intro-stage-2 .intro-processes-wrapper");
+    if (procWrapper) {
+      introMasterTimeline.to(viewport, {
+        scrollTop: () => (stage2El ? stage2El.offsetTop + procWrapper.offsetTop - 90 : viewport.clientHeight * 1.4),
+        duration: 1.4,
+        ease: "power3.inOut"
+      }, 15.5);
+    }
+
+    if (procCards.length > 0) {
+      introMasterTimeline.fromTo(procCards,
+        { opacity: 0, y: 26 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          stagger: 0.14,
+          ease: "power2.out"
+        },
+        16.1
+      );
+    }
+
+    // Stage 3: Smooth Glide to Developers & Academic Supervisor at the Very Bottom (20.2s -> 21.7s)
+    introMasterTimeline.add(() => {
+      updateScrubber(100, 3);
+    }, 20.0);
+
+    const s3TargetY = stage3El ? stage3El.offsetTop : viewport.clientHeight * 2.2;
+
+    introMasterTimeline.to(viewport, {
+      scrollTop: s3TargetY,
+      duration: 1.5,
+      ease: "power3.inOut"
+    }, 20.2);
+
+    if (creditsFrame) {
+      introMasterTimeline.fromTo(creditsFrame,
+        { opacity: 0, y: 26, scale: 0.98 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: "power3.out" },
+        20.9
+      );
+    }
+
+    // Hold for 4.0 seconds at the bottom so user can clearly read Developers & Supervisor names
+    introMasterTimeline.to({}, { duration: 4.0 });
+  } else {
+    // Offline / no-GSAP graceful fallback so intro never hangs indefinitely
+    if (teleStatus) {
+      teleStatus.textContent = currentLang === "ar"
+        ? "وضع العرض التفاعلي (تصفح بحرية أو اضغط تخطي)"
+        : "INTERACTIVE TOUR READY (SCROLL FREELY OR SKIP)";
+    }
+    if (teleFill) teleFill.style.width = "100%";
+    updateScrubber(100, 1);
+  }
+}
+
+function dismissCinematicIntro(targetSection = "section-home") {
+  if (!isIntroActive) return;
+  isIntroActive = false;
+  isIntroPaused = false;
+
+  if (introMasterTimeline) {
+    introMasterTimeline.kill();
+    introMasterTimeline = null;
+  }
+
+  const overlay = document.getElementById("cinematic-intro-overlay");
+  if (overlay) {
+    overlay.classList.add("dismissed");
+    setTimeout(() => {
+      overlay.style.display = "none";
+    }, 850);
+  }
+
+  if (targetSection) {
+    switchToSection(targetSection);
+  }
+}
+
+/* ==========================================================================
+   0B. POST-QUANTUM HUD HERO: BLUEPRINT REVEAL, TOP-TO-BOTTOM REEL & PARALLAX
+   ========================================================================== */
+let isBlueprintAnimating = false;
+
+/* Cryptographic Character Scrambler Utility */
+function scrambleText(element, targetText, duration = 1200) {
+  if (!element || !targetText) return;
+  const chars = "0123456789ABCDEF0xλ§ΔΨΩ%&#@+*§~";
+  const length = targetText.length;
+  const startTime = performance.now();
+
+  function updateScramble(now) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const revealedCount = Math.floor(progress * length);
+
+    let output = "";
+    for (let i = 0; i < length; i++) {
+      if (i < revealedCount) {
+        output += targetText[i];
+      } else if (targetText[i] === " " || targetText[i] === "\n") {
+        output += targetText[i];
+      } else {
+        output += chars[Math.floor(Math.random() * chars.length)];
+      }
+    }
+
+    element.textContent = output;
+
+    if (progress < 1) {
+      requestAnimationFrame(updateScramble);
+    } else {
+      element.textContent = targetText;
+    }
+  }
+
+  requestAnimationFrame(updateScramble);
+}
+
+function triggerCipherScramble() {
+  swapTermTopToBottom("inline", currentInlineTermIdx, false);
+  swapTermTopToBottom("overlay", currentOverlayTermIdx, false);
+}
+
+function playBlueprintRevealAnimation() {
+  if (isBlueprintAnimating) return;
+  isBlueprintAnimating = true;
+
+  const overlay = document.getElementById("blueprint-overlay-layer");
+  const hudStatus = document.getElementById("hud-status-text");
+  const hudCoords = document.getElementById("hud-coords");
+  const bootCounterEl = document.getElementById("boot-counter");
+  const bootHexEl = document.getElementById("boot-hex");
+  const bgTitle = document.getElementById("hero-massive-bg-title");
+  const headlineBlock = document.querySelector(".pq-hero-headline-block");
+  const cards = document.querySelectorAll(".pillar-card");
+  const wireLines = document.querySelectorAll(".svg-wire-line");
+
+  if (!overlay) {
+    isBlueprintAnimating = false;
+    return;
+  }
+
+  // Phase 1 Reset: Show overlay with technical blueprint coordinate grid
+  overlay.classList.remove("revealed");
+  overlay.style.opacity = "1";
+  overlay.style.clipPath = "polygon(0 0, 100% 0, 100% 100%, 0 100%)";
+  if (bootCounterEl) bootCounterEl.textContent = "00%";
+  if (bootHexEl) bootHexEl.textContent = "0x00";
+
+  if (hudStatus) {
+    hudStatus.textContent = currentLang === "ar"
+      ? "جارٍ رسم وتدقيق المخطط الهيكلي (DRAWING_WIREFRAME)..."
+      : "INITIALIZING_SKELETON...";
+  }
+
+  // Rapidly randomize technical HUD coordinates
+  let tickCount = 0;
+  const coordInterval = setInterval(() => {
+    tickCount++;
+    if (hudCoords) {
+      const rx = (Math.random() * 800 + 120).toFixed(1);
+      const ry = (Math.random() * 600 + 40).toFixed(1);
+      hudCoords.textContent = `COORD: X.${rx} • Y.${ry} [LAT-768]`;
+    }
+    if (tickCount > 24) clearInterval(coordInterval);
+  }, 80);
+
+  if (window.gsap) {
+    const tl = gsap.timeline({
+      onComplete: () => {
+        clearInterval(coordInterval);
+        isBlueprintAnimating = false;
+      }
+    });
+
+    gsap.set(wireLines, { strokeDashoffset: 2000, opacity: 0.95 });
+
+    tl.to(wireLines, {
+      strokeDashoffset: 0,
+      duration: 1.4,
+      stagger: 0.09,
+      ease: "power2.inOut"
+    }, 0);
+
+    const bootObj = { val: 0 };
+    const hexCodes = ["0x00", "0x1C", "0x3A", "0x5E", "0x82", "0xA7", "0xC9", "0xE4", "0xFF"];
+
+    tl.to(bootObj, {
+      val: 100,
+      duration: 1.55,
+      ease: "power2.inOut",
+      onUpdate: () => {
+        const p = Math.floor(bootObj.val);
+        if (bootCounterEl) bootCounterEl.textContent = (p < 10 ? "0" : "") + p + "%";
+        if (bootHexEl) {
+          const hexIdx = Math.min(Math.floor((p / 100) * hexCodes.length), hexCodes.length - 1);
+          bootHexEl.textContent = hexCodes[hexIdx];
+        }
+      }
+    }, 0);
+
+    tl.to(hudStatus, {
+      duration: 0.4,
+      onStart: () => {
+        if (hudStatus) {
+          hudStatus.textContent = currentLang === "ar"
+            ? "معايرة مصفوفة كايبر ML-KEM-768 (64%)..."
+            : "CALIBRATING_LATTICE_KEM (64%)...";
+        }
+      }
+    }, 0.65);
+
+    tl.to(hudStatus, {
+      duration: 0.35,
+      onStart: () => {
+        if (hudStatus) {
+          hudStatus.textContent = currentLang === "ar"
+            ? "اكتمال المحاكاة والانتقال للعرض الحي (100%)"
+            : "QUANTUM_SHIELD_ONLINE (100%)";
+        }
+      }
+    }, 1.35);
+
+    tl.to(overlay, {
+      clipPath: "polygon(0 0, 100% 0, 100% 0%, 0 0%)",
+      opacity: 0,
+      duration: 1.0,
+      ease: "power3.inOut",
+      onComplete: () => {
+        overlay.classList.add("revealed");
+      }
+    }, 1.55);
+
+    if (bgTitle) {
+      tl.fromTo(bgTitle,
+        { opacity: 0, scale: 0.78, y: 35 },
+        { opacity: 0.95, scale: 1, y: 0, duration: 0.95, ease: "back.out(1.4)" },
+        1.65
+      );
+    }
+
+    if (headlineBlock) {
+      tl.fromTo(headlineBlock,
+        { opacity: 0, y: 25 },
+        { opacity: 1, y: 0, duration: 0.8, ease: "power2.out" },
+        1.7
+      );
+    }
+
+    if (cards.length > 0) {
+      tl.fromTo(cards,
+        { opacity: 0, y: 40, scale: 0.94 },
+        { opacity: 1, y: 0, scale: 1, duration: 0.85, stagger: 0.15, ease: "power3.out" },
+        1.8
+      );
+    }
+
+    tl.add(() => {
+      startInlineTermSwapper();
+    }, 1.8);
+
+  } else {
+    overlay.classList.add("revealed");
+    clearInterval(coordInterval);
+    isBlueprintAnimating = false;
+    startInlineTermSwapper();
+  }
+}
+
+/* Mouse Parallax Depth Effect on Massive Background Title & Security Cards */
+function initHeroParallax() {
+  const container = document.getElementById("pq-intro-container");
+  const bgTitleWrap = document.getElementById("hero-massive-wrap");
+  const cards = document.querySelectorAll(".pillar-card");
+
+  if (!container || !bgTitleWrap) return;
+
+  let rafId = null;
+  let targetX = 0, targetY = 0;
+  let currentX = 0, currentY = 0;
+
+  container.addEventListener("mousemove", (e) => {
+    const rect = container.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    targetX = x;
+    targetY = y;
+
+    if (!rafId) {
+      rafId = requestAnimationFrame(updateParallax);
+    }
+  });
+
+  container.addEventListener("mouseleave", () => {
+    targetX = 0;
+    targetY = 0;
+    if (!rafId) {
+      rafId = requestAnimationFrame(updateParallax);
+    }
+  });
+
+  function updateParallax() {
+    currentX += (targetX - currentX) * 0.08;
+    currentY += (targetY - currentY) * 0.08;
+
+    // Shift massive background headline in subtle opposite parallax
+    bgTitleWrap.style.transform = `translate(calc(-50% + ${-currentX * 35}px), calc(-50% + ${-currentY * 25}px))`;
+
+    // Subtle 3D tilt on cards
+    cards.forEach((card, i) => {
+      const depth = (i % 2 === 0 ? 1 : 1.25);
+      card.style.transform = `perspective(1000px) rotateY(${currentX * 6 * depth}deg) rotateX(${-currentY * 6 * depth}deg) translateY(${currentY * 4}px)`;
+    });
+
+    if (Math.abs(targetX - currentX) > 0.001 || Math.abs(targetY - currentY) > 0.001) {
+      rafId = requestAnimationFrame(updateParallax);
+    } else {
+      rafId = null;
+      if (targetX === 0 && targetY === 0) {
+        bgTitleWrap.style.transform = "translate(-50%, -50%)";
+        cards.forEach((card) => { card.style.transform = ""; });
+      }
+    }
+  }
+}
+
+function initPortfolioIntro() {
+  // Replay Blueprint button
+  const btnReplay = document.getElementById("btn-replay-blueprint");
+  if (btnReplay) {
+    btnReplay.addEventListener("click", () => {
+      playBlueprintRevealAnimation();
+    });
+  }
+
+  // CTA Button: Explore Workstation -> switch to Home
+  const btnExplore = document.getElementById("btn-hero-explore-workstation");
+  if (btnExplore) {
+    btnExplore.addEventListener("click", () => {
+      switchToSection("section-home");
+    });
+  }
+
+  // CTA Button: View Specs -> switch to Info
+  const btnInfo = document.getElementById("btn-hero-view-info");
+  if (btnInfo) {
+    btnInfo.addEventListener("click", () => {
+      switchToSection("section-info");
+    });
+  }
+
+  // Interactive Pillar Cards Click Routing
+  const cards = document.querySelectorAll(".pillar-card");
+  cards.forEach(card => {
+    card.addEventListener("click", () => {
+      const action = card.getAttribute("data-target-action");
+      if (action === "vault") {
+        if (typeof openVaultModal === "function") {
+          openVaultModal();
+        } else {
+          switchToSection("section-home");
+        }
+      } else if (action === "encrypt-sign") {
+        switchToSection("section-encrypt");
+        if (typeof setOperationMode === "function") {
+          setOperationMode("signature", true);
+        }
+      } else if (action === "encrypt-standard") {
+        switchToSection("section-encrypt");
+        if (typeof setOperationMode === "function") {
+          setOperationMode("encryption", true);
+        }
+      } else if (action === "channel") {
+        switchToSection("section-channel");
+      }
+    });
+
+    // Keyboard accessibility Enter / Space
+    card.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        card.click();
+      }
+    });
+  });
+
+  // Initialize mouse parallax
+  initHeroParallax();
+
+  // ScrollTrigger reveals for sections below the fold if GSAP ScrollTrigger loaded
+  if (window.gsap && window.ScrollTrigger) {
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.utils.toArray(".home-quick-card, .decision-service-card, .stat-card").forEach(el => {
+      gsap.fromTo(el,
+        { opacity: 0, y: 25 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.6,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: el,
+            start: "top 88%",
+            toggleActions: "play none none none"
+          }
+        }
+      );
+    });
+  }
+
+  // Automatically trigger blueprint reveal animation on initial load
+  setTimeout(() => {
+    const introSection = document.getElementById("section-intro");
+    if (introSection && introSection.classList.contains("active")) {
+      playBlueprintRevealAnimation();
+    }
+  }, 150);
 }
 
 function initNavigation() {
@@ -509,10 +1642,10 @@ async function generateLatticeKeys(autoApply = true, notify = true) {
       if (vaultPk) vaultPk.value = data.public_key_b64;
       if (vaultSk) vaultSk.value = data.secret_key_b64;
 
-      const btnExportPk = document.getElementById("btn-export-pk");
-      const btnExportSk = document.getElementById("btn-export-sk");
-      if (btnExportPk) btnExportPk.disabled = false;
-      if (btnExportSk) btnExportSk.disabled = false;
+      const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
+      const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
+      if (btnCopyVaultPk) btnCopyVaultPk.disabled = false;
+      if (btnCopyVaultSk) btnCopyVaultSk.disabled = false;
 
       saveKeysToStorage();
 
@@ -546,13 +1679,9 @@ function initKeyVault() {
   const btnOpen = document.getElementById("btn-open-vault");
   const btnClose = document.getElementById("btn-close-vault");
   const btnGen = document.getElementById("btn-gen-keys");
-  const btnExportPk = document.getElementById("btn-export-pk");
-  const btnExportSk = document.getElementById("btn-export-sk");
+  const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
+  const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
   const btnUseVault = document.getElementById("btn-use-vault-keys");
-  const btnUseVaultPk = document.getElementById("btn-use-vault-pk");
-  const btnUseVaultSk = document.getElementById("btn-use-vault-sk");
-  const btnQuickGenPk = document.getElementById("btn-quick-gen-pk");
-  const btnQuickGenSk = document.getElementById("btn-quick-gen-sk");
 
   if (btnOpen && modal) btnOpen.addEventListener("click", () => modal.classList.remove("hidden"));
   if (btnClose && modal) btnClose.addEventListener("click", () => modal.classList.add("hidden"));
@@ -574,41 +1703,35 @@ function initKeyVault() {
     });
   }
 
-  if (btnQuickGenPk) {
-    btnQuickGenPk.addEventListener("click", async () => {
-      btnQuickGenPk.disabled = true;
-      btnQuickGenPk.textContent = currentLang === "ar" ? "جارٍ التوليد..." : "Generating...";
-      await generateLatticeKeys(true, true);
-      btnQuickGenPk.disabled = false;
-      btnQuickGenPk.textContent = currentLang === "ar" ? "⚡ توليد زوج مفاتيح شبكية" : "⚡ Generate Lattice Keypair";
-    });
-  }
-
-  if (btnQuickGenSk) {
-    btnQuickGenSk.addEventListener("click", async () => {
-      btnQuickGenSk.disabled = true;
-      btnQuickGenSk.textContent = currentLang === "ar" ? "جارٍ التوليد..." : "Generating...";
-      await generateLatticeKeys(true, true);
-      btnQuickGenSk.disabled = false;
-      btnQuickGenSk.textContent = currentLang === "ar" ? "⚡ توليد زوج مفاتيح شبكية" : "⚡ Generate Lattice Keypair";
-    });
-  }
-
-  if (btnExportPk) {
-    btnExportPk.addEventListener("click", () => {
-      if (state.localKeys.pk) {
-        downloadBlob(state.localKeys.pk, "kyber_public.key", "text/plain");
-        showToast(currentLang === "ar" ? "تم تصدير المفتاح العام" : "Public key saved", "success");
+  // Copy public token from vault (Copy to clipboard only, download disabled)
+  if (btnCopyVaultPk) {
+    btnCopyVaultPk.addEventListener("click", () => {
+      const val = state.localKeys.pk || document.getElementById("vault-pk")?.value;
+      if (!val) {
+        showToast(currentLang === "ar" ? "يرجى توليد زوج المفاتيح أولاً." : "Please generate keys first.", "info");
+        return;
       }
+      navigator.clipboard.writeText(val);
+      showToast(
+        currentLang === "ar" ? "تم نسخ الرمز العام (ML-KEM-768) إلى الحافظة بنجاح!" : "Public token copied to clipboard!",
+        "success"
+      );
     });
   }
 
-  if (btnExportSk) {
-    btnExportSk.addEventListener("click", () => {
-      if (state.localKeys.sk) {
-        downloadBlob(state.localKeys.sk, "kyber_secret.key", "text/plain");
-        showToast(currentLang === "ar" ? "تم تصدير المفتاح السري" : "Secret key saved", "success");
+  // Copy secret token from vault (Copy to clipboard only, download disabled)
+  if (btnCopyVaultSk) {
+    btnCopyVaultSk.addEventListener("click", () => {
+      const val = state.localKeys.sk || document.getElementById("vault-sk")?.value;
+      if (!val) {
+        showToast(currentLang === "ar" ? "يرجى توليد زوج المفاتيح أولاً." : "Please generate keys first.", "info");
+        return;
       }
+      navigator.clipboard.writeText(val);
+      showToast(
+        currentLang === "ar" ? "تم نسخ الرمز السري (ML-KEM-768) إلى الحافظة بنجاح!" : "Secret token copied to clipboard!",
+        "success"
+      );
     });
   }
 
@@ -620,52 +1743,6 @@ function initKeyVault() {
         currentLang === "ar" ? "تم تحميل المفاتيح في نماذج التشفير وفك التشفير." : "Loaded keys into Encrypt & Decrypt forms.",
         "success"
       );
-    });
-  }
-
-  if (btnUseVaultPk) {
-    btnUseVaultPk.addEventListener("click", async () => {
-      if (state.localKeys.pk) {
-        const input = document.getElementById("encrypt-recipient-pk");
-        if (input) input.value = state.localKeys.pk;
-        showToast(
-          currentLang === "ar" ? "تم تحميل المفتاح العام في نموذج التشفير." : "Public key loaded into Encrypt form.",
-          "success"
-        );
-      } else {
-        showToast(
-          currentLang === "ar" ? "جارٍ توليد زوج مفاتيح ML-KEM-768 جديد..." : "Generating fresh ML-KEM-768 keypair...",
-          "info"
-        );
-        const ok = await generateLatticeKeys(true, true);
-        if (ok) {
-          const input = document.getElementById("encrypt-recipient-pk");
-          if (input) input.value = state.localKeys.pk;
-        }
-      }
-    });
-  }
-
-  if (btnUseVaultSk) {
-    btnUseVaultSk.addEventListener("click", async () => {
-      if (state.localKeys.sk) {
-        const input = document.getElementById("decrypt-kyber-sk");
-        if (input) input.value = state.localKeys.sk;
-        showToast(
-          currentLang === "ar" ? "تم تحميل المفتاح السري في نموذج فك التشفير." : "Secret key loaded into Decrypt form.",
-          "success"
-        );
-      } else {
-        showToast(
-          currentLang === "ar" ? "جارٍ توليد زوج مفاتيح ML-KEM-768 جديد..." : "Generating fresh ML-KEM-768 keypair...",
-          "info"
-        );
-        const ok = await generateLatticeKeys(true, true);
-        if (ok) {
-          const input = document.getElementById("decrypt-kyber-sk");
-          if (input) input.value = state.localKeys.sk;
-        }
-      }
     });
   }
 }
@@ -688,10 +1765,10 @@ function loadKeysFromStorage() {
       const vaultSk = document.getElementById("vault-sk");
       if (vaultPk) vaultPk.value = pk;
       if (vaultSk) vaultSk.value = sk;
-      const btnExportPk = document.getElementById("btn-export-pk");
-      const btnExportSk = document.getElementById("btn-export-sk");
-      if (btnExportPk) btnExportPk.disabled = false;
-      if (btnExportSk) btnExportSk.disabled = false;
+      const btnCopyVaultPk = document.getElementById("btn-copy-vault-pk");
+      const btnCopyVaultSk = document.getElementById("btn-copy-vault-sk");
+      if (btnCopyVaultPk) btnCopyVaultPk.disabled = false;
+      if (btnCopyVaultSk) btnCopyVaultSk.disabled = false;
       applyVaultKeysToForms();
     } else {
       generateLatticeKeys(true, false);
@@ -713,14 +1790,376 @@ function applyVaultKeysToForms() {
 }
 
 /* ==========================================================================
-   3. STEGANOGRAPHY COVER SIZE CALCULATOR
+   3. STEGANOGRAPHY COVER SIZE CALCULATOR, DROPZONES & CAPACITY ALERT MODAL
    ========================================================================== */
 let currentUploadedCover = null;
+let lastCapacityModalKey = "";
 let lastCalculatedCapacity = {
   rawBytes: 0,
+  packageBytes: 0,
   minDim: 0,
   isSufficient: true,
+  exceedsTier4: false,
+  exceedsSafeMax: false,
+  matchedTier: null,
 };
+
+function formatHumanBytes(bytes) {
+  if (!bytes || bytes <= 0) return "0 B";
+  if (bytes < 1024) return `${bytes.toLocaleString()} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+}
+
+function attachDropzone(zoneId, inputId, onClear = null) {
+  const zone = document.getElementById(zoneId);
+  const input = document.getElementById(inputId);
+  if (!zone || !input) return;
+
+  zone.addEventListener("click", (e) => {
+    if (e.target.closest("button")) return;
+    input.click();
+  });
+
+  zone.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      input.click();
+    }
+  });
+
+  ["dragenter", "dragover"].forEach((evName) => {
+    zone.addEventListener(evName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      zone.classList.add("is-dragover");
+    });
+  });
+
+  ["dragleave", "dragend"].forEach((evName) => {
+    zone.addEventListener(evName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!zone.contains(e.relatedTarget)) {
+        zone.classList.remove("is-dragover");
+      }
+    });
+  });
+
+  zone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    zone.classList.remove("is-dragover");
+    const files = e.dataTransfer?.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      const dt = new DataTransfer();
+      dt.items.add(files[0]);
+      input.files = dt.files;
+      input.dispatchEvent(new Event("change", { bubbles: true }));
+    } catch (_) {
+      showToast(
+        currentLang === "ar" ? "يرجى النقر على الصندوق لاختيار الملف." : "Please click the dropbox to browse the file.",
+        "info"
+      );
+    }
+  });
+
+  if (onClear) {
+    zone.dataset.hasClear = "1";
+  }
+}
+
+async function loadDefaultCoverTiers() {
+  try {
+    const res = await fetch("/api/stego/default-covers");
+    if (!res.ok) return;
+    const data = await res.json();
+    if (Array.isArray(data.tiers) && data.tiers.length > 0) {
+      state.defaultCoverTiers = data.tiers;
+    }
+    if (data.max_safe_stego_bytes) {
+      state.maxSafeStegoBytes = data.max_safe_stego_bytes;
+    }
+    renderDefaultCoverTiers();
+    updateStegoCapacity();
+  } catch (_) {
+    renderDefaultCoverTiers();
+  }
+}
+
+function renderDefaultCoverTiers() {
+  const grid = document.getElementById("default-cover-tier-grid");
+  const badge = document.getElementById("default-cover-badge");
+  const btnAuto = document.getElementById("btn-auto-cover-mode");
+  if (!grid) return;
+
+  const pkgBytes = lastCalculatedCapacity.packageBytes || 0;
+  const isCustomCover = Boolean(currentUploadedCover);
+  const autoTier = getBestDefaultTierForPackage(pkgBytes);
+
+  if (badge) {
+    if (isCustomCover) {
+      badge.textContent = currentLang === "ar" ? "صورة مخصصة نشطة" : "Custom Image Active";
+    } else if (state.selectedDefaultCoverId === "auto") {
+      badge.textContent = currentLang === "ar" ? "اختيار ذكي تلقائي" : "Smart Auto-Select";
+    } else {
+      badge.textContent = currentLang === "ar" ? "منظر طبيعي محدد يدوياً" : "Manual Landscape";
+    }
+  }
+
+  if (btnAuto) {
+    btnAuto.classList.toggle("hidden", isCustomCover || state.selectedDefaultCoverId === "auto");
+  }
+
+  grid.innerHTML = state.defaultCoverTiers
+    .map((tier) => {
+      const fits = pkgBytes === 0 || pkgBytes <= tier.capacity_bytes;
+      const isActive =
+        !isCustomCover &&
+        (state.selectedDefaultCoverId === tier.id ||
+          (state.selectedDefaultCoverId === "auto" && autoTier && autoTier.id === tier.id));
+      const label = currentLang === "ar" ? tier.label_ar : tier.label_en;
+      const capText = formatHumanBytes(tier.capacity_bytes);
+      const pill = isActive
+        ? `<span class="cover-tier-pill">${
+            state.selectedDefaultCoverId === "auto"
+              ? currentLang === "ar"
+                ? "تلقائي ✓"
+                : "Auto ✓"
+              : currentLang === "ar"
+                ? "محدد ✓"
+                : "Selected ✓"
+          }</span>`
+        : "";
+      return `
+        <button type="button" class="cover-tier-card ${isActive ? "active" : ""} ${!fits ? "insufficient" : ""}"
+          data-tier-id="${tier.id}">
+          ${pill}
+          <img class="cover-tier-thumb" src="${tier.url}" alt="${label}">
+          <div class="cover-tier-meta">
+            <strong>${label}</strong>
+            <span>${tier.width}×${tier.height} &bull; ${capText}</span>
+          </div>
+        </button>
+      `;
+    })
+    .join("");
+
+  grid.querySelectorAll(".cover-tier-card").forEach((card) => {
+    card.addEventListener("click", () => {
+      const tierId = card.dataset.tierId;
+      if (!tierId) return;
+      // Clear uploaded custom cover when user chooses a preset landscape
+      const coverInput = document.getElementById("encrypt-cover-image");
+      if (coverInput) coverInput.value = "";
+      currentUploadedCover = null;
+      syncCoverDropzoneUI(null);
+      state.selectedDefaultCoverId = tierId;
+      lastCapacityModalKey = "";
+      updateStegoCapacity(null, true);
+    });
+  });
+}
+
+function getBestDefaultTierForPackage(packageBytes) {
+  const tiers = state.defaultCoverTiers || [];
+  if (tiers.length === 0) return null;
+  if (!packageBytes || packageBytes <= 0) return tiers[0];
+  for (const tier of tiers) {
+    if (packageBytes <= tier.capacity_bytes) {
+      return tier;
+    }
+  }
+  return null;
+}
+
+function openCapacityAlertModal(reason, details = {}) {
+  const modal = document.getElementById("capacity-alert-modal");
+  if (!modal) return;
+
+  const badgeEl = document.getElementById("cap-modal-badge");
+  const titleEl = document.getElementById("cap-modal-title");
+  const detailEl = document.getElementById("cap-modal-detail");
+  const reqValEl = document.getElementById("cap-metric-req-val");
+  const curValEl = document.getElementById("cap-metric-cur-val");
+  const deltaPillEl = document.getElementById("cap-delta-pill");
+  const gaugeFillEl = document.getElementById("cap-gauge-fill");
+
+  const btnDefault = document.getElementById("btn-cap-use-default");
+  const recThumbEl = document.getElementById("cap-rec-thumb");
+  const recSubEl = document.getElementById("cap-rec-sub");
+  const btnDirect = document.getElementById("btn-cap-switch-direct");
+  const dirBadgeEl = document.getElementById("cap-dir-badge");
+  const btnUploadLarger = document.getElementById("btn-cap-upload-larger");
+
+  const pkgBytes = details.packageBytes || lastCalculatedCapacity.packageBytes || 0;
+  const minDim = details.minDim || lastCalculatedCapacity.minDim || 0;
+  const reqStr = `${formatHumanBytes(pkgBytes)} • ≥ ${minDim.toLocaleString()}×${minDim.toLocaleString()}`;
+  const bestTier = getBestDefaultTierForPackage(pkgBytes);
+
+  if (reqValEl) reqValEl.textContent = reqStr;
+
+  if (reason === "huge_payload") {
+    const safeCap = state.maxSafeStegoBytes || 9749964;
+    const ratio = safeCap > 0 ? Math.max(1.1, pkgBytes / safeCap) : 1;
+    if (badgeEl) {
+      badgeEl.textContent = currentLang === "ar" ? "تجاوز سقف الإخفاء الآمن" : "SAFE STEGO LIMIT";
+    }
+    if (titleEl) {
+      titleEl.textContent =
+        currentLang === "ar" ? "حجم البيانات ضخم جداً على الإخفاء الصوري" : "Payload Too Large for Safe PNG Stego";
+    }
+    if (detailEl) {
+      detailEl.textContent =
+        currentLang === "ar"
+          ? "تجنباً لتوليد صورة عملاقة بحجم 50–100 MB، حوّل للتشفير الكمومي المباشر لحماية الملف بسرعة فائقة."
+          : "To avoid generating a slow 50–100 MB image carrier, switch to Direct Quantum-Safe PQC for instant compact encryption.";
+    }
+    if (curValEl) {
+      curValEl.textContent =
+        currentLang === "ar"
+          ? `${formatHumanBytes(safeCap)} (الحد الأقصى الآمن)`
+          : `${formatHumanBytes(safeCap)} (Safe Max)`;
+    }
+    if (deltaPillEl) {
+      deltaPillEl.textContent =
+        currentLang === "ar" ? `${ratio.toFixed(1)}× فوق السقف` : `${ratio.toFixed(1)}× Over Limit`;
+    }
+    if (gaugeFillEl) gaugeFillEl.style.width = "100%";
+
+    if (btnDefault) btnDefault.classList.add("hidden");
+    if (btnDirect) {
+      btnDirect.classList.remove("hidden");
+      btnDirect.classList.add("is-hero");
+    }
+    if (dirBadgeEl) dirBadgeEl.classList.remove("hidden");
+    if (btnUploadLarger) btnUploadLarger.classList.remove("hidden");
+  } else {
+    const curW = details.curWidth || currentUploadedCover?.width || 0;
+    const curH = details.curHeight || currentUploadedCover?.height || 0;
+    const curCap = details.curCapBytes || currentUploadedCover?.capacityBytes || 0;
+    const fitsSafe = pkgBytes <= state.maxSafeStegoBytes;
+    const deficit = Math.max(0, pkgBytes - curCap);
+    const ratio = curCap > 0 ? Math.max(1.05, pkgBytes / curCap) : 1;
+
+    if (badgeEl) {
+      badgeEl.textContent = currentLang === "ar" ? "عدم كفاية سعة الصورة" : "CARRIER TOO SMALL";
+    }
+    if (titleEl) {
+      titleEl.textContent =
+        currentLang === "ar" ? "صورة الغلاف الحالية أصغر من البيانات" : "Cover Image Cannot Fit Your Payload";
+    }
+    if (detailEl) {
+      detailEl.textContent = fitsSafe
+        ? currentLang === "ar"
+          ? "الصورة المختارة لا تملك بكسلات كافية لإخفاء الحزمة المشفرة — اختر المنظر الطبيعي المناسب أو ارفع صورة أكبر."
+          : "This cover lacks enough pixels for your encrypted payload. Let the system match a landscape carrier or upload a larger image."
+        : currentLang === "ar"
+          ? "الحجم يتجاوز أيضاً حد الصور الافتراضية الآمن — استخدم التشفير الكمومي المباشر أو ارفع صورة مخصصة ضخمة."
+          : "Payload also exceeds automatic landscape limits. Use Direct Quantum-Safe PQC or supply a high-resolution custom cover.";
+    }
+    if (curValEl) {
+      curValEl.textContent = `${formatHumanBytes(curCap)} • ${curW}×${curH}`;
+    }
+    if (deltaPillEl) {
+      deltaPillEl.textContent =
+        currentLang === "ar"
+          ? `عجز +${formatHumanBytes(deficit)} (${ratio.toFixed(1)}×)`
+          : `+${formatHumanBytes(deficit)} short (${ratio.toFixed(1)}×)`;
+    }
+    if (gaugeFillEl) {
+      const pct = curCap > 0 ? Math.min(100, Math.round((curCap / pkgBytes) * 100)) : 8;
+      gaugeFillEl.style.width = `${Math.max(12, pct)}%`;
+    }
+
+    if (btnDefault) {
+      btnDefault.classList.toggle("hidden", !fitsSafe);
+      if (fitsSafe) {
+        const previewTier = bestTier || state.defaultCoverTiers[state.defaultCoverTiers.length - 1];
+        if (recThumbEl && previewTier?.url) recThumbEl.src = previewTier.url;
+        if (recSubEl && bestTier) {
+          const tName = currentLang === "ar" ? bestTier.label_ar : bestTier.label_en;
+          recSubEl.textContent = `${tName} • ${bestTier.width}×${bestTier.height} px (${formatHumanBytes(bestTier.capacity_bytes)})`;
+        } else if (recSubEl) {
+          recSubEl.textContent =
+            currentLang === "ar"
+              ? "بانوراما جبال الألب مكبّرة تلقائياً لتلائم حجم بياناتك"
+              : "Dynamic high-res scaled alpine panorama fit";
+        }
+      }
+    }
+    if (btnDirect) {
+      btnDirect.classList.remove("hidden");
+      btnDirect.classList.toggle("is-hero", !fitsSafe);
+    }
+    if (dirBadgeEl) dirBadgeEl.classList.toggle("hidden", fitsSafe);
+    if (btnUploadLarger) btnUploadLarger.classList.remove("hidden");
+  }
+
+  modal.classList.remove("hidden");
+}
+
+function closeCapacityAlertModal() {
+  const modal = document.getElementById("capacity-alert-modal");
+  if (modal) modal.classList.add("hidden");
+}
+
+function initCapacityAlertModal() {
+  const modal = document.getElementById("capacity-alert-modal");
+  const btnClose = document.getElementById("btn-close-capacity-modal");
+  const btnDismiss = document.getElementById("btn-cap-dismiss");
+  const btnUseDefault = document.getElementById("btn-cap-use-default");
+  const btnSwitchDirect = document.getElementById("btn-cap-switch-direct");
+  const btnUploadLarger = document.getElementById("btn-cap-upload-larger");
+
+  if (btnClose) btnClose.addEventListener("click", closeCapacityAlertModal);
+  if (btnDismiss) btnDismiss.addEventListener("click", closeCapacityAlertModal);
+  if (modal) {
+    modal.addEventListener("click", (e) => {
+      if (e.target === modal) closeCapacityAlertModal();
+    });
+  }
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) {
+      closeCapacityAlertModal();
+    }
+  });
+
+  if (btnUseDefault) {
+    btnUseDefault.addEventListener("click", () => {
+      const coverInput = document.getElementById("encrypt-cover-image");
+      if (coverInput) coverInput.value = "";
+      currentUploadedCover = null;
+      syncCoverDropzoneUI(null);
+      state.selectedDefaultCoverId = "auto";
+      closeCapacityAlertModal();
+      updateStegoCapacity();
+      showToast(
+        currentLang === "ar"
+          ? "تم التبديل تلقائياً إلى المنظر الطبيعي المتوافق مع حجم بياناتك!"
+          : "Switched to auto-matched high-texture landscape cover!",
+        "success"
+      );
+    });
+  }
+
+  if (btnSwitchDirect) {
+    btnSwitchDirect.addEventListener("click", () => {
+      closeCapacityAlertModal();
+      setOperationMode("direct_pqc", true);
+    });
+  }
+
+  if (btnUploadLarger) {
+    btnUploadLarger.addEventListener("click", () => {
+      closeCapacityAlertModal();
+      const coverInput = document.getElementById("encrypt-cover-image");
+      if (coverInput) coverInput.click();
+    });
+  }
+}
 
 function estimatePackageBytes(rawBytes, isDocument = false) {
   if (rawBytes <= 0) return 0;
@@ -737,7 +2176,7 @@ function estimatePackageBytes(rawBytes, isDocument = false) {
   }
 }
 
-function updateStegoCapacity(forcedType = null) {
+function updateStegoCapacity(forcedType = null, triggerPopupOnMismatch = false) {
   const isFile = document.getElementById("tab-input-file")?.classList.contains("active");
   const textVal = document.getElementById("encrypt-text")?.value || "";
   const fileInput = document.getElementById("encrypt-file");
@@ -769,10 +2208,19 @@ function updateStegoCapacity(forcedType = null) {
   if (!msgBox || !valEl) return;
 
   if (rawBytes === 0) {
-    lastCalculatedCapacity = { rawBytes: 0, minDim: 0, isSufficient: true };
+    lastCalculatedCapacity = {
+      rawBytes: 0,
+      packageBytes: 0,
+      minDim: 0,
+      isSufficient: true,
+      exceedsTier4: false,
+      exceedsSafeMax: false,
+      matchedTier: getBestDefaultTierForPackage(0),
+    };
     msgBox.className = "cover-size-msg mt-2";
     if (labelEl) labelEl.textContent = currentLang === "ar" ? "أبعاد الصورة الناقلة المطلوبة:" : "Required cover image size:";
     valEl.textContent = currentLang === "ar" ? "بانتظار البيانات..." : "Awaiting payload...";
+    renderDefaultCoverTiers();
     return;
   }
 
@@ -780,12 +2228,30 @@ function updateStegoCapacity(forcedType = null) {
   const framedBytes = packageBytes + 36;
   const minPixels = Math.ceil((framedBytes * 8) / 3);
   const minDim = Math.ceil(Math.sqrt(minPixels));
+  const autoTier = getBestDefaultTierForPackage(packageBytes);
+  const exceedsTier4 = !autoTier;
+  const exceedsSafeMax = packageBytes > state.maxSafeStegoBytes;
 
   lastCalculatedCapacity = {
     rawBytes,
+    packageBytes,
     minDim,
     isSufficient: true,
+    exceedsTier4,
+    exceedsSafeMax,
+    matchedTier: autoTier,
   };
+
+  if (state.operationMode === "direct_pqc") {
+    msgBox.className = "cover-size-msg msg-ok mt-2";
+    if (labelEl) labelEl.textContent = currentLang === "ar" ? "وضع Direct PQC:" : "Direct PQC Mode:";
+    valEl.textContent =
+      currentLang === "ar"
+        ? `لا حاجة لصورة غلاف (${formatHumanBytes(rawBytes)} مشفر مباشرة)`
+        : `No cover image required (${formatHumanBytes(rawBytes)} direct)`;
+    renderDefaultCoverTiers();
+    return;
+  }
 
   if (currentUploadedCover) {
     const coverCap = currentUploadedCover.capacityBytes;
@@ -805,19 +2271,86 @@ function updateStegoCapacity(forcedType = null) {
       msgBox.className = "cover-size-msg msg-error mt-2";
       if (labelEl) {
         labelEl.textContent = currentLang === "ar"
-          ? `⚠️ الصورة المختارة ${currentUploadedCover.width} × ${currentUploadedCover.height} بكسل. المطلوب:`
-          : `⚠️ Selected image is ${currentUploadedCover.width} × ${currentUploadedCover.height} px. Required:`;
+          ? `⚠️ الصورة المختارة ${currentUploadedCover.width} × ${currentUploadedCover.height} بكسل صغيرة جداً! المطلوب:`
+          : `⚠️ Selected image (${currentUploadedCover.width} × ${currentUploadedCover.height} px) is too small! Required:`;
       }
       valEl.textContent = currentLang === "ar"
-        ? `على الأقل ${minDim} × ${minDim} بكسل`
-        : `at least ${minDim} × ${minDim} px`;
+        ? `على الأقل ${minDim} × ${minDim} بكسل (${formatHumanBytes(packageBytes)})`
+        : `at least ${minDim} × ${minDim} px (${formatHumanBytes(packageBytes)})`;
+
+      const alertKey = `custom:${minDim}:${coverCap}`;
+      if (triggerPopupOnMismatch && alertKey !== lastCapacityModalKey) {
+        lastCapacityModalKey = alertKey;
+        openCapacityAlertModal("cover_too_small", {
+          packageBytes,
+          minDim,
+          curWidth: currentUploadedCover.width,
+          curHeight: currentUploadedCover.height,
+          curCapBytes: coverCap,
+        });
+      }
     }
+  } else if (state.selectedDefaultCoverId !== "auto") {
+    const chosen = state.defaultCoverTiers.find((t) => t.id === state.selectedDefaultCoverId);
+    if (chosen && packageBytes > chosen.capacity_bytes) {
+      lastCalculatedCapacity.isSufficient = false;
+      msgBox.className = "cover-size-msg msg-error mt-2";
+      if (labelEl) {
+        labelEl.textContent = currentLang === "ar"
+          ? `⚠️ المنظر المختار (${chosen.width}×${chosen.height}) لا يكفي! المطلوب:`
+          : `⚠️ Selected landscape (${chosen.width}×${chosen.height}) is too small! Required:`;
+      }
+      valEl.textContent = `${minDim} × ${minDim} px`;
+      const alertKey = `preset:${chosen.id}:${minDim}`;
+      if (triggerPopupOnMismatch && alertKey !== lastCapacityModalKey) {
+        lastCapacityModalKey = alertKey;
+        openCapacityAlertModal("cover_too_small", {
+          packageBytes,
+          minDim,
+          curWidth: chosen.width,
+          curHeight: chosen.height,
+          curCapBytes: chosen.capacity_bytes,
+        });
+      }
+    } else if (chosen) {
+      lastCalculatedCapacity.isSufficient = true;
+      msgBox.className = "cover-size-msg msg-ok mt-2";
+      if (labelEl) {
+        labelEl.textContent = currentLang === "ar" ? "✓ الغلاف الطبيعي المختار:" : "✓ Selected Landscape Carrier:";
+      }
+      valEl.textContent = `${currentLang === "ar" ? chosen.label_ar : chosen.label_en} (${chosen.width}×${chosen.height} px)`;
+    }
+  } else if (exceedsSafeMax) {
+    lastCalculatedCapacity.isSufficient = false;
+    msgBox.className = "cover-size-msg msg-error mt-2";
+    if (labelEl) {
+      labelEl.textContent = currentLang === "ar"
+        ? "⚠️ الملف ضخم جداً يتجاوز حد الإخفاء الآمن! يوصى بـ Direct PQC:"
+        : "⚠️ Payload exceeds safe stego ceiling! Switch to Direct PQC:";
+    }
+    valEl.textContent = `${formatHumanBytes(packageBytes)} (> ${formatHumanBytes(state.maxSafeStegoBytes)})`;
+    const alertKey = `huge:${Math.round(packageBytes / 65536)}`;
+    if (triggerPopupOnMismatch && alertKey !== lastCapacityModalKey) {
+      lastCapacityModalKey = alertKey;
+      openCapacityAlertModal("huge_payload", { packageBytes, minDim });
+    }
+  } else if (autoTier) {
+    lastCalculatedCapacity.isSufficient = true;
+    msgBox.className = "cover-size-msg msg-ok mt-2";
+    if (labelEl) {
+      labelEl.textContent = currentLang === "ar" ? "✓ الغلاف الطبيعي المحدد تلقائياً:" : "✓ Auto-Selected Landscape:";
+    }
+    valEl.textContent = `${currentLang === "ar" ? autoTier.label_ar : autoTier.label_en} (${autoTier.width}×${autoTier.height} px)`;
   } else {
     lastCalculatedCapacity.isSufficient = true;
     msgBox.className = "cover-size-msg mt-2";
-    if (labelEl) labelEl.textContent = currentLang === "ar" ? "أبعاد الصورة الناقلة المطلوبة:" : "Required cover image size:";
-    valEl.textContent = currentLang === "ar" ? `على الأقل ${minDim} × ${minDim} بكسل` : `at least ${minDim} × ${minDim} px`;
+    if (labelEl) {
+      labelEl.textContent = currentLang === "ar" ? "✓ سيتم تكييف بانوراما الألب تلقائياً:" : "✓ Dynamic High-Res Landscape Fit:";
+    }
+    valEl.textContent = `${minDim} × ${minDim} px (${formatHumanBytes(packageBytes)})`;
   }
+
+  renderDefaultCoverTiers();
 }
 
 /* ==========================================================================
@@ -864,6 +2397,20 @@ function initClassifier() {
 
   if (fileInput) {
     fileInput.addEventListener("change", () => {
+      syncPayloadDropzoneUI(fileInput.files[0] || null);
+      lastCapacityModalKey = "";
+      updateStegoCapacity(null, true);
+      triggerClassification();
+    });
+  }
+
+  attachDropzone("payload-dropzone", "encrypt-file");
+  const btnClearPayload = document.getElementById("btn-clear-payload-file");
+  if (btnClearPayload && fileInput) {
+    btnClearPayload.addEventListener("click", (e) => {
+      e.stopPropagation();
+      fileInput.value = "";
+      syncPayloadDropzoneUI(null);
       updateStegoCapacity();
       triggerClassification();
     });
@@ -957,8 +2504,56 @@ async function triggerClassification() {
 /* ==========================================================================
    5. ENCRYPTION & DIGITAL SIGNATURE PIPELINE (SENDER)
    ========================================================================== */
+function syncPayloadDropzoneUI(file) {
+  const zone = document.getElementById("payload-dropzone");
+  const emptyEl = document.getElementById("payload-dropzone-empty");
+  const selEl = document.getElementById("payload-dropzone-selected");
+  const nameEl = document.getElementById("payload-selected-name");
+  const sizeEl = document.getElementById("payload-selected-size");
+  if (!zone || !emptyEl || !selEl) return;
+
+  if (file) {
+    zone.classList.add("has-file");
+    emptyEl.classList.add("hidden");
+    selEl.classList.remove("hidden");
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = formatHumanBytes(file.size);
+  } else {
+    zone.classList.remove("has-file");
+    emptyEl.classList.remove("hidden");
+    selEl.classList.add("hidden");
+  }
+}
+
+function syncCoverDropzoneUI(coverInfo, thumbUrl = "") {
+  const zone = document.getElementById("cover-dropzone");
+  const emptyEl = document.getElementById("cover-dropzone-empty");
+  const selEl = document.getElementById("cover-dropzone-selected");
+  const nameEl = document.getElementById("cover-selected-name");
+  const metaEl = document.getElementById("cover-selected-meta");
+  const thumbEl = document.getElementById("cover-selected-thumb");
+  const btnResetCover = document.getElementById("btn-reset-cover");
+  if (!zone || !emptyEl || !selEl) return;
+
+  if (coverInfo) {
+    zone.classList.add("has-file");
+    emptyEl.classList.add("hidden");
+    selEl.classList.remove("hidden");
+    if (nameEl) nameEl.textContent = coverInfo.name;
+    if (metaEl) metaEl.textContent = `${coverInfo.width}×${coverInfo.height} px • ${formatHumanBytes(coverInfo.capacityBytes)}`;
+    if (thumbEl && thumbUrl) thumbEl.src = thumbUrl;
+    if (btnResetCover) btnResetCover.classList.remove("hidden");
+  } else {
+    zone.classList.remove("has-file");
+    emptyEl.classList.remove("hidden");
+    selEl.classList.add("hidden");
+    if (thumbEl) thumbEl.removeAttribute("src");
+    if (btnResetCover) btnResetCover.classList.add("hidden");
+  }
+}
+
 function setOperationMode(mode, notify = false) {
-  state.operationMode = mode === "signature" ? "signature" : "encryption";
+  state.operationMode = mode === "signature" ? "signature" : mode === "direct_pqc" ? "direct_pqc" : "encryption";
 
   document.querySelectorAll(".op-mode-option").forEach((opt) => {
     const isActive = opt.dataset.opMode === state.operationMode;
@@ -969,20 +2564,37 @@ function setOperationMode(mode, notify = false) {
 
   const encControls = document.getElementById("encryption-mode-controls");
   const sigControls = document.getElementById("signature-mode-controls");
+  const step4DirectNote = document.getElementById("step4-direct-note");
+  const coverCarrierControls = document.getElementById("cover-carrier-controls");
   const btnExecute = document.getElementById("btn-execute-encrypt");
 
   if (state.operationMode === "signature") {
     if (encControls) encControls.classList.add("hidden");
     if (sigControls) sigControls.classList.remove("hidden");
+    if (step4DirectNote) step4DirectNote.classList.add("hidden");
+    if (coverCarrierControls) coverCarrierControls.classList.remove("hidden");
     if (btnExecute && !btnExecute.disabled) {
       btnExecute.textContent =
         currentLang === "ar"
           ? "تنفيذ التوقيع الرقمي وتغليف كايبر والحجب"
           : "Execute Digital Signature, Kyber KEM & Concealment";
     }
+  } else if (state.operationMode === "direct_pqc") {
+    if (encControls) encControls.classList.remove("hidden");
+    if (sigControls) sigControls.classList.add("hidden");
+    if (step4DirectNote) step4DirectNote.classList.remove("hidden");
+    if (coverCarrierControls) coverCarrierControls.classList.add("hidden");
+    if (btnExecute && !btnExecute.disabled) {
+      btnExecute.textContent =
+        currentLang === "ar"
+          ? "تنفيذ التشفير الكمومي المباشر (بدون صورة حاملة)"
+          : "Execute Direct Quantum-Safe PQC (No Cover Image)";
+    }
   } else {
     if (encControls) encControls.classList.remove("hidden");
     if (sigControls) sigControls.classList.add("hidden");
+    if (step4DirectNote) step4DirectNote.classList.add("hidden");
+    if (coverCarrierControls) coverCarrierControls.classList.remove("hidden");
     if (btnExecute && !btnExecute.disabled) {
       btnExecute.textContent =
         currentLang === "ar"
@@ -999,9 +2611,13 @@ function setOperationMode(mode, notify = false) {
         ? currentLang === "ar"
           ? "تم التبديل إلى مسار التوقيع الرقمي المعزول (ECDSA P-256 + CRYSTALS-Kyber)"
           : "Switched to Isolated Digital Signature Pipeline (ECDSA P-256 + CRYSTALS-Kyber)"
-        : currentLang === "ar"
-          ? "تم التبديل إلى مسار تشفير البيانات القياسي"
-          : "Switched to Standard Data Encryption Pipeline",
+        : state.operationMode === "direct_pqc"
+          ? currentLang === "ar"
+            ? "تم التبديل إلى التشفير الكمومي المباشر للملفات الكبيرة (بدون صورة)"
+            : "Switched to Direct Quantum-Safe PQC (No Image Carrier Required)"
+          : currentLang === "ar"
+            ? "تم التبديل إلى مسار تشفير البيانات القياسي"
+            : "Switched to Standard Data Encryption Pipeline",
       "info"
     );
   }
@@ -1022,12 +2638,30 @@ function initEncryptSection() {
     });
   });
 
+  attachDropzone("cover-dropzone", "encrypt-cover-image");
+
+  const btnAutoCoverMode = document.getElementById("btn-auto-cover-mode");
+  if (btnAutoCoverMode) {
+    btnAutoCoverMode.addEventListener("click", () => {
+      if (coverInput) coverInput.value = "";
+      currentUploadedCover = null;
+      syncCoverDropzoneUI(null);
+      state.selectedDefaultCoverId = "auto";
+      lastCapacityModalKey = "";
+      updateStegoCapacity();
+      showToast(
+        currentLang === "ar" ? "تم تفعيل الاختيار التلقائي للمناظر الطبيعية." : "Smart Auto-Selection enabled.",
+        "info"
+      );
+    });
+  }
+
   if (coverInput) {
     coverInput.addEventListener("change", (e) => {
       const file = e.target.files[0];
       if (!file) {
         currentUploadedCover = null;
-        if (btnResetCover) btnResetCover.classList.add("hidden");
+        syncCoverDropzoneUI(null);
         updateStegoCapacity();
         return;
       }
@@ -1050,13 +2684,13 @@ function initEncryptSection() {
           capacityBytes,
         };
 
-        URL.revokeObjectURL(objectUrl);
-        if (btnResetCover) btnResetCover.classList.remove("hidden");
-        updateStegoCapacity();
+        syncCoverDropzoneUI(currentUploadedCover, objectUrl);
+        lastCapacityModalKey = "";
+        updateStegoCapacity(null, true);
         showToast(
           currentLang === "ar"
-            ? `أبعاد صورة الغلاف: ${width} × ${height} بكسل`
-            : `Cover image: ${width} × ${height} px`,
+            ? `أبعاد صورة الغلاف: ${width} × ${height} بكسل (${formatHumanBytes(capacityBytes)})`
+            : `Cover image: ${width} × ${height} px (${formatHumanBytes(capacityBytes)})`,
           "info"
         );
       };
@@ -1064,7 +2698,7 @@ function initEncryptSection() {
       img.onerror = () => {
         currentUploadedCover = null;
         URL.revokeObjectURL(objectUrl);
-        if (btnResetCover) btnResetCover.classList.add("hidden");
+        syncCoverDropzoneUI(null);
         showToast(
           currentLang === "ar"
             ? "تعذر قراءة أبعاد الصورة. يرجى التحقق من صيغة الملف."
@@ -1082,9 +2716,14 @@ function initEncryptSection() {
     btnResetCover.addEventListener("click", () => {
       if (coverInput) coverInput.value = "";
       currentUploadedCover = null;
-      btnResetCover.classList.add("hidden");
+      state.selectedDefaultCoverId = "auto";
+      syncCoverDropzoneUI(null);
+      lastCapacityModalKey = "";
       updateStegoCapacity();
-      showToast(currentLang === "ar" ? "تمت العودة للصورة المولدة تلقائياً." : "Reverted to default cover.", "info");
+      showToast(
+        currentLang === "ar" ? "تمت العودة للمناظر الطبيعية المختارة تلقائياً." : "Reverted to auto-selected landscape covers.",
+        "info"
+      );
     });
   }
 
@@ -1093,11 +2732,17 @@ function initEncryptSection() {
       const isFile = document.getElementById("tab-input-file")?.classList.contains("active");
       const textVal = document.getElementById("encrypt-text")?.value || "";
       const fileInput = document.getElementById("encrypt-file");
-      const pkVal = document.getElementById("encrypt-recipient-pk")?.value.trim() || "";
+      let pkVal = document.getElementById("encrypt-recipient-pk")?.value.trim() || state.localKeys.pk || "";
       const cipherChoice = document.querySelector('input[name="cipher_choice"]:checked')?.value || "chacha20";
       const overrideVal = document.getElementById("encrypt-override")?.value || "";
       const channelRoomVal = document.getElementById("encrypt-channel-room")?.value.trim() || "";
       const isSignatureMode = state.operationMode === "signature";
+      const isDirectMode = state.operationMode === "direct_pqc";
+
+      if (!pkVal) {
+        await generateLatticeKeys(false);
+        pkVal = document.getElementById("encrypt-recipient-pk")?.value.trim() || state.localKeys.pk || "";
+      }
 
       if (!pkVal) {
         showToast(
@@ -1129,18 +2774,29 @@ function initEncryptSection() {
         return;
       }
 
-      if (currentUploadedCover && !lastCalculatedCapacity.isSufficient) {
-        showToast(
-          currentLang === "ar"
-            ? `الصورة المختارة صغيرة جداً! الأبعاد المطلوبة على الأقل: ${lastCalculatedCapacity.minDim} × ${lastCalculatedCapacity.minDim} بكسل.`
-            : `Selected cover image is too small! Required size: at least ${lastCalculatedCapacity.minDim}×${lastCalculatedCapacity.minDim} px.`,
-          "error"
-        );
-        const msgBox = document.getElementById("cover-size-msg");
-        if (msgBox) {
-          msgBox.scrollIntoView({ behavior: "smooth", block: "center" });
-          msgBox.classList.add("shake-animation");
-          setTimeout(() => msgBox.classList.remove("shake-animation"), 500);
+      if (!isDirectMode && !lastCalculatedCapacity.isSufficient) {
+        if (currentUploadedCover) {
+          openCapacityAlertModal("cover_too_small", {
+            packageBytes: lastCalculatedCapacity.packageBytes,
+            minDim: lastCalculatedCapacity.minDim,
+            curWidth: currentUploadedCover.width,
+            curHeight: currentUploadedCover.height,
+            curCapBytes: currentUploadedCover.capacityBytes,
+          });
+        } else if (state.selectedDefaultCoverId !== "auto") {
+          const chosen = state.defaultCoverTiers.find((t) => t.id === state.selectedDefaultCoverId);
+          openCapacityAlertModal("cover_too_small", {
+            packageBytes: lastCalculatedCapacity.packageBytes,
+            minDim: lastCalculatedCapacity.minDim,
+            curWidth: chosen?.width || 0,
+            curHeight: chosen?.height || 0,
+            curCapBytes: chosen?.capacity_bytes || 0,
+          });
+        } else {
+          openCapacityAlertModal("huge_payload", {
+            packageBytes: lastCalculatedCapacity.packageBytes,
+            minDim: lastCalculatedCapacity.minDim,
+          });
         }
         return;
       }
@@ -1152,14 +2808,19 @@ function initEncryptSection() {
         formData.append("text", textVal);
       }
 
-      if (coverInput && coverInput.files.length > 0) {
-        formData.append("cover_image", coverInput.files[0]);
+      if (!isDirectMode) {
+        if (coverInput && coverInput.files.length > 0) {
+          formData.append("cover_image", coverInput.files[0]);
+        } else if (state.selectedDefaultCoverId && state.selectedDefaultCoverId !== "auto") {
+          formData.append("default_cover_id", state.selectedDefaultCoverId);
+        }
       }
 
       formData.append("recipient_kyber_pk_b64", pkVal);
       formData.append("preferred_cipher", cipherChoice);
-      formData.append("operation_mode", state.operationMode);
-      if (overrideVal && !isSignatureMode) formData.append("override_type", overrideVal);
+      formData.append("operation_mode", isSignatureMode ? "signature" : "encryption");
+      formData.append("intent_objective", isDirectMode ? "direct_pqc" : "full_hybrid");
+      if (overrideVal && !isSignatureMode && !isDirectMode) formData.append("override_type", overrideVal);
       if (channelRoomVal) formData.append("channel_room", channelRoomVal);
       formData.append("username", getActiveUser());
 
@@ -1168,9 +2829,13 @@ function initEncryptSection() {
         ? currentLang === "ar"
           ? "جارٍ التوقيع الرقمي وتغليف كايبر..."
           : "Executing Digital Signature & Kyber KEM..."
-        : currentLang === "ar"
-          ? "جارٍ معالجة التشفير والتغليف..."
-          : "Processing Multi-Level Pipeline...";
+        : isDirectMode
+          ? currentLang === "ar"
+            ? "جارٍ تنفيذ التشفير الكمومي المباشر..."
+            : "Executing Direct Quantum-Safe PQC..."
+          : currentLang === "ar"
+            ? "جارٍ معالجة التشفير والتغليف..."
+            : "Processing Multi-Level Pipeline...";
 
       const endpoint = isSignatureMode ? "/api/sign" : "/api/encrypt";
 
@@ -1192,9 +2857,13 @@ function initEncryptSection() {
             ? currentLang === "ar"
               ? "اكتمل التوقيع الرقمي وتغليف كايبر والتضمين الستيجانوغرافي بنجاح!"
               : "Digital signature, Kyber encapsulation & stego embedding completed!"
-            : currentLang === "ar"
-              ? "اكتمل التشفير الهجين والتضمين الستيجانوغرافي بنجاح!"
-              : "Encryption and steganographic embedding completed!",
+            : isDirectMode
+              ? currentLang === "ar"
+                ? "اكتمل التشفير الكمومي المباشر وتوليد الحزمة بنجاح!"
+                : "Direct Quantum-Safe PQC encryption completed!"
+              : currentLang === "ar"
+                ? "اكتمل التشفير الهجين والتضمين الستيجانوغرافي بنجاح!"
+                : "Encryption and steganographic embedding completed!",
           "success"
         );
 
@@ -1228,6 +2897,47 @@ function initEncryptSection() {
       );
     });
   }
+
+  // Copy recipient/local public key token ONLY (raw key hidden, download disabled)
+  const btnCopyRecipientPk = document.getElementById("btn-copy-recipient-pk");
+  if (btnCopyRecipientPk) {
+    btnCopyRecipientPk.addEventListener("click", async () => {
+      let text = state.localKeys.pk || document.getElementById("encrypt-recipient-pk")?.value?.trim() || "";
+      if (!text) {
+        await generateLatticeKeys(true, false);
+        text = state.localKeys.pk || document.getElementById("encrypt-recipient-pk")?.value?.trim() || "";
+      }
+      if (!text) {
+        showToast(
+          currentLang === "ar" ? "لا يوجد مفتاح عام لنسخه." : "No public key to copy.",
+          "info"
+        );
+        return;
+      }
+      navigator.clipboard.writeText(text);
+      showToast(
+        currentLang === "ar" ? "تم نسخ المفتاح العام إلى الحافظة بنجاح!" : "Public Key copied to clipboard!",
+        "success"
+      );
+    });
+  }
+
+  // Reset / restore recipient public key field to own local Kyber public key
+  const btnUseLocalPk = document.getElementById("btn-use-local-pk");
+  if (btnUseLocalPk) {
+    btnUseLocalPk.addEventListener("click", async () => {
+      if (!state.localKeys.pk) {
+        await generateLatticeKeys(true, true);
+      } else {
+        const pkInput = document.getElementById("encrypt-recipient-pk");
+        if (pkInput) pkInput.value = state.localKeys.pk;
+        showToast(
+          currentLang === "ar" ? "تمت استعادة مفتاحك العام المحلي في الحقل." : "Restored your local public key.",
+          "info"
+        );
+      }
+    });
+  }
 }
 
 function renderEncryptionResult(result) {
@@ -1236,17 +2946,91 @@ function renderEncryptionResult(result) {
   if (placeholder) placeholder.classList.add("hidden");
   if (container) container.classList.remove("hidden");
 
-  // Stego Preview
+  const stegoPreviewBox = document.getElementById("encrypt-stego-preview-box");
+  const directResultBox = document.getElementById("encrypt-direct-result-box");
+  const btnDlStego = document.getElementById("btn-download-stego");
+  const btnDlDirect = document.getElementById("btn-download-direct-pqc");
   const imgPreview = document.getElementById("stego-image-preview");
+  const tokenEl = document.getElementById("output-kyber-ct");
+  const decTokenEl = document.getElementById("decrypt-kyber-ct");
+
+  const isDirectResult = result.pipeline_target === "direct_pqc" && result.direct_result;
+
+  if (isDirectResult) {
+    const dir = result.direct_result;
+    if (stegoPreviewBox) stegoPreviewBox.classList.add("hidden");
+    if (directResultBox) directResultBox.classList.remove("hidden");
+    if (btnDlStego) btnDlStego.classList.add("hidden");
+
+    const bundle = {
+      format: "fgp_direct_pqc",
+      version: "1.0",
+      filename: result.filename || dir.filename || "encrypted_payload",
+      filesize: dir.filesize || result.payload_size,
+      cipher_used: dir.cipher_used || dir.cipher || "chacha20",
+      nonce_b64: dir.nonce_b64,
+      kyber_ciphertext_b64: dir.kyber_ciphertext_b64,
+      ciphertext_b64: dir.ciphertext_b64,
+    };
+
+    if (state.lastDirectDownloadUrl) {
+      URL.revokeObjectURL(state.lastDirectDownloadUrl);
+    }
+    const blob = new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" });
+    state.lastDirectDownloadUrl = URL.createObjectURL(blob);
+
+    if (btnDlDirect) {
+      btnDlDirect.href = state.lastDirectDownloadUrl;
+      btnDlDirect.download = `${bundle.filename}.fgp.json`;
+      btnDlDirect.classList.remove("hidden");
+    }
+
+    if (tokenEl) tokenEl.value = dir.kyber_ciphertext_b64;
+    if (decTokenEl) decTokenEl.value = dir.kyber_ciphertext_b64;
+
+    const telMode = document.getElementById("telem-op-mode");
+    const telPayload = document.getElementById("telem-payload-size");
+    const telStego = document.getElementById("telem-stego-size");
+    const telRoute = document.getElementById("telem-route");
+    const telSig = document.getElementById("telem-signature");
+    const telDigestRow = document.getElementById("telem-digest-row");
+
+    if (telMode) {
+      telMode.textContent =
+        currentLang === "ar"
+          ? "التشفير الكمومي المباشر (Direct PQC • بدون صورة)"
+          : "Direct Quantum-Safe PQC (No Stego Carrier)";
+    }
+    if (telPayload) telPayload.textContent = formatHumanBytes(result.payload_size);
+    if (telStego) telStego.textContent = formatHumanBytes(blob.size) + " (.fgp.json)";
+    if (telRoute) telRoute.textContent = result.intent_evaluation?.route_desc || "Kyber-768 + AEAD";
+    if (telSig) telSig.textContent = currentLang === "ar" ? "غير مطلوب" : "Not Required";
+    if (telDigestRow) telDigestRow.classList.add("hidden");
+    return;
+  }
+
+  if (stegoPreviewBox) stegoPreviewBox.classList.remove("hidden");
+  if (directResultBox) directResultBox.classList.add("hidden");
+  if (btnDlStego) btnDlStego.classList.remove("hidden");
+  if (btnDlDirect) btnDlDirect.classList.add("hidden");
+
+  // Stego Preview
   const imgUrl = `data:image/png;base64,${result.stego_image_b64}`;
   if (imgPreview) imgPreview.src = imgUrl;
+  if (btnDlStego) btnDlStego.href = imgUrl;
 
-  const btnDl = document.getElementById("btn-download-stego");
-  if (btnDl) btnDl.href = imgUrl;
+  const badgeEl = document.getElementById("enc-result-stego-badge");
+  if (badgeEl && result.cover_tier && result.cover_tier.label_en) {
+    const tierName = currentLang === "ar" ? result.cover_tier.label_ar : result.cover_tier.label_en;
+    badgeEl.textContent =
+      currentLang === "ar"
+        ? `تم الإخفاء بنجاح • ${tierName} • PNG نقي`
+        : `Concealed in ${tierName} • Lossless PNG`;
+  }
 
   // Hidden Kyber Ciphertext Vault Input
-  const tokenEl = document.getElementById("output-kyber-ct");
   if (tokenEl) tokenEl.value = result.kyber_ciphertext_b64;
+  if (decTokenEl) decTokenEl.value = result.kyber_ciphertext_b64;
 
   // Telemetry
   const telMode = document.getElementById("telem-op-mode");
@@ -1299,32 +3083,136 @@ function renderEncryptionResult(result) {
 /* ==========================================================================
    6. DECRYPTION PIPELINE (RECEIVER)
    ========================================================================== */
+function syncDecryptDropzoneUI(file, extraLabel = "") {
+  const zone = document.getElementById("decrypt-dropzone");
+  const emptyEl = document.getElementById("decrypt-dropzone-empty");
+  const selEl = document.getElementById("decrypt-dropzone-selected");
+  const nameEl = document.getElementById("decrypt-selected-name");
+  const sizeEl = document.getElementById("decrypt-selected-size");
+  if (!zone || !emptyEl || !selEl) return;
+
+  if (file) {
+    zone.classList.add("has-file");
+    emptyEl.classList.add("hidden");
+    selEl.classList.remove("hidden");
+    if (nameEl) nameEl.textContent = file.name;
+    if (sizeEl) sizeEl.textContent = extraLabel ? `${formatHumanBytes(file.size)} • ${extraLabel}` : formatHumanBytes(file.size);
+  } else {
+    zone.classList.remove("has-file");
+    emptyEl.classList.remove("hidden");
+    selEl.classList.add("hidden");
+  }
+}
+
 function initDecryptSection() {
   const btnDecrypt = document.getElementById("btn-execute-decrypt");
   const stegoInput = document.getElementById("decrypt-stego-file");
-  const skBrowse = document.getElementById("btn-browse-sk");
-  const skInput = document.getElementById("decrypt-sk-file");
+  const btnClearDecrypt = document.getElementById("btn-clear-decrypt-file");
+  const btnCopyDecryptCt = document.getElementById("btn-copy-decrypt-ct");
+  const btnCopyDecryptSk = document.getElementById("btn-copy-decrypt-sk");
+  const btnUseLocalSk = document.getElementById("btn-use-local-sk");
 
-  if (stegoInput) {
-    stegoInput.addEventListener("change", () => {
-      if (stegoInput.files.length > 0) {
-        const file = stegoInput.files[0];
-        const previewBox = document.getElementById("decrypt-image-preview-box");
-        const previewImg = document.getElementById("decrypt-image-preview");
-        if (previewImg) previewImg.src = URL.createObjectURL(file);
-        if (previewBox) previewBox.classList.remove("hidden");
-      }
+  attachDropzone("decrypt-dropzone", "decrypt-stego-file");
+
+  if (btnClearDecrypt && stegoInput) {
+    btnClearDecrypt.addEventListener("click", (e) => {
+      e.stopPropagation();
+      stegoInput.value = "";
+      state.lastLoadedDirectFile = null;
+      syncDecryptDropzoneUI(null);
+      const previewBox = document.getElementById("decrypt-image-preview-box");
+      if (previewBox) previewBox.classList.add("hidden");
     });
   }
 
-  if (skBrowse && skInput) {
-    skBrowse.addEventListener("click", () => skInput.click());
-    skInput.addEventListener("change", async () => {
-      if (skInput.files.length > 0) {
-        const text = await skInput.files[0].text();
-        const input = document.getElementById("decrypt-kyber-sk");
-        if (input) input.value = text.trim();
-        showToast(currentLang === "ar" ? "تم تحميل المفتاح السري من الملف." : "Secret key loaded from file.", "info");
+  if (stegoInput) {
+    stegoInput.addEventListener("change", async () => {
+      if (stegoInput.files.length === 0) {
+        state.lastLoadedDirectFile = null;
+        syncDecryptDropzoneUI(null);
+        return;
+      }
+
+      const file = stegoInput.files[0];
+      const previewBox = document.getElementById("decrypt-image-preview-box");
+      const previewImg = document.getElementById("decrypt-image-preview");
+
+      if (/\.json$/i.test(file.name)) {
+        try {
+          const parsed = JSON.parse(await file.text());
+          if (parsed && parsed.ciphertext_b64 && parsed.nonce_b64 && parsed.kyber_ciphertext_b64) {
+            state.lastLoadedDirectFile = parsed;
+            const decCt = document.getElementById("decrypt-kyber-ct");
+            if (decCt) decCt.value = parsed.kyber_ciphertext_b64;
+            if (previewBox) previewBox.classList.add("hidden");
+            syncDecryptDropzoneUI(file, "Direct PQC");
+            showToast(
+              currentLang === "ar"
+                ? "تم تحميل حزمة التشفير الكمومي المباشر (.fgp.json) بنجاح!"
+                : "Direct PQC bundle loaded (.fgp.json)!",
+              "info"
+            );
+            return;
+          }
+        } catch (_) {
+          // Fall through cleanly if malformed JSON
+        }
+      }
+
+      state.lastLoadedDirectFile = null;
+      syncDecryptDropzoneUI(file, "PNG Carrier");
+      if (previewImg) previewImg.src = URL.createObjectURL(file);
+      if (previewBox) previewBox.classList.remove("hidden");
+    });
+  }
+
+  // Copy token in decrypt form
+  if (btnCopyDecryptCt) {
+    btnCopyDecryptCt.addEventListener("click", () => {
+      const text = document.getElementById("decrypt-kyber-ct")?.value.trim();
+      if (!text) {
+        showToast(
+          currentLang === "ar" ? "لا يوجد رمز مشفر لنسخه." : "No token to copy.",
+          "info"
+        );
+        return;
+      }
+      navigator.clipboard.writeText(text);
+      showToast(
+        currentLang === "ar" ? "تم نسخ الرمز إلى الحافظة بنجاح!" : "Token copied to clipboard!",
+        "success"
+      );
+    });
+  }
+
+  // Copy receiver secret key (masked)
+  if (btnCopyDecryptSk) {
+    btnCopyDecryptSk.addEventListener("click", () => {
+      const text = document.getElementById("decrypt-kyber-sk")?.value.trim() || state.localKeys.sk || "";
+      if (!text) {
+        showToast(currentLang === "ar" ? "لا يوجد مفتاح سري لنسخه." : "No secret key to copy.", "info");
+        return;
+      }
+      navigator.clipboard.writeText(text);
+      showToast(
+        currentLang === "ar" ? "تم نسخ المفتاح السري إلى الحافظة." : "Secret key copied to clipboard.",
+        "success"
+      );
+    });
+  }
+
+  // Restore local receiver secret key
+  if (btnUseLocalSk) {
+    btnUseLocalSk.addEventListener("click", async () => {
+      if (!state.localKeys.sk) {
+        await generateLatticeKeys(true, true);
+      } else {
+        const skInput = document.getElementById("decrypt-kyber-sk");
+        if (skInput) skInput.value = state.localKeys.sk;
+        showToast(
+          currentLang === "ar" ? "تمت استعادة مفتاحك السري المحلي." : "Restored your local secret key.",
+          "info"
+        );
       }
     });
   }
@@ -1334,10 +3222,65 @@ function initDecryptSection() {
       const stegoFile = stegoInput?.files[0];
       const incomingStegoB64 = state.lastIncomingTransmission ? state.lastIncomingTransmission.stego_image_b64 : null;
       const kyberCt = document.getElementById("decrypt-kyber-ct")?.value.trim() || "";
-      const kyberSk = document.getElementById("decrypt-kyber-sk")?.value.trim() || "";
+      let kyberSk = document.getElementById("decrypt-kyber-sk")?.value.trim() || state.localKeys.sk || "";
+
+      if (!kyberSk) {
+        await generateLatticeKeys(false);
+        kyberSk = document.getElementById("decrypt-kyber-sk")?.value.trim() || state.localKeys.sk || "";
+      }
+
+      if (state.lastLoadedDirectFile) {
+        if (!kyberSk) {
+          showToast(
+            currentLang === "ar" ? "المفتاح السري للمستلم مطلوب لفك التغليف." : "Recipient Kyber-768 Secret Key is required.",
+            "error"
+          );
+          return;
+        }
+        const pkg = state.lastLoadedDirectFile;
+        const formData = new FormData();
+        formData.append("ciphertext_b64", pkg.ciphertext_b64);
+        formData.append("nonce_b64", pkg.nonce_b64);
+        formData.append("kyber_ciphertext_b64", kyberCt || pkg.kyber_ciphertext_b64);
+        formData.append("recipient_kyber_sk_b64", kyberSk);
+        formData.append("cipher_used", pkg.cipher_used || "chacha20");
+        formData.append("username", getActiveUser());
+
+        btnDecrypt.disabled = true;
+        btnDecrypt.textContent = currentLang === "ar" ? "جارٍ فك التشفير الكمومي المباشر..." : "Decrypting Direct PQC Bundle...";
+        try {
+          const res = await fetch("/api/decrypt_direct", { method: "POST", body: formData });
+          if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.detail || "Direct decryption failed");
+          }
+          const result = await res.json();
+          renderDecryptionResult({
+            ...result,
+            operation_mode: "direct_pqc",
+            data_type: "direct_pqc",
+            cipher_used: pkg.cipher_used || "chacha20",
+            filename: pkg.filename || "recovered_payload",
+            signature_verified: null,
+          });
+          showToast(
+            currentLang === "ar" ? "تم فك تشفير حزمة Direct PQC بنجاح!" : "Direct PQC bundle decrypted successfully!",
+            "success"
+          );
+        } catch (e) {
+          showToast((currentLang === "ar" ? "خطأ في فك التشفير: " : "Decryption error: ") + e.message, "error");
+        } finally {
+          btnDecrypt.disabled = false;
+          btnDecrypt.textContent = currentLang === "ar" ? "فك التغليف واستخراج البيانات الأصلية" : "Decapsulate & Extract Plaintext";
+        }
+        return;
+      }
 
       if (!stegoFile && !incomingStegoB64) {
-        showToast(currentLang === "ar" ? "يرجى رفع صورة الإخفاء (PNG)." : "Please upload a Stego-Image PNG.", "error");
+        showToast(
+          currentLang === "ar" ? "يرجى رفع صورة الإخفاء (PNG) أو حزمة (.fgp.json)." : "Please upload a Stego PNG or (.fgp.json) bundle.",
+          "error"
+        );
         return;
       }
       if (!kyberCt) {
@@ -1476,9 +3419,13 @@ function renderDecryptionResult(result) {
       ? currentLang === "ar"
         ? "توقيع رقمي معزول (DIGITAL SIGNATURE)"
         : "ISOLATED DIGITAL SIGNATURE"
-      : currentLang === "ar"
-        ? "تشفير البيانات القياسي (DATA ENCRYPTION)"
-        : "STANDARD DATA ENCRYPTION";
+      : result.operation_mode === "direct_pqc"
+        ? currentLang === "ar"
+          ? "تشفير كمومي مباشر (DIRECT PQC)"
+          : "DIRECT QUANTUM-SAFE PQC"
+        : currentLang === "ar"
+          ? "تشفير البيانات القياسي (DATA ENCRYPTION)"
+          : "STANDARD DATA ENCRYPTION";
   }
   if (recData) recData.textContent = result.data_type ? result.data_type.toUpperCase() : "-";
   if (recCiph) recCiph.textContent = result.cipher_used ? result.cipher_used.toUpperCase() : "-";
@@ -1646,18 +3593,6 @@ function appendChannelLog(message, type = "normal") {
   logBox.scrollTop = logBox.scrollHeight;
 }
 
-function downloadBlob(content, filename, contentType) {
-  const blob = new Blob([content], { type: contentType });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
-}
-
 /* ==========================================================================
    8. INTERACTIVE ARCHITECTURE PIPELINE & SIMULATION
    ========================================================================== */
@@ -1712,20 +3647,20 @@ const ARCH_STAGES_DATA = {
       defense: "يحمي البيانات من هجمات 'احصد الآن وفك التشفير لاحقاً' الكمومية. لا توجد خوارزمية كمومية قادرة على كسر M-LWE في زمن متعدد الحدود."
     },
     4: {
-      title: "المرحلة 04: الحجب والإخفاء الستيجانوغرافي المكاني",
-      desc: "تبديل عشوائي للبكسلات ببذرة كايبر وتضمين البت الأقل أهمية (LSB) في صور PNG غير فاقدة.",
-      standard: "الإخفاء المكاني LSB / PNG غير الفاقدة",
-      primitive: "تبديل عشوائي زائف مبذور",
-      security: "انعدام التغيير البصري كلياً (ΔE < 0.05)",
-      io: "حزمة مشفرة + غلاف PNG ← صورة إخفاء ناقلة",
-      latency: "~1.2 مللي ثانية (تبديل متوازٍ للبكسلات)",
-      math: "تهيئة خوارزمية التبديل العشوائي الزائف (Fisher-Yates) المبذورة بـ 32 بايت مشتقة من كايبر، ثم تضمين بتات الحزمة المشفرة داخل البت الأقل أهمية (LSB) لإحداثيات RGB غير متتالية.",
+      title: "المرحلة 04: الحجب المتكيف بالحواف (Sobel HBIG)",
+      desc: "تحليل تدرج الحواف Sobel باستخدام بتات HBIG وتمديد بذرة كايبر عبر Argon2id وختم BLAKE2b داخل صور PNG.",
+      standard: "Sobel Edge HBIG / Argon2id + BLAKE2b",
+      primitive: "قناع حواف Sobel + Argon2id KDF",
+      security: "PSNR > 50 dB / فرق بصري ΔE < 0.05",
+      io: "حزمة مشفرة + غلاف PNG ← صورة إخفاء متكيفة",
+      latency: "~15–40 مللي ثانية (Argon2id + Sobel)",
+      math: "تمديد بذرة كايبر عبر Argon2id إلى 64 بايت (بذرة التبديل + مفتاح ختم BLAKE2b)، ثم تصفير البت الأدنى (HBIG) لحساب طاقة التدرج الغرافي 2D Sobel وفرز البكسلات ذات الحواف الحادة أولاً.",
       steps: [
-        "تبديل مؤشرات البكسلات: مسار غير متسلسل وسري عبر قنوات الألوان RGB.",
-        "تعديل LSB: استبدال البت الأقل وزناً بتغير طفيف في الإضاءة غير محسوس للعين البشرية.",
-        "حماية الدقة البصرية: الحفاظ التام على الجودة والنزاهة في صيغ PNG بدون أي ضغط فاقد."
+        "تمثيل HBIG الثابت: تصفير Bit 0 لضمان تطابق خريطة الحواف 100% بين المرسل والمستلم دون إرسال خرائط مساعدة.",
+        "انتقاء الحواف (Sobel Edges): تضمين البيانات في المناطق المعقدة وعالية التدرج وتجنب المناطق الملساء.",
+        "ختم BLAKE2b MAC: إرفاق ختم مصادقة 32 بايت مشتق من Argon2id لكشف أي تلف أو عبث بالصورة."
       ],
-      defense: "يحصن البيانات ضد هجمات كشف الإخفاء الإحصائية (Chi-Square) بإلغاء النمط التتابعي. يستحيل على المتنصت كشف وجود البيانات أو استخراجها بدون مفتاح كايبر السري."
+      defense: "يحصن الحزمة ضد كشف الإخفاء الإحصائي (Chi-Square و RS Steganalysis) بتجنب المساحات الملساء، مع تطابق تام بدون أي قناة جانبية."
     }
   },
   en: {
@@ -1778,20 +3713,20 @@ const ARCH_STAGES_DATA = {
       defense: "Secures data against 'Harvest Now, Decrypt Later' quantum attacks. No known quantum algorithm (including Shor's) can invert M-LWE in polynomial time."
     },
     4: {
-      title: "Stage 04: Spatial-Domain Steganographic Concealment",
-      desc: "Kyber-seeded pseudo-random pixel permutation and lossless RGB least significant bit embedding.",
-      standard: "Spatial LSB / Lossless PNG",
-      primitive: "Seeded Pseudo-Random Permutation",
-      security: "Visual Zero-Alteration (ΔE < 0.05)",
-      io: "Payload + Cover PNG → Stego PNG Carrier",
-      latency: "~1.2 ms (Parallel Pixel Shuffling)",
-      math: "Initializes a Mersenne Twister pseudo-random permutation seeded with the 32-byte Kyber-derived 'stego_seed'. Embeds encrypted payload bits into the least significant bit (LSB) of non-contiguous RGB pixel coordinates.",
+      title: "Stage 04: Adaptive Sobel Edge Steganography (HBIG)",
+      desc: "Content-adaptive Sobel gradient masking with Higher-Bit Invariant Gradients (HBIG), Argon2id key-stretching, and BLAKE2b MAC.",
+      standard: "Sobel Edge HBIG / Lossless PNG",
+      primitive: "Sobel Edge Map + Argon2id KDF + BLAKE2b",
+      security: "PSNR > 50 dB (ΔE < 0.05)",
+      io: "Payload + Cover PNG → Adaptive Stego Carrier",
+      latency: "~15–40 ms (Argon2id + 2D Gradient)",
+      math: "Stretches the 32-byte Kyber 'stego_seed' via Argon2id into 64 bytes (PRNG seed + BLAKE2b MAC key). Clears Bit 0 (HBIG) before evaluating G(x,y) = √(Gx² + Gy²) so sender and receiver compute the identical edge traversal map.",
       steps: [
-        "Pixel Index Permutation: Non-sequential, secret-dependent pixel path across RGB channels.",
-        "LSB Modification: Replaces least significant bit (imperceptible luminance variation).",
-        "Zero-Alteration Guard: Preserves perceptual visual fidelity in lossless PNG output."
+        "HBIG Invariance: Masks Bit 0 prior to Sobel gradient calculation for zero side-channel synchronization.",
+        "Texture Prioritization: Embeds strictly inside high-gradient edge pixels and bypasses smooth/flat regions.",
+        "BLAKE2b Frame MAC: Appends a 32-byte Argon2id-keyed BLAKE2b MAC to detect tampering or carrier corruption."
       ],
-      defense: "Shields against statistical chi-square steganographic attacks by eliminating sequential embedding patterns. An eavesdropper cannot detect or extract bits without the Kyber secret key."
+      defense: "Defeats Chi-Square (χ²) and RS statistical steganalysis by avoiding flat image regions, while requiring zero auxiliary edge-map transmission."
     }
   }
 };
@@ -1954,7 +3889,7 @@ function initAuthGateway() {
     });
   }
 
-  // Login submit
+  // Login submit (Argon2id zero-database verification via /api/auth/verify-password)
   if (formLogin) {
     formLogin.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1963,13 +3898,27 @@ function initAuthGateway() {
       if (!u || !p) return;
 
       try {
-        const stored = JSON.parse(localStorage.getItem(`fgp_user_${u}`));
-        if (!stored) throw new Error(currentLang === "ar" ? "المستخدم غير موجود" : "User not found");
-        if (stored.password !== p) throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        const raw = localStorage.getItem(`fgp_user_${u}`);
+        if (!raw) throw new Error(currentLang === "ar" ? "المستخدم غير موجود" : "User not found");
+        const stored = JSON.parse(raw);
+
+        if (stored.argon2_hash) {
+          const fd = new FormData();
+          fd.append("password", p);
+          fd.append("argon2_hash", stored.argon2_hash);
+          const res = await fetch("/api/auth/verify-password", { method: "POST", body: fd });
+          if (!res.ok) throw new Error(currentLang === "ar" ? "تعذر التحقق عبر الخادم" : "Verification request failed");
+          const data = await res.json();
+          if (!data.valid) throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        } else if (stored.password !== p) {
+          throw new Error(currentLang === "ar" ? "كلمة المرور غير صحيحة" : "Incorrect password");
+        }
+
         localStorage.setItem("fgp_auth_user", u);
         updateUserDisplay(u);
-        showToast(currentLang === "ar" ? `مرحباً بك مجدداً ${u}! تم تسجيل الدخول بنجاح` : `Welcome back, ${u}! Signed in successfully`, "success");
+        showToast(currentLang === "ar" ? `مرحباً بك مجدداً ${u}! تم التحقق عبر Argon2id` : `Welcome back, ${u}! Verified via Argon2id`, "success");
         if (typeof loadAuditLogs === "function") loadAuditLogs();
+        if (typeof openCinematicIntro === "function") setTimeout(() => openCinematicIntro(), 120);
       } catch (err) {
         if (loginErr) {
           loginErr.textContent = err.message;
@@ -1979,7 +3928,7 @@ function initAuthGateway() {
     });
   }
 
-  // Register submit
+  // Register submit (Argon2id memory-hard hashing via /api/auth/hash-password)
   if (formRegister) {
     formRegister.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1996,11 +3945,18 @@ function initAuthGateway() {
       }
 
       try {
-        localStorage.setItem(`fgp_user_${u}`, JSON.stringify({ password: p }));
+        const fd = new FormData();
+        fd.append("password", p);
+        const res = await fetch("/api/auth/hash-password", { method: "POST", body: fd });
+        if (!res.ok) throw new Error(currentLang === "ar" ? "فشل التشفير عبر Argon2id" : "Argon2id hashing failed");
+        const data = await res.json();
+
+        localStorage.setItem(`fgp_user_${u}`, JSON.stringify({ argon2_hash: data.argon2_hash }));
         localStorage.setItem("fgp_auth_user", u);
         updateUserDisplay(u);
-        showToast(currentLang === "ar" ? `تم إنشاء الحساب بنجاح! أهلاً بك يا ${u}` : `Account created! Welcome, ${u}`, "success");
+        showToast(currentLang === "ar" ? `تم إنشاء الحساب وحمايته عبر Argon2id! أهلاً بك ${u}` : `Account created & Argon2id-protected! Welcome, ${u}`, "success");
         if (typeof loadAuditLogs === "function") loadAuditLogs();
+        if (typeof openCinematicIntro === "function") setTimeout(() => openCinematicIntro(), 120);
       } catch (err) {
         if (regErr) {
           regErr.textContent = err.message;
@@ -2018,6 +3974,7 @@ function initAuthGateway() {
       updateUserDisplay(guestName);
       showToast(currentLang === "ar" ? `تم الدخول كضيف تجريبي: ${guestName}` : `Logged in as: ${guestName}`, "info");
       if (typeof loadAuditLogs === "function") loadAuditLogs();
+      if (typeof openCinematicIntro === "function") setTimeout(() => openCinematicIntro(), 120);
     });
   }
 
@@ -2210,6 +4167,61 @@ const I18N_DATA = {
     brand_title: "نظام التشفير المقاوم للكم",
     brand_sub: "الجامعة المستنصرية • كلية الهندسة",
     badge_grad: "مشروع التخرج",
+    nav_intro: "المقدمة (Intro)",
+    hero_status_pill: "محرك التشفير المقاوم للكم • متوافق مع معيار NIST FIPS 203",
+    hero_replay_blueprint: "إعادة محاكاة المخطط (Replay Blueprint)",
+    hero_bg_title: "POST-QUANTUM",
+    hero_tag_sub: "منظومة الدفاع السيبراني المقاومة للحوسبة الكمومية",
+    hero_lead_text: "تشفير سيادي متعدد الطبقات يجمع بين تغليف المفاتيح الشبكي NIST FIPS 203 (ML-KEM-768)، والتوقيعات الرقمية الموثقة، وإخفاء الحواف المتكيف Sobel HBIG داخل صور PNG.",
+    hero_cta_workstation: "تشغيل منصة الأمان والتشفير",
+    hero_cta_info: "المواصفات الهندسية (System Specs)",
+    pillar_1_desc: "تغليف المفاتيح القائم على التراكيب الشبكية المقاوم للحوسبة الكمومية.",
+    pillar_action_vault: "فتح خزنة المفاتيح ←",
+    pillar_2_desc: "موثوقية وأصالة رقمية غير قابلة للتلاعب أو التزييف.",
+    pillar_action_sign: "توقيع المستندات ←",
+    pillar_3_desc: "معمارية حماية مزدوجة تجمع التشفير التقليدي والتشفير المقاوم للكم.",
+    pillar_action_encrypt: "بدء التشفير ←",
+    pillar_4_desc: "أمان فائق ومحصن بنهاية إلى نهاية مع انعدام أي تسريب للمعلومات.",
+    pillar_action_channel: "قناة البث الآمن ←",
+
+    // Cinematic Intro Showcase Overlay & Intro Section Processes
+    intro_skip: "تخطي العرض (Skip Intro) ➔",
+    intro_pause: "⏸ إيقاف مؤقت للتصفح (Pause Auto-Scroll)",
+    hero_play_showcase: "🎬 تشغيل العرض السينمائي الكامل (Guided Showcase)",
+    stage1_pill: "منظومة الأمان السيبراني المقاومة للحوسبة الكمومية",
+    stage1_kicker: "المصطلحات والتقنيات التشفيرية الأساسية",
+    stage1_sub: "تغليف المفاتيح الشبكي NIST FIPS 203 • خوارزميات التشفير التناظري • إخفاء الحواف المتكيف Sobel HBIG",
+    stage1_scroll_hint: "الجولة التلقائية نشطة • الانتقال المبطأ للمميزات والعمليات",
+    stage2_heading: "المميزات الرئيسية للمشروع وركائز الحماية",
+    stage2_sub: "حماية رياضية مستمرة بنهاية إلى نهاية لمنع هجمات الحوسبة الكمومية المستهدفة.",
+    card1_title: "تبادل وتغليف المفاتيح المقاوم للكم",
+    card1_desc: "مدعوم بتراكيب CRYSTALS-Kyber (ML-KEM-768) الشبكية لمقاومة خوارزمية شور وحواسيب الكم الفائقة.",
+    card2_title: "طبقة الحماية الهجينة المزدوجة",
+    card2_desc: "تشفير ثنائي يدمج الخوارزميات التناظرية السريعة (ChaCha20-Poly1305 و AES-256-GCM) مع تغليف ما بعد الكم.",
+    card3_title: "مسار التوقيع الرقمي المعزول",
+    card3_desc: "التحقق من الهوية وسلامة البيانات ومنع التزييف عبر ECDSA P-256 و SHA-256 مع تغليف المفاتيح عبر قنوات كايبر.",
+    card4_title: "إخفاء الحواف المتكيف (Sobel HBIG)",
+    card4_desc: "تضمين الحزم المشفرة داخل حواف وتفاصيل صور PNG بتقنية HBIG وتمديد Argon2id وختم BLAKE2b دون أي تشويه بصري.",
+    intro_proc_heading: "مراحل وعمليات التشفير والتغليف والإخفاء",
+    intro_proc_sub: "تدفق العمليات التشفيرية خطوة بخطوة من لحظة إدخال البيانات وحتى الاستخراج الآمن لدى المستلم.",
+    proc_step1_title: "التصنيف الذكي واختيار نمط العملية",
+    proc_step1_desc: "فحص تلقائي لنوع الملف وحجمه ومستوى الإنتروبيا مع إتاحة الاختيار بين مسار تشفير البيانات القياسي أو مسار التوقيع الرقمي المعزول.",
+    proc_step2_title: "التشفير الموثق أو التوقيع الرقمي",
+    proc_step2_desc: "تشفير البيانات عبر ChaCha20-Poly1305 / AES-256-GCM بوسم مصادقة، أو توليد بصمة SHA-256 وتوقيعها رقمياً عبر منحنى ECDSA P-256.",
+    proc_step3_title: "تغليف المفاتيح الكمومي (CRYSTALS-Kyber)",
+    proc_step3_desc: "تغليف السر المشترك عبر معيار NIST FIPS 203 (ML-KEM-768) واشتقاق مفتاح التشفير وبذرة الإخفاء عبر دالة HKDF-SHA256.",
+    proc_step4_title: "الإخفاء المتكيف بالحواف (Sobel HBIG)",
+    proc_step4_desc: "تمديد بذرة كايبر عبر Argon2id، وحساب حواف الصورة بتقنية HBIG لإخفاء البيانات مع ختم BLAKE2b داخل الحواف المعقدة لصورة PNG.",
+    proc_step5_title: "فك التغليف والاستخراج والتحقق من النزاهة",
+    proc_step5_desc: "يستخرج المستلم البيانات عبر مفتاح كايبر السري ويعيد حساب حواف HBIG ويتحقق من ختم BLAKE2b والتوقيع الرقمي وسلامة المستند.",
+    credits_title: "فريق تطوير المشروع والإشراف الأكاديمي",
+    credits_sup_label: "الإشراف الأكاديمي والتوجيه العلمي",
+    credits_devs_label: "فريق تطوير وهندسة المشروع (Developers)",
+    dev1_role: "المتحدث الرئيسي وباحث التشفير المقاوم للكم (CRYSTALS-Kyber ML-KEM-768)",
+    dev2_role: "مهندس النظم وهندسة التشفير والتوجيه والإخفاء المتكيف",
+    dev_affil: "الجامعة المستنصرية • كلية الهندسة • قسم هندسة الحاسوب",
+    credits_inst: "قسم هندسة الحاسوب • مشروع التخرج الهندسي 2026",
+    btn_enter_home: "الدخول إلى لوحة التحكم الرئيسية (Launch Home Dashboard) ➔",
     nav_home: "الرئيسية",
     nav_info: "معلومات النظام",
     nav_encrypt: "تشفير وحجب",
@@ -2238,8 +4250,8 @@ const I18N_DATA = {
     home_step1_desc: "توجيه تلقائي وتشفير عبر ChaCha20 أو AES-256-GCM",
     home_step2_title: "تغليف كمومي (Kyber-768)",
     home_step2_desc: "حماية المفاتيح ضد الحوسبة الكمومية وفق NIST FIPS 203",
-    home_step3_title: "إخفاء داخل صورة (LSB)",
-    home_step3_desc: "تضمين البيانات المشفرة داخل صورة PNG بتبديل عشوائي",
+    home_step3_title: "إخفاء متكيف بالحواف (Sobel HBIG)",
+    home_step3_desc: "تضمين البيانات داخل حواف وتفاصيل صورة PNG بتمديد Argon2id",
     home_menu_heading: "القوائم والأدوات الرئيسية",
     home_menu_sub: "اختر القسم المطلوب للانتقال المباشر وتنفيذ العمليات بسهولة.",
     menu_enc_title: "التشفير والحجب",
@@ -2291,8 +4303,8 @@ const I18N_DATA = {
     vault_modal_title: "خزنة مفاتيح كايبر المحلية (ML-KEM-768 Local Vault)",
     vault_modal_desc: "يتم توليد المفاتيح محلياً داخل الذاكرة باستخدام شبكات NIST FIPS 203. المفاتيح السرية لا تغادر جهازك إطلاقاً.",
     vault_gen_btn: "⚡ توليد زوج مفاتيح كايبر",
-    vault_export_pk: "حفظ المفتاح العام (.key)",
-    vault_export_sk: "حفظ المفتاح السري (.key)",
+    vault_copy_pk: "نسخ الرمز العام للحافظة",
+    vault_copy_sk: "نسخ الرمز السري للحافظة",
     vault_lbl_pk: "المفتاح العام (1,184 بايت • رمز التشفير للمرسل):",
     vault_placeholder_pk: "قم بتوليد المفاتيح لاشتقاق رمز التشفير العام...",
     vault_lbl_sk: "المفتاح السري (2,400 بايت • مفتاح فك التشفير الخاص):",
@@ -2328,10 +4340,10 @@ const I18N_DATA = {
     stage_3_chip2: "سر مشترك 32 بايت",
     stage_3_chip3: "HKDF-SHA256",
     stage_4_num: "المرحلة 04",
-    stage_4_title: "الحجب والإخفاء الستيجانوغرافي",
-    stage_4_desc: "تبديل عشوائي للبكسلات بصيغة PNG غير الفاقدة",
-    stage_4_chip1: "تعديل بتات LSB",
-    stage_4_chip2: "خلط معتمد على كايبر",
+    stage_4_title: "الحجب والإخفاء المتكيف (Sobel HBIG)",
+    stage_4_desc: "تمديد Argon2id وإخفاء الحواف بتقنية HBIG وختم BLAKE2b",
+    stage_4_chip1: "حواف Sobel (HBIG)",
+    stage_4_chip2: "Argon2id + BLAKE2b MAC",
     stage_4_chip3: "ΔE < 0.05",
     insp_lbl_prim: "التقنية الأساسية",
     insp_lbl_sec: "الضمان الأمني",
@@ -2453,16 +4465,16 @@ const I18N_DATA = {
     st2_name: "كرار حيدر إسماعيل",
     st2_role: "مهندس النظم وهندسة التشفير",
     st2_dept: "الجامعة المستنصرية • كلية الهندسة",
-    st2_spec: "تنفيذ وتطوير خوارزميات التشفير الكلاسيكية (RSA, DSA/ECDSA, ECDH, ChaCha20/AES)، ومحرك التوجيه الديناميكي، ونظام خزنة المفاتيح والتوليد، والإخفاء المكاني، وتطوير النظام المتكامل.",
+    st2_spec: "تنفيذ وتطوير خوارزميات التشفير الكلاسيكية (RSA, DSA/ECDSA, ECDH, ChaCha20/AES)، ومحرك التوجيه الديناميكي، ونظام خزنة المفاتيح والتوليد، والإخفاء المتكيف Sobel HBIG، وتطوير النظام المتكامل.",
     st2_scope1: "<strong>الخوارزميات الكلاسيكية:</strong> برمجة RSA-3072، وتواقيع DSA / ECDSA P-256، وتبادل مفاتيح ECDH، وتشفير ChaCha20-Poly1305 ARX، و AES.",
     st2_scope2: "<strong>مصفوفة التوجيه الديناميكي:</strong> تصميم وبرمجة مصنف البيانات وخوارزمية التوجيه الذكية بحسب الحجم وتوقيع MIME والإنتروبيا.",
     st2_scope3: "<strong>خزنة وتوليد المفاتيح:</strong> بناء نظام خزنة المفاتيح في الذاكرة، ومحرك توليد أزواج المفاتيح المحلية وتصديرها واستيرادها.",
-    st2_scope4: "<strong>الإخفاء المكاني LSB:</strong> تطوير محرك الإخفاء الستيجانوغرافي بتبديل البكسلات العشوائي بدون أي تسريب بصري (ΔE < 0.05).",
+    st2_scope4: "<strong>الإخفاء المتكيف Sobel HBIG:</strong> تطوير محرك الإخفاء الستيجانوغرافي المتكيف بالحواف وتمديد Argon2id دون أي تسريب بصري (ΔE < 0.05).",
     st2_scope5: "<strong>تطوير النظم والويب:</strong> بناء الواجهة الخلفية عبر FastAPI، وقنوات البث المباشر WebSockets، وواجهة المستخدم التفاعلية.",
     st2_pill1: "RSA & DSA / ECDSA",
     st2_pill2: "مصفوفة التوجيه الديناميكي",
     st2_pill3: "خزنة وتوليد المفاتيح",
-    st2_pill4: "الإخفاء المكاني LSB",
+    st2_pill4: "إخفاء حواف Sobel HBIG",
     st2_pill5: "تطوير النظم المتكاملة",
     st2_btn: "مراسلة المطور",
 
@@ -2529,6 +4541,35 @@ const I18N_DATA = {
     enc_mode_sig_title: "مسار التوقيع الرقمي المعزول (Digital Signature)",
     enc_mode_sig_tag: "ECDSA + Kyber-768",
     enc_mode_sig_desc: "مسار توقيع رقمي مستقل لإثبات الموثوقية وعدم الإنكار عبر ECDSA P-256 و SHA-256 مع تبادل وتغليف المفاتيح عبر CRYSTALS-Kyber.",
+    enc_mode_dir_title: "التشفير الكمومي المباشر (للملفات الضخمة)",
+    enc_mode_dir_tag: "Direct PQC • بدون صورة",
+    enc_mode_dir_desc: "تشفير مباشر فائق السرعة عبر CRYSTALS-Kyber و AEAD للملفات الكبيرة جداً دون الحاجة لصورة حاملة أو تضخم حجم PNG.",
+    dz_payload_title: "اسحب وأفلت الملف هنا أو انقر للاختيار",
+    dz_payload_sub: "يدعم المستندات، الأرشيفات، والملفات الثنائية بأي حجم",
+    dz_cover_title: "اسحب وأفلت صورة الغلاف هنا أو انقر للرفع (اختياري)",
+    dz_cover_sub: "PNG / JPG / WebP — اتركه فارغاً ليختار النظام المنظر الطبيعي الأنسب لحجم بياناتك",
+    dz_dec_title: "اسحب وأفلت صورة الإخفاء (PNG) أو حزمة .fgp.json هنا",
+    dz_dec_sub: "انقر للتصفح أو أفلت الملف لاستخراج وفك التشفير الكمومي",
+    dz_clear_btn: "✕ إزالة",
+    def_cover_auto_badge: "اختيار ذكي تلقائي",
+    def_cover_heading: "مكتبة المناظر الطبيعية الافتراضية (تتكيف مع حجم البيانات):",
+    def_cover_btn_auto: "↺ تلقائي",
+    enc_direct_note_title: "وضع التشفير الكمومي المباشر نشط (بدون إخفاء في صورة)",
+    enc_direct_note_desc: "يتم تشفير البيانات مباشرة عبر CRYSTALS-Kyber و AEAD وتوليد حزمة (.fgp.json) مضغوطة دون الحاجة لصورة حاملة ضخمة.",
+    enc_direct_res_title: "تم تشفير الحزمة مباشرة عبر Direct Quantum-Safe PQC ✓",
+    enc_direct_res_desc: "ملف مشفر مقاوم للكم (.fgp.json) دون تضخم حجم الصورة الناقلة.",
+    enc_btn_dl_direct: "تحميل الحزمة المشفرة (.fgp.json)",
+    cap_badge_overflow: "تجاوز سعة الحامل",
+    cap_modal_title: "الصورة الغلاف أصغر من حجم الحزمة",
+    cap_gauge_title: "توازن السعة والاستيعاب",
+    cap_metric_req: "الحجم المطلوب",
+    cap_metric_cur: "السعة الحالية",
+    cap_tag_recommended: "موصى به",
+    cap_btn_use_default: "استخدام المنظر الطبيعي المتوافق تلقائياً",
+    cap_btn_switch_direct: "التحويل للتشفير الكمومي المباشر (Direct PQC)",
+    cap_dir_sub: "تشفير Kyber-768 + AEAD بصيغة (.fgp.json) مضغوطة دون الحاجة لصورة حاملة",
+    cap_btn_upload_larger: "رفع صورة أكبر",
+    cap_btn_dismiss: "إلغاء",
     enc_step2_enc_title: "2. إعدادات التشفير والتصنيف الذكي",
     enc_step2_sig_title: "2. مسار التوقيع الرقمي المعزول (Kyber + ECDSA)",
     enc_sig_pipe_title: "ECDSA P-256 + SHA-256 + CRYSTALS-Kyber (ML-KEM-768)",
@@ -2537,7 +4578,7 @@ const I18N_DATA = {
     enc_sig_chip1: "1. بصمة SHA-256",
     enc_sig_chip2: "2. توقيع ECDSA P-256",
     enc_sig_chip3: "3. تغليف مفاتيح CRYSTALS-Kyber",
-    enc_sig_chip4: "4. إخفاء PNG LSB",
+    enc_sig_chip4: "4. إخفاء Sobel HBIG PNG",
     enc_card1_title: "1. إدخال البيانات والتصنيف الذكي",
     enc_tab_text: "إدخال نصي",
     enc_tab_file: "رفع ملف",
@@ -2556,10 +4597,14 @@ const I18N_DATA = {
     enc_lbl_sym: "اختيار خوارزمية التشفير التناظري:",
     enc_opt_chacha: "<strong>ChaCha20-Poly1305</strong> (تنفيذ ARX ثابت زمنياً &bull; موصى به)",
     enc_opt_aes: "<strong>AES-256-GCM</strong> (تشفير موثق مسرّع عتادياً)",
-    enc_card2_title: "2. المفتاح العام للمستلم (ML-KEM-768)",
-    enc_lbl_pk: "المفتاح العام للمستلم (ترميز Base64 &bull; 1,184 بايت):",
-    enc_ph_pk: "الصق المفتاح العام للمستلم (1,184 بايت) أو قم بتحميله من الخزنة...",
-    enc_btn_load_vault: "تحميل من خزنة المفاتيح",
+    enc_card2_title: "3. المفتاح العام للمستلم (ML-KEM-768)",
+    enc_lbl_pk: "المفتاح العام للمستلم (مخفي أمنياً • 1,184 بايت):",
+    enc_pk_hidden_badge: "المفتاح العام مخفي أمنياً • 1,184 بايت محمي",
+    enc_pk_security_hint: "المفتاح العام محجوب بصرياً (نقاط مخفية) ومنع تنزيله كملف؛ يتاح نسخ مفتاحك العام أو لصق المفتاح العام للمستلم الآخر هنا.",
+    enc_btn_copy_pk: "📋 نسخ مفتاحي العام",
+    enc_btn_use_local_pk: "↺ مفتاحي المحلي",
+    enc_ph_pk: "•••••••••••••••••••••••••••••••• (مملوء تلقائياً أو الصق مفتاح المستلم)",
+    enc_btn_load_vault: "تحميل المفتاح",
     enc_btn_gen_pk: "⚡ توليد زوج مفاتيح شبكية",
     enc_card3_title: "3. الصورة الناقلة الحاملة (الغلاف)",
     enc_lbl_cover: "اختر صورة الغلاف (PNG غير فاقدة):",
@@ -2596,9 +4641,12 @@ const I18N_DATA = {
     dec_card2_title: "2. رمز التغليف المشفر (ML-KEM-768)",
     dec_lbl_token: "النص المشفر لكايبر (1,088 بايت Base64):",
     dec_ph_token: "الصق رمز كايبر المنسوخ من الحافظة (1,088 بايت)...",
+    dec_btn_copy_ct: "📋 نسخ الرمز",
     dec_card3_title: "3. المفتاح السري المحلي للمستلم",
-    dec_lbl_sk: "المفتاح السري للمستلم (2,400 بايت Base64):",
-    dec_ph_sk: "الصق المفتاح السري لفك التغليف أو قم بتحميله من الخزنة...",
+    dec_lbl_sk: "المفتاح السري للمستلم (مخفي أمنياً • 2,400 بايت):",
+    dec_ph_sk: "•••••••••••••••••••••••••••••••• (محمّل تلقائياً أو الصق مفتاحك السري)",
+    dec_btn_copy_sk: "📋 نسخ",
+    dec_btn_use_local_sk: "↺ المحلي",
     dec_btn_load_vault: "تحميل من خزنة المفاتيح",
     dec_btn_gen_sk: "⚡ توليد زوج مفاتيح شبكية",
     dec_btn_browse_sk: "تحميل من ملف مفتاح",
@@ -2674,6 +4722,61 @@ const I18N_DATA = {
     brand_title: "Post-Quantum Stego System",
     brand_sub: "Mustansiriyah University • College of Engineering",
     badge_grad: "Graduation Project",
+    nav_intro: "Intro",
+    hero_status_pill: "POST-QUANTUM CRYPTOGRAPHIC ENGINE • NIST FIPS 203 READY",
+    hero_replay_blueprint: "Replay Blueprint Reveal",
+    hero_bg_title: "POST-QUANTUM",
+    hero_tag_sub: "QUANTUM-RESISTANT CYBER DEFENSE ARCHITECTURE",
+    hero_lead_text: "Multi-layered sovereign cryptography uniting NIST FIPS 203 Module-Lattice Key Encapsulation (ML-KEM-768), tamper-evident digital signatures, and lossless steganographic concealment.",
+    hero_cta_workstation: "Launch Security Workstation",
+    hero_cta_info: "System Technical Specs",
+    pillar_1_desc: "Quantum-resistant lattice-based key encapsulation.",
+    pillar_action_vault: "Open Key Vault →",
+    pillar_2_desc: "Tamper-proof cryptographic authenticity & integrity.",
+    pillar_action_sign: "Sign Documents →",
+    pillar_3_desc: "Dual-layer classical + post-quantum defense architecture.",
+    pillar_action_encrypt: "Start Encryption →",
+    pillar_4_desc: "End-to-end hardened security with zero exposure.",
+    pillar_action_channel: "Secure Channel →",
+
+    // Cinematic Intro Showcase Overlay & Intro Section Processes
+    intro_skip: "Skip Intro ➔",
+    intro_pause: "⏸ Pause Auto-Scroll",
+    hero_play_showcase: "🎬 Play Fullscreen Guided Showcase",
+    stage1_pill: "QUANTUM-SAFE CYBER DEFENSE ENGINE",
+    stage1_kicker: "Core Cryptographic Terminology & Primitives",
+    stage1_sub: "Module-Lattice Key Encapsulation • Constant-Time ARX Ciphers • Adaptive Sobel HBIG Stego",
+    stage1_scroll_hint: "SLOW GUIDED TOUR ACTIVE • SCROLLING TO FEATURES & PROCESSES",
+    stage2_heading: "Key Project Features & Security Pillars",
+    stage2_sub: "Continuous end-to-end mathematical protection against harvest-now-decrypt-later quantum attacks.",
+    card1_title: "Post-Quantum Key Exchange",
+    card1_desc: "Powered by CRYSTALS-Kyber (ML-KEM-768) lattice cryptography, resisting Shor's algorithm on universal quantum supercomputers.",
+    card2_title: "Hybrid Symmetric Encryption",
+    card2_desc: "Dual-stage classical AEAD (ChaCha20-Poly1305 & AES-256-GCM) combined with quantum-resistant key encapsulation.",
+    card3_title: "Isolated Digital Signature Pipeline",
+    card3_desc: "Unforgeable ECDSA P-256 + SHA-256 identity and document integrity verification encapsulated inside Kyber channels.",
+    card4_title: "Adaptive Sobel HBIG Steganography",
+    card4_desc: "End-to-end encrypted payloads concealed inside high-gradient edge textures using HBIG, Argon2id key-stretching, and BLAKE2b MAC.",
+    intro_proc_heading: "End-to-End Encryption & Concealment Processes",
+    intro_proc_sub: "Clear step-by-step walkthrough of how payloads are classified, encrypted or signed, encapsulated with CRYSTALS-Kyber, and hidden inside PNG edge textures.",
+    proc_step1_title: "Smart Classification & Mode Selection",
+    proc_step1_desc: "Analyzes payload MIME headers, file size, and Shannon entropy while letting the user select Standard Encryption or the Isolated Digital Signature pipeline.",
+    proc_step2_title: "Authenticated Encryption or ECDSA Signing",
+    proc_step2_desc: "Encrypts data via constant-time ChaCha20-Poly1305 or AES-256-GCM with 128-bit MAC tags, or signs SHA-256 digests using ECDSA P-256.",
+    proc_step3_title: "CRYSTALS-Kyber Key Encapsulation",
+    proc_step3_desc: "Encapsulates a 32-byte shared secret via NIST FIPS 203 ML-KEM-768 (1,088-byte ciphertext) and derives independent encryption and stego keys via HKDF-SHA256.",
+    proc_step4_title: "Adaptive Sobel HBIG Concealment",
+    proc_step4_desc: "Stretches the Kyber seed via Argon2id, maps high-gradient edge pixels via HBIG, and embeds framed bits + BLAKE2b MAC into lossless PNG textures.",
+    proc_step5_title: "Decapsulation, Extraction & Verification",
+    proc_step5_desc: "The receiver decapsulates the Kyber token, reconstructs the identical HBIG edge map, verifies the BLAKE2b MAC, and checks ECDSA signatures.",
+    credits_title: "PROJECT DEVELOPERS & ACADEMIC SUPERVISION",
+    credits_sup_label: "ACADEMIC SUPERVISOR & PROJECT ADVISOR",
+    credits_devs_label: "ARCHITECTED & DEVELOPED BY",
+    dev1_role: "Lead Presenter & Post-Quantum Cryptography Researcher (CRYSTALS-Kyber ML-KEM-768)",
+    dev2_role: "Systems Architect & Cryptographic Engine Developer (Ciphers, Routing & Adaptive Sobel Stego)",
+    dev_affil: "Mustansiriyah University • College of Engineering",
+    credits_inst: "Computer Engineering Department • Senior Graduation Project 2026",
+    btn_enter_home: "Launch Home Dashboard ➔",
     nav_home: "Home",
     nav_info: "System Info",
     nav_encrypt: "Encrypt & Conceal",
@@ -2702,8 +4805,8 @@ const I18N_DATA = {
     home_step1_desc: "Smart routing & AEAD encryption via ChaCha20 or AES-256-GCM",
     home_step2_title: "2. Post-Quantum KEM (Kyber-768)",
     home_step2_desc: "Quantum-resistant key encapsulation under NIST FIPS 203",
-    home_step3_title: "3. Conceal in PNG (LSB)",
-    home_step3_desc: "Seeded pseudo-random pixel embedding inside lossless PNGs",
+    home_step3_title: "3. Conceal in Edges (Sobel HBIG)",
+    home_step3_desc: "Argon2id-stretched Sobel edge steganography + BLAKE2b MAC in PNG",
     home_menu_heading: "Main Menus & Workstation Tools",
     home_menu_sub: "Select a module below to jump directly to your task.",
     menu_enc_title: "Encrypt & Conceal",
@@ -2755,8 +4858,8 @@ const I18N_DATA = {
     vault_modal_title: "ML-KEM-768 Local Vault (Post-Quantum Key Management)",
     vault_modal_desc: "Keys are generated locally in-memory using NIST FIPS 203 module lattices. Private keys never leave your machine.",
     vault_gen_btn: "⚡ Generate Kyber Keypair",
-    vault_export_pk: "Save Public Key (.key)",
-    vault_export_sk: "Save Secret Key (.key)",
+    vault_copy_pk: "Copy Public Token to Clipboard",
+    vault_copy_sk: "Copy Secret Token to Clipboard",
     vault_lbl_pk: "Public Key (1,184 Bytes • Sender Encapsulation Token):",
     vault_placeholder_pk: "Generate keypair to derive public encapsulation token...",
     vault_lbl_sk: "Secret Key (2,400 Bytes • Private Decapsulation Key):",
@@ -2792,10 +4895,10 @@ const I18N_DATA = {
     stage_3_chip2: "32B Shared Secret",
     stage_3_chip3: "HKDF-SHA256",
     stage_4_num: "Stage 04",
-    stage_4_title: "Steganographic Carrier",
-    stage_4_desc: "Seeded Pixel Permutation in Lossless PNG",
-    stage_4_chip1: "LSB RGB Mod",
-    stage_4_chip2: "Kyber Shuffle",
+    stage_4_title: "Adaptive Edge Carrier (Sobel HBIG)",
+    stage_4_desc: "Argon2id Key-Stretching & HBIG Edge Masking in PNG",
+    stage_4_chip1: "Sobel Edges (HBIG)",
+    stage_4_chip2: "Argon2id + BLAKE2b MAC",
     stage_4_chip3: "ΔE < 0.05",
     insp_lbl_prim: "Primary Primitive",
     insp_lbl_sec: "Security Guarantee",
@@ -2917,16 +5020,16 @@ const I18N_DATA = {
     st2_name: "Karrar Haider Ismail",
     st2_role: "Systems Architect & Cryptographic Engineer",
     st2_dept: "Mustansiriyah University • College of Engineering",
-    st2_spec: "Engineered the classical cryptographic methods (RSA, DSA/ECDSA, ECDH, ChaCha20/AES), the dynamic routing engine, the Key Vault & key generation system, spatial steganography, and full-stack workstation.",
+    st2_spec: "Engineered the classical cryptographic methods (RSA, DSA/ECDSA, ECDH, ChaCha20/AES), dynamic routing engine, Key Vault system, Adaptive Sobel HBIG steganography, and full-stack workstation.",
     st2_scope1: "<strong>RSA, DSA & Classical Ciphers:</strong> Implemented RSA-3072, DSA / ECDSA P-256 digital signatures, ECDH key exchange, ChaCha20-Poly1305 ARX, and AES pipelines.",
     st2_scope2: "<strong>Dynamic Routing Matrix:</strong> Architected and implemented the payload classifier and dynamic routing algorithm that directs data based on MIME, entropy, and size.",
     st2_scope3: "<strong>Key Vault & Key Generation:</strong> Built the in-memory Key Vault system, local lattice & classical keypair generation engine, and key export/import pipelines.",
-    st2_scope4: "<strong>Spatial LSB Steganography:</strong> Developed the pseudo-random Fisher-Yates pixel permutation steganography engine with zero-leakage embedding (ΔE < 0.05).",
+    st2_scope4: "<strong>Adaptive Sobel HBIG Steganography:</strong> Developed the content-adaptive Sobel edge masking engine with Argon2id key-stretching and BLAKE2b integrity MAC (ΔE < 0.05).",
     st2_scope5: "<strong>Full-Stack & WebSockets:</strong> Created the FastAPI backend, real-time peer WebSocket channels, and reactive workstation user interface.",
     st2_pill1: "RSA & DSA / ECDSA",
     st2_pill2: "Dynamic Routing Matrix",
     st2_pill3: "Key Vault & Key Gen",
-    st2_pill4: "Spatial Stego Permutation",
+    st2_pill4: "Adaptive Sobel HBIG",
     st2_pill5: "Full-Stack Systems",
     st2_btn: "Contact Developer",
 
@@ -2993,6 +5096,35 @@ const I18N_DATA = {
     enc_mode_sig_title: "Isolated Digital Signature Pipeline",
     enc_mode_sig_tag: "ECDSA + Kyber-768",
     enc_mode_sig_desc: "Dedicated digital signing pipeline for authenticity and non-repudiation via ECDSA P-256 and SHA-256 with CRYSTALS-Kyber key encapsulation.",
+    enc_mode_dir_title: "Direct Quantum-Safe PQC (Large Files)",
+    enc_mode_dir_tag: "Direct PQC • No Image",
+    enc_mode_dir_desc: "High-speed Kyber-768 + AEAD encryption for large files without PNG cover bloat.",
+    dz_payload_title: "Drag & drop your payload file here or click to browse",
+    dz_payload_sub: "Supports documents, archives, and binary files of any size",
+    dz_cover_title: "Drag & drop a cover image here or click to upload (Optional)",
+    dz_cover_sub: "PNG / JPG / WebP — Leave empty to auto-select the best landscape carrier for your payload",
+    dz_dec_title: "Drag & drop Stego PNG or .fgp.json bundle here",
+    dz_dec_sub: "Click to browse or drop file for quantum extraction & decryption",
+    dz_clear_btn: "✕ Remove",
+    def_cover_auto_badge: "Smart Auto-Select",
+    def_cover_heading: "Default High-Texture Landscape Carriers (Auto-Scaled by Payload):",
+    def_cover_btn_auto: "↺ Auto-Fit",
+    enc_direct_note_title: "Direct Quantum-Safe PQC Mode Active (No Cover Image)",
+    enc_direct_note_desc: "Encrypts payloads directly with CRYSTALS-Kyber + AEAD into a compact (.fgp.json) bundle without giant PNG bloat.",
+    enc_direct_res_title: "Direct Quantum-Safe PQC Encryption Complete ✓",
+    enc_direct_res_desc: "Compact quantum-resistant package (.fgp.json) created without cover image bloat.",
+    enc_btn_dl_direct: "Download Encrypted Bundle (.fgp.json)",
+    cap_badge_overflow: "CARRIER TOO SMALL",
+    cap_modal_title: "Cover Image Cannot Fit Your Payload",
+    cap_gauge_title: "Capacity Allocation",
+    cap_metric_req: "Required Size",
+    cap_metric_cur: "Current Capacity",
+    cap_tag_recommended: "Recommended",
+    cap_btn_use_default: "Use Auto-Matched Landscape Cover",
+    cap_btn_switch_direct: "Encrypt via Direct Quantum-Safe PQC",
+    cap_dir_sub: "Compact Kyber-768 + AEAD (.fgp.json) bundle with zero cover image bloat",
+    cap_btn_upload_larger: "Upload Larger Image",
+    cap_btn_dismiss: "Cancel",
     enc_step2_enc_title: "2. Encryption Settings & Smart Classifier",
     enc_step2_sig_title: "2. Isolated Digital Signature Pipeline (Kyber + ECDSA)",
     enc_sig_pipe_title: "ECDSA P-256 + SHA-256 + CRYSTALS-Kyber (ML-KEM-768)",
@@ -3001,7 +5133,7 @@ const I18N_DATA = {
     enc_sig_chip1: "1. SHA-256 Digest",
     enc_sig_chip2: "2. ECDSA P-256 Sign",
     enc_sig_chip3: "3. CRYSTALS-Kyber KEM",
-    enc_sig_chip4: "4. PNG LSB Conceal",
+    enc_sig_chip4: "4. Sobel HBIG PNG",
     enc_card1_title: "1. Payload Input & Classification",
     enc_tab_text: "Text Input",
     enc_tab_file: "File Upload",
@@ -3020,10 +5152,14 @@ const I18N_DATA = {
     enc_lbl_sym: "Symmetric Cipher Selection:",
     enc_opt_chacha: "<strong>ChaCha20-Poly1305</strong> (Constant-Time ARX &bull; Recommended)",
     enc_opt_aes: "<strong>AES-256-GCM</strong> (Hardware-Accelerated AEAD)",
-    enc_card2_title: "2. Recipient ML-KEM-768 Public Key",
-    enc_lbl_pk: "Recipient Public Key (Base64 &bull; 1,184 Bytes):",
-    enc_ph_pk: "Paste 1,184-byte recipient public key or load from Key Vault...",
-    enc_btn_load_vault: "Load from Key Vault",
+    enc_card2_title: "3. Recipient ML-KEM-768 Public Key",
+    enc_lbl_pk: "Recipient Public Key (Masked &bull; 1,184 Bytes):",
+    enc_pk_hidden_badge: "Public Key Hidden &bull; 1,184 Bytes Protected",
+    enc_pk_security_hint: "Raw keys are visually masked (dot display) and file downloads are disabled. Copy your own public key or paste a peer's key here.",
+    enc_btn_copy_pk: "📋 Copy My Public Key",
+    enc_btn_use_local_pk: "↺ Use My Key",
+    enc_ph_pk: "•••••••••••••••••••••••••••••••• (Auto-filled or paste peer Public Key)",
+    enc_btn_load_vault: "Load Key",
     enc_btn_gen_pk: "⚡ Generate Lattice Keypair",
     enc_card3_title: "3. Carrier Image (Cover)",
     enc_lbl_cover: "Select Cover Image (Lossless PNG):",
@@ -3060,9 +5196,12 @@ const I18N_DATA = {
     dec_card2_title: "2. ML-KEM-768 Ciphertext Token",
     dec_lbl_token: "Kyber-768 Ciphertext (1,088 Bytes Base64):",
     dec_ph_token: "Paste 1,088-byte Kyber token from clipboard...",
+    dec_btn_copy_ct: "📋 Copy Token",
     dec_card3_title: "3. Local Receiver Secret Key",
-    dec_lbl_sk: "Recipient Secret Key (2,400 Bytes Base64):",
-    dec_ph_sk: "Paste private decapsulation key or load from vault...",
+    dec_lbl_sk: "Recipient Secret Key (Masked &bull; 2,400 Bytes):",
+    dec_ph_sk: "•••••••••••••••••••••••••••••••• (Auto-filled or paste Secret Key)",
+    dec_btn_copy_sk: "📋 Copy",
+    dec_btn_use_local_sk: "↺ My Key",
     dec_btn_load_vault: "Load from Key Vault",
     dec_btn_gen_sk: "⚡ Generate Lattice Keypair",
     dec_btn_browse_sk: "Load from Key File",
@@ -3253,6 +5392,20 @@ function setLanguage(lang, notify = false) {
   // Refresh audit logs if loaded
   if (allAuditLogs && allAuditLogs.length > 0) {
     renderAuditTable();
+  }
+
+  // Refresh vertical terminology swappers in active language
+  if (typeof swapTermTopToBottom === "function") {
+    swapTermTopToBottom("overlay", currentOverlayTermIdx, false);
+    swapTermTopToBottom("inline", currentInlineTermIdx, false);
+  }
+
+  // Trigger cipher scramble on headline & cards if intro section is active
+  const introSection = document.getElementById("section-intro");
+  if (introSection && introSection.classList.contains("active")) {
+    if (typeof triggerCipherScramble === "function") {
+      triggerCipherScramble();
+    }
   }
 
   if (notify) {

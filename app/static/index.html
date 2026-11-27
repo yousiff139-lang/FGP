@@ -6,15 +6,500 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Hybrid Multi-Level Post-Quantum Security & Steganographic Workstation">
   <title data-i18n="doc_title">منظومة التشفير الهجين المقاوم للحوسبة الكمومية والإخفاء &bull; مشروع التخرج</title>
-  <link rel="stylesheet" href="/static/style.css?v=2.2">
+  <link rel="stylesheet" href="/static/style.css?v=3.1">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@500;600;700&display=swap"
     rel="stylesheet">
+  <!-- GSAP Animation Library, ScrollTrigger & ScrollToPlugin for Cinematic Auto-Scroll -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollToPlugin.min.js"></script>
 </head>
 
 <body>
+
+  <!-- ========================================================
+       CINEMATIC INTRO SHOWCASE OVERLAY (SLOW, CLEAR & READABLE)
+       ======================================================== -->
+  <div id="cinematic-intro-overlay" class="cinematic-intro-overlay">
+    <!-- Deep Obsidian Grid Mesh Canvas & Live Post-Quantum Lattice Animation -->
+    <div class="intro-bg-canvas">
+      <div class="intro-grid-mesh"></div>
+      <canvas id="overlay-quantum-canvas" class="quantum-lattice-canvas"></canvas>
+      <div class="intro-ambient-glow glow-cyan-top"></div>
+      <div class="intro-ambient-glow glow-crimson-bottom"></div>
+    </div>
+
+    <!-- Top Floating HUD Controls -->
+    <div class="intro-hud-topbar">
+      <div class="intro-hud-left">
+        <div class="intro-hud-badge">
+          <span class="hud-pulse-dot"></span>
+          <span class="hud-tag-text">// POST-QUANTUM SECURITY SHOWCASE &bull; NIST FIPS 203 //</span>
+        </div>
+        <span class="intro-hud-clock" id="intro-hud-clock">00:00:00 UTC</span>
+      </div>
+      <div class="intro-hud-right">
+        <button type="button" class="btn-pause-intro" id="btn-pause-intro" title="Pause / Resume Auto-Scroll">
+          <span id="pause-intro-label" data-i18n="intro_pause">⏸ إيقاف مؤقت للتصفح (Pause Auto-Scroll)</span>
+        </button>
+        <button type="button" class="btn-skip-intro" id="btn-skip-intro" title="Skip to Home Dashboard">
+          <span data-i18n="intro_skip">تخطي إلى الرئيسية (Skip Intro)</span>
+          <span class="skip-arrow">➔</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Smooth Auto-Scrollable Cinema Viewport Container -->
+    <div class="intro-cinema-viewport" id="intro-cinema-viewport">
+      <div class="intro-cinema-track" id="intro-cinema-track">
+
+        <!-- ================= STAGE 1: SLOW TOP-TO-BOTTOM TERMINOLOGY SWAPPER ================= -->
+        <section class="intro-stage intro-stage-1" id="intro-stage-1">
+          <!-- SVG Line-Drawing Wireframe Frame -->
+          <svg class="intro-svg-wireframe" viewBox="0 0 1200 680" preserveAspectRatio="none">
+            <rect class="svg-wire-rect" x="30" y="30" width="1140" height="620" rx="16" />
+            <line class="svg-wire-diag" x1="30" y1="30" x2="160" y2="160" />
+            <line class="svg-wire-diag" x1="1170" y1="30" x2="1040" y2="160" />
+            <line class="svg-wire-diag" x1="30" y1="650" x2="160" y2="520" />
+            <line class="svg-wire-diag" x1="1170" y1="650" x2="1040" y2="520" />
+            <path class="svg-wire-cross" d="M 22 30 H 38 M 30 22 V 38" />
+            <path class="svg-wire-cross" d="M 1162 30 H 1178 M 1170 22 V 38" />
+            <path class="svg-wire-cross" d="M 22 650 H 38 M 30 642 V 658" />
+            <path class="svg-wire-cross" d="M 1162 650 H 1178 M 1170 642 V 658" />
+          </svg>
+
+          <div class="stage-1-content">
+            <div class="stage-tag-pill">
+              <span class="bracket">[</span>
+              <span data-i18n="stage1_pill">QUANTUM-SAFE CYBER DEFENSE &amp; STEGANOGRAPHY PLATFORM</span>
+              <span class="bracket">]</span>
+            </div>
+
+            <div class="kinetic-hero-title-box">
+              <div class="kinetic-kicker" data-i18n="stage1_kicker">Core Cryptographic Terminology &amp; Architecture</div>
+
+              <!-- Smooth Top-to-Bottom Vertical Swapping Reel -->
+              <div class="vertical-term-swapper-box" id="overlay-term-swapper-box">
+                <div class="vertical-term-slide active" id="overlay-term-slide-current">
+                  <span class="term-step-badge" id="overlay-term-badge">01 / 05 &bull; NIST FIPS 203 STANDARD</span>
+                  <h1 class="vertical-term-heading" id="overlay-term-title">CRYSTALS-Kyber (ML-KEM-768)</h1>
+                  <p class="vertical-term-desc" id="overlay-term-desc">
+                    Quantum-resistant module-lattice key encapsulation protecting session keys against future quantum supercomputers.
+                  </p>
+                </div>
+                <div class="vertical-term-slide incoming" id="overlay-term-slide-next" aria-hidden="true">
+                  <span class="term-step-badge" id="overlay-term-badge-next"></span>
+                  <h1 class="vertical-term-heading" id="overlay-term-title-next"></h1>
+                  <p class="vertical-term-desc" id="overlay-term-desc-next"></p>
+                </div>
+              </div>
+
+              <!-- Interactive Term Selector Pills -->
+              <div class="term-selector-pills" id="overlay-term-pills">
+                <button type="button" class="term-pill-btn active" data-term-idx="0">01. CRYSTALS-Kyber</button>
+                <button type="button" class="term-pill-btn" data-term-idx="1">02. ChaCha20 &amp; AES-256</button>
+                <button type="button" class="term-pill-btn" data-term-idx="2">03. Digital Signatures</button>
+                <button type="button" class="term-pill-btn" data-term-idx="3">04. Adaptive Sobel Stego</button>
+                <button type="button" class="term-pill-btn" data-term-idx="4">05. Smart Classifier</button>
+              </div>
+
+              <!-- SYNCHRONIZED LIVE CRYPTOGRAPHIC PIPELINE & HOLOGRAPHIC ANIMATION STAGE -->
+              <div class="crypto-sync-visualizer" id="overlay-sync-visualizer" data-active-scene="0">
+                <!-- 5-Node Live Synchronized Pipeline Conduit -->
+                <div class="sync-pipeline-track">
+                  <div class="sync-laser-beam" id="overlay-sync-beam"></div>
+                  <div class="sync-node active" data-node="0">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">ML-KEM-768</span>
+                  </div>
+                  <div class="sync-node" data-node="1">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">AEAD 256-BIT</span>
+                  </div>
+                  <div class="sync-node" data-node="2">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">ECDSA P-256</span>
+                  </div>
+                  <div class="sync-node" data-node="3">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">SOBEL HBIG STEGO</span>
+                  </div>
+                  <div class="sync-node" data-node="4">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">AI ROUTER</span>
+                  </div>
+                </div>
+
+                <!-- Dynamic Synchronized Scene Stage (5 Live Project Animations) -->
+                <div class="sync-scenes-viewport">
+                  <!-- Scene 0: CRYSTALS-Kyber Module-LWE Lattice Encapsulation -->
+                  <div class="sync-scene active" data-scene="0">
+                    <div class="scene-visual-row">
+                      <div class="kyber-key-node">
+                        <span class="k-tag">PUBLIC KEY (PK)</span>
+                        <strong>1,184 Bytes</strong>
+                      </div>
+                      <div class="kyber-lattice-core">
+                        <div class="lattice-ring ring-outer"></div>
+                        <div class="lattice-ring ring-mid"></div>
+                        <div class="lattice-cube-grid">
+                          <span></span><span></span><span></span>
+                          <span></span><span></span><span></span>
+                          <span></span><span></span><span></span>
+                        </div>
+                        <span class="lattice-core-tag">M-LWE R<sub>q</sub></span>
+                      </div>
+                      <div class="kyber-key-node crimson">
+                        <span class="k-tag">CIPHERTEXT + SECRET</span>
+                        <strong>1,088B CT &bull; 32B SS</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 1: ChaCha20-Poly1305 & AES-256-GCM ARX Matrix -->
+                  <div class="sync-scene" data-scene="1">
+                    <div class="scene-visual-row">
+                      <div class="arx-matrix-grid">
+                        <span class="arx-cell c-const">expa</span><span class="arx-cell c-const">nd 3</span><span class="arx-cell c-const">2-by</span><span class="arx-cell c-const">te k</span>
+                        <span class="arx-cell c-key">K_01</span><span class="arx-cell c-key">K_02</span><span class="arx-cell c-key">K_03</span><span class="arx-cell c-key">K_04</span>
+                        <span class="arx-cell c-key">K_05</span><span class="arx-cell c-key">K_06</span><span class="arx-cell c-key">K_07</span><span class="arx-cell c-key">K_08</span>
+                        <span class="arx-cell c-nonce">CNT0</span><span class="arx-cell c-nonce">N_01</span><span class="arx-cell c-nonce">N_02</span><span class="arx-cell c-nonce">N_03</span>
+                      </div>
+                      <div class="arx-ops-stream">
+                        <div class="arx-op-pill">ADD (⊞)</div>
+                        <div class="arx-op-pill">ROTATE (⋘)</div>
+                        <div class="arx-op-pill">XOR (⊕)</div>
+                      </div>
+                      <div class="mac-seal-box">
+                        <span class="mac-seal-icon">🔒</span>
+                        <span class="mac-seal-lbl">128-BIT POLY1305 / GCM TAG</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 2: Isolated Digital Signatures (ECDSA P-256 + SHA-256) -->
+                  <div class="sync-scene" data-scene="2">
+                    <div class="scene-visual-row">
+                      <div class="sig-hash-box">
+                        <span class="k-tag">SHA-256 DIGEST</span>
+                        <code>e3b0c442...98fc1c14</code>
+                      </div>
+                      <svg class="ecdsa-curve-svg" viewBox="0 0 220 74">
+                        <path class="ecdsa-curve-bg" d="M 10 58 Q 55 5, 110 37 T 210 16" fill="none" />
+                        <path class="ecdsa-curve-Animated" d="M 10 58 Q 55 5, 110 37 T 210 16" fill="none" />
+                        <circle class="ecdsa-point p1" cx="55" cy="23" r="4" />
+                        <circle class="ecdsa-point p2" cx="110" cy="37" r="4.5" />
+                        <circle class="ecdsa-point p3" cx="172" cy="31" r="4" />
+                      </svg>
+                      <div class="sig-verified-stamp">
+                        <span class="stamp-check">✓</span>
+                        <div>
+                          <strong>ECDSA P-256 SIGNED</strong>
+                          <span>KYBER-ENCAPSULATED</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 3: Content-Adaptive Sobel Edge Steganography (HBIG) -->
+                  <div class="sync-scene" data-scene="3">
+                    <div class="scene-visual-row">
+                      <div class="stego-prng-seed">
+                        <span class="k-tag">ARGON2ID STEGO SEED</span>
+                        <strong>Sobel HBIG Edge Map</strong>
+                      </div>
+                      <div class="stego-pixel-matrix">
+                        <span class="px-cell hit">R₀</span><span class="px-cell">G₁</span><span class="px-cell hit-alt">B₂</span><span class="px-cell">R₃</span><span class="px-cell hit">G₄</span><span class="px-cell">B₅</span>
+                        <span class="px-cell">R₆</span><span class="px-cell hit-alt">G₇</span><span class="px-cell">B₈</span><span class="px-cell hit">R₉</span><span class="px-cell">G₁₀</span><span class="px-cell hit-alt">B₁₁</span>
+                      </div>
+                      <div class="stego-metrics-pill">
+                        <strong>PSNR &gt; 50 dB</strong>
+                        <span>ΔE &lt; 0.05 &bull; BLAKE2b MAC</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 4: Smart Content & Entropy Classifier -->
+                  <div class="sync-scene" data-scene="4">
+                    <div class="scene-visual-row">
+                      <div class="entropy-bars-box">
+                        <span class="e-bar b1"></span><span class="e-bar b2"></span><span class="e-bar b3"></span><span class="e-bar b4"></span><span class="e-bar b5"></span><span class="e-bar b6"></span>
+                        <span class="e-caption">SHANNON ENTROPY H(X)</span>
+                      </div>
+                      <div class="classifier-routes-branches">
+                        <span class="route-branch r-bulk">⚡ BULK STREAM (ChaCha20)</span>
+                        <span class="route-branch r-sens">🛡️ SENSITIVE (ECDH + AEAD)</span>
+                        <span class="route-branch r-doc">✒️ DOCUMENT (ECDSA + KYBER)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Telemetry Indicator Bar -->
+            <div class="stage-1-telemetry">
+              <div class="telemetry-item">
+                <span class="tele-lbl">SECURITY:</span>
+                <span class="tele-val text-cyan">POST-QUANTUM 128-BIT</span>
+              </div>
+              <div class="telemetry-bar-wrap">
+                <div class="telemetry-bar-fill" id="telemetry-bar-fill"></div>
+              </div>
+              <div class="telemetry-item">
+                <span class="tele-lbl">STATUS:</span>
+                <span class="tele-val text-crimson" id="tele-status-text">READING TERMINOLOGY...</span>
+              </div>
+            </div>
+
+            <div class="stage-scroll-hint">
+              <span class="hint-mouse-icon"></span>
+              <span class="hint-text" data-i18n="stage1_scroll_hint">SLOW GUIDED PRESENTATION &bull; SCROLL FREELY ANYTIME</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= STAGE 2: KEY PROJECT FEATURES & ENCRYPTION PROCESSES ================= -->
+        <section class="intro-stage intro-stage-2" id="intro-stage-2">
+          <div class="stage-header-block">
+            <span class="stage-sec-tag">// 01. KEY PROJECT FEATURES //</span>
+            <h2 class="stage-heading" data-i18n="stage2_heading">Core Cryptographic Defense Pillars</h2>
+            <p class="stage-sub" data-i18n="stage2_sub">A comprehensive multi-layered cybersecurity platform combining post-quantum key exchange, authenticated symmetric encryption, digital signatures, and lossless steganography.</p>
+          </div>
+
+          <div class="intro-cards-grid">
+            <!-- Card 1: Post-Quantum Key Exchange -->
+            <div class="cyber-showcase-card" id="showcase-card-1">
+              <div class="card-glow-edge"></div>
+              <div class="card-header">
+                <div class="card-icon-hex">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                    <polyline points="2 17 12 22 22 17"></polyline>
+                    <polyline points="2 12 12 17 22 12"></polyline>
+                  </svg>
+                </div>
+                <span class="card-badge badge-cyan">ML-KEM-768</span>
+              </div>
+              <h3 class="card-title" data-i18n="card1_title">Post-Quantum Key Exchange</h3>
+              <p class="card-desc" data-i18n="card1_desc">Powered by CRYSTALS-Kyber (ML-KEM-768) lattice cryptography, encapsulating 32-byte shared secrets to resist Shor's algorithm on quantum computers.</p>
+              <div class="card-specs">
+                <span>NIST FIPS 203</span>
+                <span>1,184B Public Key &bull; 1,088B CT</span>
+              </div>
+            </div>
+
+            <!-- Card 2: Hybrid Defense Layer -->
+            <div class="cyber-showcase-card" id="showcase-card-2">
+              <div class="card-glow-edge"></div>
+              <div class="card-header">
+                <div class="card-icon-hex">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    <circle cx="12" cy="16" r="1"></circle>
+                  </svg>
+                </div>
+                <span class="card-badge badge-crimson">ChaCha20 / AES-256-GCM</span>
+              </div>
+              <h3 class="card-title" data-i18n="card2_title">Hybrid Symmetric Encryption</h3>
+              <p class="card-desc" data-i18n="card2_desc">Dual-cipher AEAD architecture that dynamically selects ChaCha20-Poly1305 or AES-256-GCM based on file type, size, and entropy analysis.</p>
+              <div class="card-specs">
+                <span>256-bit Key</span>
+                <span>128-bit Auth Tag (MAC)</span>
+              </div>
+            </div>
+
+            <!-- Card 3: Cryptographic Digital Signatures -->
+            <div class="cyber-showcase-card" id="showcase-card-3">
+              <div class="card-glow-edge"></div>
+              <div class="card-header">
+                <div class="card-icon-hex">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <path d="M9 15l2 2 4-4"></path>
+                  </svg>
+                </div>
+                <span class="card-badge badge-cyan">ECDSA P-256 + SHA-256</span>
+              </div>
+              <h3 class="card-title" data-i18n="card3_title">Isolated Digital Signature Pipeline</h3>
+              <p class="card-desc" data-i18n="card3_desc">Generates unforgeable ECDSA P-256 signatures over SHA-256 digests, encapsulated with CRYSTALS-Kyber to guarantee authenticity and non-repudiation.</p>
+              <div class="card-specs">
+                <span>SHA-256 Digest</span>
+                <span>Tamper-Proof Verification</span>
+              </div>
+            </div>
+
+            <!-- Card 4: Hardened Zero-Knowledge Privacy -->
+            <div class="cyber-showcase-card" id="showcase-card-4">
+              <div class="card-glow-edge"></div>
+              <div class="card-header">
+                <div class="card-icon-hex">
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <path d="M9 12h6"></path>
+                  </svg>
+                </div>
+                <span class="card-badge badge-crimson">Adaptive Sobel Edge Stego</span>
+              </div>
+              <h3 class="card-title" data-i18n="card4_title">Adaptive Sobel HBIG Steganography</h3>
+              <p class="card-desc" data-i18n="card4_desc">Conceals encrypted payloads strictly inside high-gradient edge textures using Higher-Bit Invariant Gradients (HBIG), Argon2id key-stretching, and a BLAKE2b integrity MAC.</p>
+              <div class="card-specs">
+                <span>PSNR &gt; 50 dB</span>
+                <span>HBIG Edges &bull; BLAKE2b MAC</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ENCRYPTION & SECURITY PROCESSES PIPELINE -->
+          <div class="intro-processes-wrapper" id="intro-stage-processes">
+            <div class="stage-header-block process-header-block">
+              <span class="stage-sec-tag">// 02. ENCRYPTION &amp; SECURITY WORKFLOW //</span>
+              <h2 class="stage-heading" data-i18n="intro_proc_heading">End-to-End Encryption &amp; Concealment Processes</h2>
+              <p class="stage-sub" data-i18n="intro_proc_sub">How confidential data is classified, encrypted or signed, encapsulated with Post-Quantum Kyber-768, and hidden inside a lossless PNG carrier.</p>
+            </div>
+
+            <!-- Live Animated Data-Packet Conduit Across the 5 Encryption Steps -->
+            <div class="process-live-conduit">
+              <div class="conduit-line"></div>
+              <div class="conduit-packet"></div>
+            </div>
+
+            <div class="intro-process-steps-grid" id="overlay-process-steps-grid">
+              <div class="intro-process-step-card">
+                <div class="proc-step-num">STEP 01</div>
+                <h4 class="proc-step-title" data-i18n="proc_step1_title">Smart Classification &amp; Mode Selection</h4>
+                <p class="proc-step-desc" data-i18n="proc_step1_desc">Analyzes payload MIME signature, byte size, and Shannon entropy, or routes directly to the Isolated Digital Signature pipeline.</p>
+                <span class="proc-step-tech">MIME + Entropy Analyzer</span>
+              </div>
+
+              <div class="intro-process-step-card">
+                <div class="proc-step-num">STEP 02</div>
+                <h4 class="proc-step-title" data-i18n="proc_step2_title">AEAD Encryption or ECDSA Signing</h4>
+                <p class="proc-step-desc" data-i18n="proc_step2_desc">Encrypts payloads via ChaCha20-Poly1305 / AES-256-GCM with a 96-bit nonce, or signs a SHA-256 hash using an ECDSA P-256 private key.</p>
+                <span class="proc-step-tech">ChaCha20 / AES-GCM / ECDSA</span>
+              </div>
+
+              <div class="intro-process-step-card">
+                <div class="proc-step-num">STEP 03</div>
+                <h4 class="proc-step-title" data-i18n="proc_step3_title">CRYSTALS-Kyber Key Encapsulation</h4>
+                <p class="proc-step-desc" data-i18n="proc_step3_desc">Encapsulates the 32-byte shared secret via NIST FIPS 203 ML-KEM-768 and derives split encryption and stego keys through HKDF-SHA256.</p>
+                <span class="proc-step-tech">ML-KEM-768 + HKDF-SHA256</span>
+              </div>
+
+              <div class="intro-process-step-card">
+                <div class="proc-step-num">STEP 04</div>
+                <h4 class="proc-step-title" data-i18n="proc_step4_title">Adaptive Sobel HBIG Concealment</h4>
+                <p class="proc-step-desc" data-i18n="proc_step4_desc">Stretches the Kyber seed via Argon2id, maps high-gradient edge pixels via HBIG, and embeds framed bits + BLAKE2b MAC into lossless PNG textures.</p>
+                <span class="proc-step-tech">Sobel HBIG + BLAKE2b MAC</span>
+              </div>
+
+              <div class="intro-process-step-card">
+                <div class="proc-step-num">STEP 05</div>
+                <h4 class="proc-step-title" data-i18n="proc_step5_title">Decapsulation, Extraction &amp; Verification</h4>
+                <p class="proc-step-desc" data-i18n="proc_step5_desc">Recipient decapsulates the Kyber token, reconstructs the identical HBIG edge map, verifies the Argon2-keyed BLAKE2b MAC, and checks ECDSA signatures.</p>
+                <span class="proc-step-tech">Zero-Trust Verification</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ================= STAGE 3: DEVELOPERS & ACADEMIC SUPERVISOR FINALE ================= -->
+        <section class="intro-stage intro-stage-3" id="intro-stage-3">
+          <div class="credits-card-container">
+            <div class="credits-cyber-frame">
+              <span class="credits-cross ch-tl">+</span>
+              <span class="credits-cross ch-tr">+</span>
+              <span class="credits-cross ch-bl">+</span>
+              <span class="credits-cross ch-br">+</span>
+              
+              <div class="credits-header">
+                <span class="credits-kicker">// 03. PROJECT CREDITS &amp; ACADEMIC SUPERVISION //</span>
+                <h2 class="credits-title" data-i18n="credits_title">DEVELOPERS &amp; ACADEMIC SUPERVISOR</h2>
+                <div class="credits-line"></div>
+              </div>
+
+              <!-- Academic Supervisor Block -->
+              <div class="supervisor-highlight-box">
+                <span class="sup-overline" data-i18n="credits_sup_label">إشراف الأستاذ المشرف (Academic Supervisor)</span>
+                <div class="dev-profile-pill supervisor-pill">
+                  <div class="dev-avatar-ring ring-gold">
+                    <span class="dev-icon">🎓</span>
+                  </div>
+                  <div class="dev-info">
+                    <h3 class="dev-name" data-i18n="sup_name">أ.م.د. حيدر طارش (Assist. Prof. Haider Tarish)</h3>
+                    <span class="dev-role" data-i18n="sup_role">المشرف الأكاديمي وموجه المشروع &bull; Academic Supervisor &amp; Project Advisor</span>
+                    <span class="dev-affil" data-i18n="dev_affil">الجامعة المستنصرية &bull; كلية الهندسة &bull; قسم هندسة الحاسوب</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Developers Grid -->
+              <div class="developers-section-block">
+                <span class="sup-overline" data-i18n="credits_devs_label">تصميم وتطوير المهندسين (Architected &amp; Developed By)</span>
+                <div class="developers-grid">
+                  <!-- Developer 1: Abdullah Ayad -->
+                  <div class="dev-profile-pill">
+                    <div class="dev-avatar-ring">
+                      <span class="dev-icon">⚡</span>
+                    </div>
+                    <div class="dev-info">
+                      <h3 class="dev-name" data-i18n="st1_name">عبدالله إياد (Abdullah Ayad)</h3>
+                      <span class="dev-role" data-i18n="dev1_role">المتحدث الرئيسي وباحث التشفير المقاوم للكم (CRYSTALS-Kyber ML-KEM-768)</span>
+                      <span class="dev-affil" data-i18n="dev_affil">Mustansiriyah University &bull; College of Engineering</span>
+                    </div>
+                  </div>
+
+                  <!-- Developer 2: Karrar Haider Ismail -->
+                  <div class="dev-profile-pill">
+                    <div class="dev-avatar-ring ring-crimson">
+                      <span class="dev-icon">🛡️</span>
+                    </div>
+                    <div class="dev-info">
+                      <h3 class="dev-name" data-i18n="st2_name">كرار حيدر إسماعيل (Karrar Haider Ismail)</h3>
+                      <span class="dev-role" data-i18n="dev2_role">مهندس النظم وهندسة التشفير والتوجيه والإخفاء المكاني</span>
+                      <span class="dev-affil" data-i18n="dev_affil">Mustansiriyah University &bull; College of Engineering</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Institution Badge & Launch CTA -->
+              <div class="credits-footer">
+                <div class="inst-tag">
+                  <span class="inst-dot"></span>
+                  <span data-i18n="credits_inst">Computer Engineering Department &bull; Senior Graduation Project 2026</span>
+                </div>
+                <div class="credits-cta-row">
+                  <button type="button" class="btn-launch-home" id="btn-launch-home">
+                    <span data-i18n="btn_enter_home">الدخول إلى لوحة التحكم الرئيسية (Launch Home Dashboard)</span>
+                    <span class="launch-icon">➔</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Bottom Progress Scrubber -->
+    <div class="intro-bottom-scrubber">
+      <div class="scrubber-track">
+        <div class="scrubber-bar" id="intro-scrubber-bar"></div>
+      </div>
+      <div class="scrubber-labels">
+        <span class="scrub-step" id="step-mark-1">1. TERMINOLOGY REEL</span>
+        <span class="scrub-step" id="step-mark-2">2. FEATURES &amp; ENCRYPTION PROCESSES</span>
+        <span class="scrub-step" id="step-mark-3">3. DEVELOPERS &amp; SUPERVISOR</span>
+      </div>
+    </div>
+  </div>
 
   <!-- Top Navigation Bar -->
   <header class="app-header">
@@ -37,7 +522,16 @@
     </div>
 
     <nav class="header-nav" role="navigation" aria-label="Main Navigation">
-      <button class="nav-tab active" data-target="section-home" id="tab-home">
+      <button class="nav-tab active" data-target="section-intro" id="tab-intro">
+        <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+        <span data-i18n="nav_intro">Intro</span>
+      </button>
+      <button class="nav-tab" data-target="section-home" id="tab-home">
         <svg class="tab-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
@@ -146,8 +640,8 @@
         <span id="theme-mode-label" data-i18n="theme_mode_dark">داكن</span>
       </button>
 
-      <!-- Key Vault Button -->
-      <button class="btn btn-secondary btn-sm" id="btn-open-vault">
+      <!-- Key Vault Button (Hidden per security policy: keys are managed internally) -->
+      <button class="btn btn-secondary btn-sm hidden" id="btn-open-vault">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
           stroke-linecap="round" stroke-linejoin="round">
           <path
@@ -279,32 +773,155 @@
         </p>
 
         <div class="key-actions-row">
-          <button class="btn btn-primary btn-sm" id="btn-gen-keys" data-i18n="vault_gen_btn">⚡ توليد زوج مفاتيح
-            كايبر</button>
-          <button class="btn btn-secondary btn-sm" id="btn-export-pk" disabled data-i18n="vault_export_pk">حفظ المفتاح
-            العام (.key)</button>
-          <button class="btn btn-warning btn-sm" id="btn-export-sk" disabled data-i18n="vault_export_sk">حفظ المفتاح
-            السري (.key)</button>
+          <button class="btn btn-primary btn-sm" id="btn-gen-keys" data-i18n="vault_gen_btn">⚡ توليد زوج مفاتيح كايبر</button>
         </div>
 
         <div class="form-group mt-3">
-          <label id="lbl-vault-pk" data-i18n="vault_lbl_pk">المفتاح العام (1,184 بايت &bull; رمز التشفير
-            للمرسل):</label>
-          <textarea id="vault-pk" class="form-input code-font" rows="3" readonly
-            data-i18n-placeholder="vault_placeholder_pk"
-            placeholder="قم بتوليد المفاتيح لاشتقاق رمز التشفير العام..."></textarea>
+          <label id="lbl-vault-pk" data-i18n="vault_lbl_pk">المفتاح العام (1,184 بايت &bull; رمز التشفير للمرسل):</label>
+          <input type="hidden" id="vault-pk" value="">
+          <div class="masked-token-vault-box">
+            <div class="masked-token-status">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span class="masked-dots" id="vault-pk-dots">••••••••••••••••••••••••••••••••</span>
+              <span class="badge badge-subtle" data-i18n="enc_token_hidden_badge">مخفي أمنياً (1,184B)</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-vault-pk" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span data-i18n="vault_copy_pk">نسخ الرمز العام للحافظة</span>
+            </button>
+          </div>
         </div>
 
-        <div class="form-group">
-          <label id="lbl-vault-sk" data-i18n="vault_lbl_sk">المفتاح السري (2,400 بايت &bull; مفتاح فك التشفير
-            الخاص):</label>
-          <textarea id="vault-sk" class="form-input code-font" rows="4" readonly
-            data-i18n-placeholder="vault_placeholder_sk" placeholder="المفتاح السري سيُخزن محلياً فقط..."></textarea>
+        <div class="form-group mt-3">
+          <label id="lbl-vault-sk" data-i18n="vault_lbl_sk">المفتاح السري (2,400 بايت &bull; مفتاح فك التشفير الخاص):</label>
+          <input type="hidden" id="vault-sk" value="">
+          <div class="masked-token-vault-box">
+            <div class="masked-token-status">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+              </svg>
+              <span class="masked-dots" id="vault-sk-dots">••••••••••••••••••••••••••••••••</span>
+              <span class="badge badge-subtle" data-i18n="enc_token_hidden_badge">مخفي أمنياً (2,400B)</span>
+            </div>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-vault-sk" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span data-i18n="vault_copy_sk">نسخ الرمز السري للحافظة</span>
+            </button>
+          </div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-primary btn-sm" id="btn-use-vault-keys" data-i18n="vault_use_btn">تحميل المفاتيح إلى سير
+        <button class="btn btn-primary btn-sm" id="btn-use-vault-keys" data-i18n="vault_use_btn">مزامنة المفاتيح مع سير
           العمل</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Premium Centered Capacity Overflow & Huge Payload Alert Modal -->
+  <div id="capacity-alert-modal" class="modal-overlay capacity-modal-overlay hidden" role="dialog" aria-modal="true"
+    aria-labelledby="cap-modal-title">
+    <div class="modal-card capacity-modal-card">
+      <div class="cap-modal-top">
+        <div class="cap-modal-status-row">
+          <span class="cap-status-icon" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+              <line x1="12" y1="9" x2="12" y2="13"></line>
+              <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+          </span>
+          <span class="cap-status-pill" id="cap-modal-badge" data-i18n="cap_badge_overflow">تجاوز سعة الحامل</span>
+        </div>
+        <button type="button" class="cap-close-btn" id="btn-close-capacity-modal" aria-label="Close">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+      <div class="cap-modal-body">
+        <h3 id="cap-modal-title" class="cap-modal-headline" data-i18n="cap_modal_title">الصورة الغلاف أصغر من حجم الحزمة</h3>
+        <p id="cap-modal-detail" class="cap-modal-sub"></p>
+
+        <!-- Precision Telemetry Gauge -->
+        <div class="cap-telemetry-panel mt-3" id="cap-modal-metrics">
+          <div class="cap-gauge-header">
+            <span class="cap-gauge-title" data-i18n="cap_gauge_title">توازن السعة والاستيعاب</span>
+            <span class="cap-delta-pill" id="cap-delta-pill">-</span>
+          </div>
+          <div class="cap-gauge-track">
+            <div class="cap-gauge-fill" id="cap-gauge-fill"></div>
+          </div>
+          <div class="cap-metrics-row">
+            <div class="cap-metric-col">
+              <span id="cap-metric-req-lbl" class="cap-metric-lbl" data-i18n="cap_metric_req">الحجم المطلوب</span>
+              <strong id="cap-metric-req-val">-</strong>
+            </div>
+            <div class="cap-metric-divider"></div>
+            <div class="cap-metric-col">
+              <span id="cap-metric-cur-lbl" class="cap-metric-lbl" data-i18n="cap_metric_cur">السعة الحالية</span>
+              <strong id="cap-metric-cur-val">-</strong>
+            </div>
+          </div>
+        </div>
+
+        <!-- Guided Action Option Cards -->
+        <div class="cap-options-stack mt-3">
+          <button type="button" class="cap-option-card cap-option-primary" id="btn-cap-use-default">
+            <img id="cap-rec-thumb" class="cap-option-thumb" src="/static/default_covers/tier2_peak.jpg" alt="Landscape Cover">
+            <div class="cap-option-text">
+              <div class="cap-option-title-row">
+                <strong id="cap-rec-title" data-i18n="cap_btn_use_default">استخدام المنظر الطبيعي المتوافق تلقائياً</strong>
+                <span class="cap-rec-tag" data-i18n="cap_tag_recommended">موصى به</span>
+              </div>
+              <span id="cap-rec-sub" class="cap-option-desc">-</span>
+            </div>
+            <span class="cap-option-arrow" aria-hidden="true">➔</span>
+          </button>
+
+          <button type="button" class="cap-option-card cap-option-direct" id="btn-cap-switch-direct">
+            <div class="cap-option-icon-badge" aria-hidden="true">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <div class="cap-option-text">
+              <div class="cap-option-title-row">
+                <strong id="cap-dir-title" data-i18n="cap_btn_switch_direct">التحويل للتشفير الكمومي المباشر (Direct PQC)</strong>
+                <span class="cap-rec-tag cap-tag-indigo hidden" id="cap-dir-badge" data-i18n="cap_tag_recommended">موصى به</span>
+              </div>
+              <span id="cap-dir-sub" class="cap-option-desc" data-i18n="cap_dir_sub">تشفير Kyber-768 + AEAD بصيغة (.fgp.json) مضغوطة دون الحاجة لصورة حاملة</span>
+            </div>
+            <span class="cap-option-arrow" aria-hidden="true">➔</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="cap-modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-cap-upload-larger">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="17 8 12 3 7 8"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          <span data-i18n="cap_btn_upload_larger">رفع صورة أكبر</span>
+        </button>
+        <button type="button" class="cap-dismiss-link" id="btn-cap-dismiss" data-i18n="cap_btn_dismiss">إلغاء</button>
       </div>
     </div>
   </div>
@@ -313,9 +930,569 @@
   <main class="app-main">
 
     <!-- ========================================================
+         SECTION -1: ULTRA-SLEEK POST-QUANTUM HUD INTRO & BLUEPRINT REVEAL
+         ======================================================== -->
+    <section id="section-intro" class="content-section active">
+      <div class="pq-intro-container" id="pq-intro-container">
+
+        <!-- Phase 1: Technical Blueprint / Wireframe Pre-Reveal Layer (0s to 1.8s) -->
+        <div class="blueprint-overlay-layer" id="blueprint-overlay-layer">
+          <!-- Deep Obsidian Coordinate Grid Mesh -->
+          <div class="blueprint-grid-mesh"></div>
+          
+          <!-- Animated Technical HUD Header & Diagnostic Readouts -->
+          <div class="blueprint-hud-top">
+            <div class="hud-left">
+              <span class="hud-mono-tag">// ARCHITECTURE_SCHEMATIC: NIST_FIPS_203 //</span>
+              <span class="hud-coords" id="hud-coords">COORD: X.4402 &bull; Y.1982 [LAT-768]</span>
+            </div>
+            <div class="hud-right">
+              <span class="hud-status">STATUS: <strong id="hud-status-text">INITIALIZING_SKELETON...</strong></span>
+              <!-- Fast Hex / Matrix Boot Counter in the Corner -->
+              <div class="hud-boot-counter-wrap">
+                <span class="boot-counter-label">BOOT:</span>
+                <span class="boot-matrix-counter" id="boot-counter">00%</span>
+                <span class="boot-hex-tag" id="boot-hex">0x00</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Laser Scan Beam Sweeping Across Layout -->
+          <div class="blueprint-scan-laser" id="blueprint-scan-laser"></div>
+
+          <!-- SVG Precision Line-Drawing Blueprint Canvas (stroke-dashoffset animations) -->
+          <svg class="blueprint-svg-canvas" id="blueprint-svg-canvas" viewBox="0 0 1440 850" preserveAspectRatio="none">
+            <!-- Structural Wireframe Rectangles matching Title & Pillar Cards -->
+            <rect class="svg-wire-line wire-title-box" x="70" y="160" width="1300" height="190" rx="8" />
+            <rect class="svg-wire-line wire-card-box card-box-1" x="70" y="450" width="295" height="310" rx="14" />
+            <rect class="svg-wire-line wire-card-box card-box-2" x="395" y="450" width="295" height="310" rx="14" />
+            <rect class="svg-wire-line wire-card-box card-box-3" x="720" y="450" width="295" height="310" rx="14" />
+            <rect class="svg-wire-line wire-card-box card-box-4" x="1045" y="450" width="295" height="310" rx="14" />
+            
+            <!-- Structural Dimension Lines and Markers -->
+            <line class="svg-dim-line" x1="70" y1="135" x2="1370" y2="135" />
+            <line class="svg-dim-tick" x1="70" y1="127" x2="70" y2="143" />
+            <line class="svg-dim-tick" x1="1370" y1="127" x2="1370" y2="143" />
+            <text class="svg-dim-text" x="720" y="130" text-anchor="middle">SPAN: 1440px &bull; BOUNDS_MAX &bull; GRID_ALIGNED</text>
+
+            <!-- Card Dimension Labels -->
+            <text class="svg-dim-text" x="217" y="435" text-anchor="middle">KEM-768 &bull; 1184-BYTE</text>
+            <text class="svg-dim-text" x="542" y="435" text-anchor="middle">ECDSA P-256 &bull; SHA-256</text>
+            <text class="svg-dim-text" x="867" y="435" text-anchor="middle">CHACHA20-POLY1305 &bull; 256-BIT</text>
+            <text class="svg-dim-text" x="1192" y="435" text-anchor="middle">ZERO-LEAK &bull; SOBEL HBIG</text>
+
+            <!-- Crosshair Alignment Markers (+) -->
+            <g class="crosshair-markers">
+              <!-- Corner crosshairs for Title Box -->
+              <path class="svg-crosshair" d="M 64 160 H 76 M 70 154 V 166" />
+              <path class="svg-crosshair" d="M 1364 160 H 1376 M 1370 154 V 166" />
+              <path class="svg-crosshair" d="M 64 350 H 76 M 70 344 V 356" />
+              <path class="svg-crosshair" d="M 1364 350 H 1376 M 1370 344 V 356" />
+
+              <!-- Crosshairs for Cards -->
+              <path class="svg-crosshair" d="M 64 450 H 76 M 70 444 V 456" />
+              <path class="svg-crosshair" d="M 359 450 H 371 M 365 444 V 456" />
+              <path class="svg-crosshair" d="M 389 450 H 401 M 395 444 V 456" />
+              <path class="svg-crosshair" d="M 684 450 H 696 M 690 444 V 456" />
+              <path class="svg-crosshair" d="M 714 450 H 726 M 720 444 V 456" />
+              <path class="svg-crosshair" d="M 1009 450 H 1021 M 1015 444 V 456" />
+              <path class="svg-crosshair" d="M 1039 450 H 1051 M 1045 444 V 456" />
+              <path class="svg-crosshair" d="M 1334 450 H 1346 M 1340 444 V 456" />
+            </g>
+
+            <!-- Guide Optics & Lattice Concentric Targets -->
+            <line class="svg-guide-ray" x1="0" y1="0" x2="220" y2="220" />
+            <line class="svg-guide-ray" x1="1440" y1="0" x2="1220" y2="220" />
+            <circle class="svg-target-ring" cx="720" cy="255" r="160" />
+            <circle class="svg-target-ring" cx="720" cy="255" r="90" />
+          </svg>
+        </div>
+
+        <!-- Phase 2: Morph & Kinetic Typography Reveal (Real High-Contrast UI Stage) -->
+        <div class="pq-stage-content" id="pq-stage-content">
+          <!-- Live Post-Quantum Lattice Background Canvas -->
+          <canvas id="inline-quantum-canvas" class="quantum-lattice-canvas inline-canvas"></canvas>
+          <!-- Dynamic Ambient Radial Glows -->
+          <div class="ambient-glow glow-crimson"></div>
+          <div class="ambient-glow glow-cyan"></div>
+
+          <!-- Top Toolbar: Replay Animation & System Readiness Status -->
+          <div class="pq-hero-toolbar">
+            <div class="pq-toolbar-left">
+              <span class="hero-live-badge">
+                <span class="hero-live-dot"></span>
+                <span data-i18n="hero_status_pill">POST-QUANTUM CRYPTOGRAPHIC ENGINE &bull; NIST FIPS 203 READY</span>
+              </span>
+            </div>
+            <div class="pq-toolbar-right">
+              <button type="button" class="btn btn-secondary btn-xs hero-tool-btn" id="btn-open-fullscreen-showcase" title="Play Full-Screen Guided Showcase">
+                <span>🎬</span>
+                <span data-i18n="hero_play_showcase">تشغيل العرض السينمائي (Guided Showcase)</span>
+              </button>
+              <button type="button" class="btn btn-secondary btn-xs hero-tool-btn" id="btn-replay-blueprint" title="Replay Blueprint Reveal">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M23 4v6h-6"></path>
+                  <path d="M1 20v-6h6"></path>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+                <span data-i18n="hero_replay_blueprint">إعادة محاكاة المخطط (Replay Blueprint)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Massive Background Typography (Layered Behind Foreground Cards in crimson/electric-crimson) -->
+          <div class="hero-massive-title-wrap" id="hero-massive-wrap">
+            <h1 class="hero-massive-bg-title" id="hero-massive-bg-title">POST-QUANTUM</h1>
+          </div>
+
+          <!-- Foreground Kinetic Hero, Key Features, Encryption Processes & Credits Stage -->
+          <div class="pq-hero-main-stage">
+            
+            <!-- 1. Smooth, Slow Top-to-Bottom Terminology Swapper Block -->
+            <div class="pq-hero-headline-block">
+              <div class="pq-sub-tag">
+                <span class="pq-tag-bracket">[</span>
+                <span class="pq-tag-text" data-i18n="hero_tag_sub">QUANTUM-RESISTANT CYBER DEFENSE ARCHITECTURE</span>
+                <span class="pq-tag-bracket">]</span>
+              </div>
+
+              <!-- Smooth Top-to-Bottom Vertical Swapping Reel on Intro Page -->
+              <div class="vertical-term-swapper-box inline-swapper" id="inline-term-swapper-box">
+                <div class="vertical-term-slide active" id="inline-term-slide-current">
+                  <span class="term-step-badge" id="inline-term-badge">01 / 05 &bull; NIST FIPS 203 STANDARD</span>
+                  <h2 class="vertical-term-heading" id="inline-term-title">CRYSTALS-Kyber (ML-KEM-768)</h2>
+                  <p class="vertical-term-desc" id="inline-term-desc">
+                    Quantum-resistant module-lattice key encapsulation protecting session keys against future quantum supercomputers.
+                  </p>
+                </div>
+                <div class="vertical-term-slide incoming" id="inline-term-slide-next" aria-hidden="true">
+                  <span class="term-step-badge" id="inline-term-badge-next"></span>
+                  <h2 class="vertical-term-heading" id="inline-term-title-next"></h2>
+                  <p class="vertical-term-desc" id="inline-term-desc-next"></p>
+                </div>
+              </div>
+
+              <!-- Interactive Term Selector Pills -->
+              <div class="term-selector-pills" id="inline-term-pills">
+                <button type="button" class="term-pill-btn active" data-term-idx="0">01. CRYSTALS-Kyber</button>
+                <button type="button" class="term-pill-btn" data-term-idx="1">02. ChaCha20 &amp; AES-256</button>
+                <button type="button" class="term-pill-btn" data-term-idx="2">03. Digital Signatures</button>
+                <button type="button" class="term-pill-btn" data-term-idx="3">04. Adaptive Sobel Stego</button>
+                <button type="button" class="term-pill-btn" data-term-idx="4">05. Smart Classifier</button>
+              </div>
+
+              <!-- SYNCHRONIZED LIVE CRYPTOGRAPHIC PIPELINE & HOLOGRAPHIC ANIMATION STAGE (INLINE INTRO) -->
+              <div class="crypto-sync-visualizer inline-visualizer" id="inline-sync-visualizer" data-active-scene="0">
+                <div class="sync-pipeline-track">
+                  <div class="sync-laser-beam" id="inline-sync-beam"></div>
+                  <div class="sync-node active" data-node="0">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">ML-KEM-768</span>
+                  </div>
+                  <div class="sync-node" data-node="1">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">AEAD 256-BIT</span>
+                  </div>
+                  <div class="sync-node" data-node="2">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">ECDSA P-256</span>
+                  </div>
+                  <div class="sync-node" data-node="3">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">SOBEL HBIG STEGO</span>
+                  </div>
+                  <div class="sync-node" data-node="4">
+                    <span class="sync-node-dot"></span>
+                    <span class="sync-node-lbl">AI ROUTER</span>
+                  </div>
+                </div>
+
+                <div class="sync-scenes-viewport">
+                  <!-- Scene 0: CRYSTALS-Kyber Module-LWE Lattice Encapsulation -->
+                  <div class="sync-scene active" data-scene="0">
+                    <div class="scene-visual-row">
+                      <div class="kyber-key-node">
+                        <span class="k-tag">PUBLIC KEY (PK)</span>
+                        <strong>1,184 Bytes</strong>
+                      </div>
+                      <div class="kyber-lattice-core">
+                        <div class="lattice-ring ring-outer"></div>
+                        <div class="lattice-ring ring-mid"></div>
+                        <div class="lattice-cube-grid">
+                          <span></span><span></span><span></span>
+                          <span></span><span></span><span></span>
+                          <span></span><span></span><span></span>
+                        </div>
+                        <span class="lattice-core-tag">M-LWE R<sub>q</sub></span>
+                      </div>
+                      <div class="kyber-key-node crimson">
+                        <span class="k-tag">CIPHERTEXT + SECRET</span>
+                        <strong>1,088B CT &bull; 32B SS</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 1: ChaCha20-Poly1305 & AES-256-GCM ARX Matrix -->
+                  <div class="sync-scene" data-scene="1">
+                    <div class="scene-visual-row">
+                      <div class="arx-matrix-grid">
+                        <span class="arx-cell c-const">expa</span><span class="arx-cell c-const">nd 3</span><span class="arx-cell c-const">2-by</span><span class="arx-cell c-const">te k</span>
+                        <span class="arx-cell c-key">K_01</span><span class="arx-cell c-key">K_02</span><span class="arx-cell c-key">K_03</span><span class="arx-cell c-key">K_04</span>
+                        <span class="arx-cell c-key">K_05</span><span class="arx-cell c-key">K_06</span><span class="arx-cell c-key">K_07</span><span class="arx-cell c-key">K_08</span>
+                        <span class="arx-cell c-nonce">CNT0</span><span class="arx-cell c-nonce">N_01</span><span class="arx-cell c-nonce">N_02</span><span class="arx-cell c-nonce">N_03</span>
+                      </div>
+                      <div class="arx-ops-stream">
+                        <div class="arx-op-pill">ADD (⊞)</div>
+                        <div class="arx-op-pill">ROTATE (⋘)</div>
+                        <div class="arx-op-pill">XOR (⊕)</div>
+                      </div>
+                      <div class="mac-seal-box">
+                        <span class="mac-seal-icon">🔒</span>
+                        <span class="mac-seal-lbl">128-BIT POLY1305 / GCM TAG</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 2: Isolated Digital Signatures (ECDSA P-256 + SHA-256) -->
+                  <div class="sync-scene" data-scene="2">
+                    <div class="scene-visual-row">
+                      <div class="sig-hash-box">
+                        <span class="k-tag">SHA-256 DIGEST</span>
+                        <code>e3b0c442...98fc1c14</code>
+                      </div>
+                      <svg class="ecdsa-curve-svg" viewBox="0 0 220 74">
+                        <path class="ecdsa-curve-bg" d="M 10 58 Q 55 5, 110 37 T 210 16" fill="none" />
+                        <path class="ecdsa-curve-Animated" d="M 10 58 Q 55 5, 110 37 T 210 16" fill="none" />
+                        <circle class="ecdsa-point p1" cx="55" cy="23" r="4" />
+                        <circle class="ecdsa-point p2" cx="110" cy="37" r="4.5" />
+                        <circle class="ecdsa-point p3" cx="172" cy="31" r="4" />
+                      </svg>
+                      <div class="sig-verified-stamp">
+                        <span class="stamp-check">✓</span>
+                        <div>
+                          <strong>ECDSA P-256 SIGNED</strong>
+                          <span>KYBER-ENCAPSULATED</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 3: Content-Adaptive Sobel Edge Steganography (HBIG) -->
+                  <div class="sync-scene" data-scene="3">
+                    <div class="scene-visual-row">
+                      <div class="stego-prng-seed">
+                        <span class="k-tag">ARGON2ID STEGO SEED</span>
+                        <strong>Sobel HBIG Edge Map</strong>
+                      </div>
+                      <div class="stego-pixel-matrix">
+                        <span class="px-cell hit">R₀</span><span class="px-cell">G₁</span><span class="px-cell hit-alt">B₂</span><span class="px-cell">R₃</span><span class="px-cell hit">G₄</span><span class="px-cell">B₅</span>
+                        <span class="px-cell">R₆</span><span class="px-cell hit-alt">G₇</span><span class="px-cell">B₈</span><span class="px-cell hit">R₉</span><span class="px-cell">G₁₀</span><span class="px-cell hit-alt">B₁₁</span>
+                      </div>
+                      <div class="stego-metrics-pill">
+                        <strong>PSNR &gt; 50 dB</strong>
+                        <span>ΔE &lt; 0.05 &bull; BLAKE2b MAC</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Scene 4: Smart Content & Entropy Classifier -->
+                  <div class="sync-scene" data-scene="4">
+                    <div class="scene-visual-row">
+                      <div class="entropy-bars-box">
+                        <span class="e-bar b1"></span><span class="e-bar b2"></span><span class="e-bar b3"></span><span class="e-bar b4"></span><span class="e-bar b5"></span><span class="e-bar b6"></span>
+                        <span class="e-caption">SHANNON ENTROPY H(X)</span>
+                      </div>
+                      <div class="classifier-routes-branches">
+                        <span class="route-branch r-bulk">⚡ BULK STREAM (ChaCha20)</span>
+                        <span class="route-branch r-sens">🛡️ SENSITIVE (ECDH + AEAD)</span>
+                        <span class="route-branch r-doc">✒️ DOCUMENT (ECDSA + KYBER)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Quick Navigation Action CTAs -->
+              <div class="pq-hero-actions">
+                <button type="button" class="btn btn-primary hero-btn-main" id="btn-hero-explore-workstation">
+                  <span data-i18n="hero_cta_workstation">تشغيل منصة الأمان والتشفير</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="cta-arrow">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                  </svg>
+                </button>
+                <button type="button" class="btn btn-secondary hero-btn-secondary" id="btn-hero-view-info">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 16v-4"></path>
+                    <path d="M12 8h.01"></path>
+                  </svg>
+                  <span data-i18n="hero_cta_info">المواصفات الهندسية (System Specs)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- 2. Key Project Features Header & 4 Interactive Security Pillars -->
+            <div class="intro-inline-section-block">
+              <div class="stage-header-block compact-header">
+                <span class="stage-sec-tag">// 01. KEY PROJECT FEATURES //</span>
+                <h2 class="stage-heading" data-i18n="stage2_heading">Core Cryptographic Defense Pillars</h2>
+                <p class="stage-sub" data-i18n="stage2_sub">A comprehensive multi-layered cybersecurity platform combining post-quantum key exchange, authenticated symmetric encryption, digital signatures, and lossless steganography.</p>
+              </div>
+
+              <div class="pq-pillars-grid" id="pq-pillars-grid">
+                
+                <!-- Pillar 1: CRYSTALS-Kyber (ML-KEM) -->
+                <div class="pillar-card" data-card-idx="1" data-target-action="encrypt-standard" tabindex="0" role="button" aria-label="CRYSTALS-Kyber Key Encapsulation">
+                  <div class="pillar-wire-border"></div>
+                  <div class="pillar-card-header">
+                    <div class="pillar-icon-box">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+                        <polyline points="2 17 12 22 22 17"></polyline>
+                        <polyline points="2 12 12 17 22 12"></polyline>
+                      </svg>
+                    </div>
+                    <span class="pillar-badge">NIST FIPS 203</span>
+                  </div>
+                  <h3 class="pillar-title" data-i18n="card1_title">
+                    Post-Quantum Key Exchange
+                  </h3>
+                  <p class="pillar-desc" data-i18n="card1_desc">
+                    Powered by CRYSTALS-Kyber (ML-KEM-768) lattice cryptography, encapsulating 32-byte shared secrets to resist Shor's algorithm on quantum computers.
+                  </p>
+                  <div class="pillar-metric">
+                    <span class="metric-label">SECURITY:</span>
+                    <span class="metric-val">128-bit PQ &bull; 1,184B PK</span>
+                  </div>
+                  <div class="pillar-card-footer">
+                    <span class="pillar-action-link" data-i18n="pillar_action_encrypt">بدء التشفير &larr;</span>
+                  </div>
+                </div>
+
+                <!-- Pillar 2: Digital Signatures -->
+                <div class="pillar-card" data-card-idx="2" data-target-action="encrypt-sign" tabindex="0" role="button" aria-label="Digital Signatures Authenticity">
+                  <div class="pillar-wire-border"></div>
+                  <div class="pillar-card-header">
+                    <div class="pillar-icon-box">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <path d="M9 15l2 2 4-4"></path>
+                      </svg>
+                    </div>
+                    <span class="pillar-badge">ECDSA P-256</span>
+                  </div>
+                  <h3 class="pillar-title" data-i18n="card3_title">
+                    Isolated Digital Signature Pipeline
+                  </h3>
+                  <p class="pillar-desc" data-i18n="card3_desc">
+                    Generates unforgeable ECDSA P-256 signatures over SHA-256 digests, encapsulated with CRYSTALS-Kyber to guarantee authenticity and non-repudiation.
+                  </p>
+                  <div class="pillar-metric">
+                    <span class="metric-label">INTEGRITY:</span>
+                    <span class="metric-val">SHA-256 Non-Repudiation</span>
+                  </div>
+                  <div class="pillar-card-footer">
+                    <span class="pillar-action-link" data-i18n="pillar_action_sign">توقيع المستندات &larr;</span>
+                  </div>
+                </div>
+
+                <!-- Pillar 3: Hybrid Encryption -->
+                <div class="pillar-card" data-card-idx="3" data-target-action="encrypt-standard" tabindex="0" role="button" aria-label="Hybrid Encryption Architecture">
+                  <div class="pillar-wire-border"></div>
+                  <div class="pillar-card-header">
+                    <div class="pillar-icon-box">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        <circle cx="12" cy="16" r="1"></circle>
+                      </svg>
+                    </div>
+                    <span class="pillar-badge">Dual-Layer AEAD</span>
+                  </div>
+                  <h3 class="pillar-title" data-i18n="card2_title">
+                    Hybrid Symmetric Encryption
+                  </h3>
+                  <p class="pillar-desc" data-i18n="card2_desc">
+                    Dual-cipher AEAD architecture that dynamically selects ChaCha20-Poly1305 or AES-256-GCM based on file type, size, and entropy analysis.
+                  </p>
+                  <div class="pillar-metric">
+                    <span class="metric-label">CIPHER:</span>
+                    <span class="metric-val">ChaCha20-Poly1305 / AES</span>
+                  </div>
+                  <div class="pillar-card-footer">
+                    <span class="pillar-action-link" data-i18n="pillar_action_encrypt">بدء التشفير &larr;</span>
+                  </div>
+                </div>
+
+                <!-- Pillar 4: Zero-Leak Privacy -->
+                <div class="pillar-card" data-card-idx="4" data-target-action="channel" tabindex="0" role="button" aria-label="Zero-Leak Steganographic Concealment">
+                  <div class="pillar-wire-border"></div>
+                  <div class="pillar-card-header">
+                    <div class="pillar-icon-box">
+                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                        <path d="M9 12h6"></path>
+                      </svg>
+                    </div>
+                    <span class="pillar-badge">Adaptive Sobel Stego</span>
+                  </div>
+                  <h3 class="pillar-title" data-i18n="card4_title">
+                    Adaptive Sobel HBIG Steganography
+                  </h3>
+                  <p class="pillar-desc" data-i18n="card4_desc">
+                    Conceals encrypted payloads strictly inside high-gradient edge textures using Higher-Bit Invariant Gradients (HBIG), Argon2id key-stretching, and a BLAKE2b integrity MAC.
+                  </p>
+                  <div class="pillar-metric">
+                    <span class="metric-label">CONCEALMENT:</span>
+                    <span class="metric-val">Sobel HBIG &bull; PSNR &gt; 50dB</span>
+                  </div>
+                  <div class="pillar-card-footer">
+                    <span class="pillar-action-link" data-i18n="pillar_action_channel">قناة البث الآمن &larr;</span>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- 3. End-to-End Encryption & Concealment Processes Section -->
+            <div class="intro-processes-wrapper inline-processes" id="inline-intro-processes">
+              <div class="stage-header-block compact-header">
+                <span class="stage-sec-tag">// 02. ENCRYPTION &amp; SECURITY WORKFLOW //</span>
+                <h2 class="stage-heading" data-i18n="intro_proc_heading">End-to-End Encryption &amp; Concealment Processes</h2>
+                <p class="stage-sub" data-i18n="intro_proc_sub">How confidential data is classified, encrypted or signed, encapsulated with Post-Quantum Kyber-768, and hidden inside a lossless PNG carrier.</p>
+              </div>
+
+              <!-- Live Animated Data-Packet Conduit Across the 5 Encryption Steps -->
+              <div class="process-live-conduit">
+                <div class="conduit-line"></div>
+                <div class="conduit-packet"></div>
+              </div>
+
+              <div class="intro-process-steps-grid" id="inline-process-steps-grid">
+                <div class="intro-process-step-card">
+                  <div class="proc-step-num">STEP 01</div>
+                  <h4 class="proc-step-title" data-i18n="proc_step1_title">Smart Classification &amp; Mode Selection</h4>
+                  <p class="proc-step-desc" data-i18n="proc_step1_desc">Analyzes payload MIME signature, byte size, and Shannon entropy, or routes directly to the Isolated Digital Signature pipeline.</p>
+                  <span class="proc-step-tech">MIME + Entropy Analyzer</span>
+                </div>
+
+                <div class="intro-process-step-card">
+                  <div class="proc-step-num">STEP 02</div>
+                  <h4 class="proc-step-title" data-i18n="proc_step2_title">AEAD Encryption or ECDSA Signing</h4>
+                  <p class="proc-step-desc" data-i18n="proc_step2_desc">Encrypts payloads via ChaCha20-Poly1305 / AES-256-GCM with a 96-bit nonce, or signs a SHA-256 hash using an ECDSA P-256 private key.</p>
+                  <span class="proc-step-tech">ChaCha20 / AES-GCM / ECDSA</span>
+                </div>
+
+                <div class="intro-process-step-card">
+                  <div class="proc-step-num">STEP 03</div>
+                  <h4 class="proc-step-title" data-i18n="proc_step3_title">CRYSTALS-Kyber Key Encapsulation</h4>
+                  <p class="proc-step-desc" data-i18n="proc_step3_desc">Encapsulates the 32-byte shared secret via NIST FIPS 203 ML-KEM-768 and derives split encryption and stego keys through HKDF-SHA256.</p>
+                  <span class="proc-step-tech">ML-KEM-768 + HKDF-SHA256</span>
+                </div>
+
+                <div class="intro-process-step-card">
+                  <div class="proc-step-num">STEP 04</div>
+                  <h4 class="proc-step-title" data-i18n="proc_step4_title">Adaptive Sobel HBIG Concealment</h4>
+                  <p class="proc-step-desc" data-i18n="proc_step4_desc">Stretches the Kyber seed via Argon2id, maps high-gradient edge pixels via HBIG, and embeds framed bits + BLAKE2b MAC into lossless PNG textures.</p>
+                  <span class="proc-step-tech">Sobel HBIG + BLAKE2b MAC</span>
+                </div>
+
+                <div class="intro-process-step-card">
+                  <div class="proc-step-num">STEP 05</div>
+                  <h4 class="proc-step-title" data-i18n="proc_step5_title">Decapsulation, Extraction &amp; Verification</h4>
+                  <p class="proc-step-desc" data-i18n="proc_step5_desc">Recipient decapsulates the Kyber token, reconstructs the identical HBIG edge map, verifies the Argon2-keyed BLAKE2b MAC, and checks ECDSA signatures.</p>
+                  <span class="proc-step-tech">Zero-Trust Verification</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Developers & Academic Supervisor Section (At the Very Bottom) -->
+            <div class="intro-bottom-credits-section" id="inline-intro-credits">
+              <div class="credits-cyber-frame inline-credits-frame">
+                <span class="credits-cross ch-tl">+</span>
+                <span class="credits-cross ch-tr">+</span>
+                <span class="credits-cross ch-bl">+</span>
+                <span class="credits-cross ch-br">+</span>
+                
+                <div class="credits-header">
+                  <span class="credits-kicker">// 03. PROJECT CREDITS &amp; ACADEMIC SUPERVISION //</span>
+                  <h2 class="credits-title" data-i18n="credits_title">DEVELOPERS &amp; ACADEMIC SUPERVISOR</h2>
+                  <div class="credits-line"></div>
+                </div>
+
+                <!-- Academic Supervisor Block -->
+                <div class="supervisor-highlight-box">
+                  <span class="sup-overline" data-i18n="credits_sup_label">إشراف الأستاذ المشرف (Academic Supervisor)</span>
+                  <div class="dev-profile-pill supervisor-pill">
+                    <div class="dev-avatar-ring ring-gold">
+                      <span class="dev-icon">🎓</span>
+                    </div>
+                    <div class="dev-info">
+                      <h3 class="dev-name" data-i18n="sup_name">أ.م.د. حيدر طارش (Assist. Prof. Haider Tarish)</h3>
+                      <span class="dev-role" data-i18n="sup_role">المشرف الأكاديمي وموجه المشروع &bull; Academic Supervisor &amp; Project Advisor</span>
+                      <span class="dev-affil" data-i18n="dev_affil">الجامعة المستنصرية &bull; كلية الهندسة &bull; قسم هندسة الحاسوب</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Developers Grid -->
+                <div class="developers-section-block">
+                  <span class="sup-overline" data-i18n="credits_devs_label">تصميم وتطوير المهندسين (Architected &amp; Developed By)</span>
+                  <div class="developers-grid">
+                    <!-- Developer 1: Abdullah Ayad -->
+                    <div class="dev-profile-pill">
+                      <div class="dev-avatar-ring">
+                        <span class="dev-icon">⚡</span>
+                      </div>
+                      <div class="dev-info">
+                        <h3 class="dev-name" data-i18n="st1_name">عبدالله إياد (Abdullah Ayad)</h3>
+                        <span class="dev-role" data-i18n="dev1_role">المتحدث الرئيسي وباحث التشفير المقاوم للكم (CRYSTALS-Kyber ML-KEM-768)</span>
+                        <span class="dev-affil" data-i18n="dev_affil">Mustansiriyah University &bull; College of Engineering</span>
+                      </div>
+                    </div>
+
+                    <!-- Developer 2: Karrar Haider Ismail -->
+                    <div class="dev-profile-pill">
+                      <div class="dev-avatar-ring ring-crimson">
+                        <span class="dev-icon">🛡️</span>
+                      </div>
+                      <div class="dev-info">
+                        <h3 class="dev-name" data-i18n="st2_name">كرار حيدر إسماعيل (Karrar Haider Ismail)</h3>
+                        <span class="dev-role" data-i18n="dev2_role">مهندس النظم وهندسة التشفير والتوجيه والإخفاء المكاني</span>
+                        <span class="dev-affil" data-i18n="dev_affil">Mustansiriyah University &bull; College of Engineering</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Institution Badge & Launch CTA -->
+                <div class="credits-footer">
+                  <div class="inst-tag">
+                    <span class="inst-dot"></span>
+                    <span data-i18n="credits_inst">Computer Engineering Department &bull; Senior Graduation Project 2026</span>
+                  </div>
+                  <div class="credits-cta-row">
+                    <button type="button" class="btn-launch-home" id="btn-inline-enter-home">
+                      <span data-i18n="btn_enter_home">الدخول إلى لوحة التحكم الرئيسية (Launch Home Dashboard)</span>
+                      <span class="launch-icon">➔</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========================================================
          SECTION 0: HOME (SIMPLIFIED OVERVIEW & QUICK MENU HUB)
          ======================================================== -->
-    <section id="section-home" class="content-section active">
+    <section id="section-home" class="content-section">
       <!-- Clean Institutional Welcome Banner -->
       <div class="home-hero-card">
         <div class="home-hero-top">
@@ -353,7 +1530,7 @@
             </svg>
             <span data-i18n="home_cta_decrypt">استخراج وفك التشفير</span>
           </button>
-          <button type="button" class="btn btn-secondary" id="btn-home-open-vault">
+          <button type="button" class="btn btn-secondary hidden" id="btn-home-open-vault">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <path
@@ -382,8 +1559,8 @@
           <div class="home-step-item">
             <span class="home-step-num">3</span>
             <div class="home-step-text">
-              <strong data-i18n="home_step3_title">إخفاء داخل صورة (LSB)</strong>
-              <span data-i18n="home_step3_desc">تضمين البيانات المشفرة داخل صورة PNG بتبديل عشوائي</span>
+              <strong data-i18n="home_step3_title">إخفاء متكيف بالحواف (Sobel HBIG)</strong>
+              <span data-i18n="home_step3_desc">تضمين البيانات داخل حواف وتفاصيل صورة PNG بتمديد Argon2id</span>
             </div>
           </div>
         </div>
@@ -461,8 +1638,6 @@
                   توقيع رقمي معزول جديد (ECDSA + Kyber)</button>
                 <button type="button" class="q-subopt-btn" data-q-jump="signature-verify" data-i18n="q1_sub2">🔍 التحقق
                   من صحة توقيع رقمي مستلم</button>
-                <button type="button" class="q-subopt-btn" data-q-jump="open-vault" data-i18n="q1_sub3">🔑 فتح خزنة
-                  مفاتيح كايبر المحلية</button>
               </div>
             </div>
 
@@ -746,8 +1921,8 @@
           </div>
         </div>
 
-        <!-- Menu 4: Local Key Vault -->
-        <div class="home-menu-card" id="card-home-vault" role="button" tabindex="0">
+        <!-- Menu 4: Local Key Vault (Hidden per security policy: keys are hidden and copy-only) -->
+        <div class="home-menu-card hidden" id="card-home-vault" role="button" tabindex="0">
           <div class="home-menu-icon-wrap icon-indigo">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -958,11 +2133,11 @@
                   <polyline points="21 15 16 10 5 21" />
                 </svg>
               </div>
-              <h4 data-i18n="stage_4_title">الحجب والإخفاء الستيجانوغرافي</h4>
-              <p data-i18n="stage_4_desc">تبديل عشوائي للبكسلات بصيغة PNG غير الفاقدة</p>
+              <h4 data-i18n="stage_4_title">الحجب والإخفاء الستيجانوغرافي المتكيف</h4>
+              <p data-i18n="stage_4_desc">خوارزمية Sobel HBIG لإخفاء الحواف وتمديد Argon2id داخل PNG</p>
               <div class="stage-chips">
-                <span class="chip chip-doc" data-i18n="stage_4_chip1">تعديل بتات LSB</span>
-                <span class="chip chip-sens" data-i18n="stage_4_chip2">خلط معتمد على كايبر</span>
+                <span class="chip chip-doc" data-i18n="stage_4_chip1">حواف Sobel (HBIG)</span>
+                <span class="chip chip-sens" data-i18n="stage_4_chip2">Argon2id + BLAKE2b MAC</span>
                 <span class="chip" data-i18n="stage_4_chip3">&Delta;E &lt; 0.05</span>
               </div>
             </div>
@@ -1378,8 +2553,8 @@
                           data-i18n-html="st2_scope3"><strong>خزنة وتوليد المفاتيح:</strong> بناء نظام خزنة المفاتيح في
                           الذاكرة، ومحرك توليد أزواج المفاتيح المحلية وتصديرها واستيرادها.</span></li>
                       <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span
-                          data-i18n-html="st2_scope4"><strong>الإخفاء المكاني LSB:</strong> تطوير محرك الإخفاء
-                          الستيجانوغرافي بتبديل البكسلات العشوائي بدون أي تسريب بصري (&Delta;E &lt; 0.05).</span></li>
+                          data-i18n-html="st2_scope4"><strong>الإخفاء المتكيف Sobel HBIG:</strong> تطوير محرك الإخفاء
+                          الستيجانوغرافي المتكيف بالحواف وتمديد Argon2id دون أي تسريب بصري (&Delta;E &lt; 0.05).</span></li>
                       <li class="pc-scope-item"><span class="pc-scope-icon">&#10003;</span><span
                           data-i18n-html="st2_scope5"><strong>تطوير النظم والويب:</strong> بناء الواجهة الخلفية عبر
                           FastAPI، وقنوات البث المباشر WebSockets، وواجهة المستخدم التفاعلية.</span></li>
@@ -1391,8 +2566,8 @@
                           التوجيه الديناميكي</span></span>
                       <span class="pc-pill-tag"><span class="pc-pill-dot"></span><span data-i18n="st2_pill3">خزنة وتوليد
                           المفاتيح</span></span>
-                      <span class="pc-pill-tag"><span class="pc-pill-dot"></span><span data-i18n="st2_pill4">الإخفاء
-                          المكاني LSB</span></span>
+                      <span class="pc-pill-tag"><span class="pc-pill-dot"></span><span data-i18n="st2_pill4">إخفاء حواف
+                          Sobel HBIG</span></span>
                       <span class="pc-pill-tag"><span class="pc-pill-dot"></span><span data-i18n="st2_pill5">تطوير النظم
                           المتكاملة</span></span>
                     </div>
@@ -1493,6 +2668,24 @@
                 SHA-256 مع تبادل وتغليف المفاتيح عبر CRYSTALS-Kyber.</p>
             </div>
           </div>
+
+          <!-- Mode 3: Direct Quantum-Safe PQC (Huge Files / No Stego Carrier) -->
+          <div class="op-mode-option" id="mode-opt-direct" data-op-mode="direct_pqc" role="button" tabindex="0">
+            <input type="radio" name="operation_mode" value="direct_pqc" id="radio-mode-direct" class="hidden">
+            <div class="op-mode-icon icon-indigo">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </div>
+            <div class="op-mode-content">
+              <div class="op-mode-title-row">
+                <strong data-i18n="enc_mode_dir_title">التشفير الكمومي المباشر (للملفات الضخمة)</strong>
+                <span class="badge badge-primary" data-i18n="enc_mode_dir_tag">Direct PQC &bull; بدون صورة</span>
+              </div>
+              <p data-i18n="enc_mode_dir_desc">تشفير مباشر فائق السرعة عبر CRYSTALS-Kyber و AEAD للملفات الكبيرة جداً دون الحاجة لصورة حاملة أو تضخم حجم PNG.</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -1524,7 +2717,36 @@
 
             <div id="input-file-container" class="form-group hidden">
               <label data-i18n="enc_lbl_file">رفع ملف (مستند، ملف ثنائي، أو بيانات):</label>
-              <input type="file" id="encrypt-file" class="form-input">
+              <div class="file-dropzone" id="payload-dropzone" tabindex="0" role="button"
+                aria-label="Upload payload file">
+                <input type="file" id="encrypt-file" class="sr-only-file">
+                <div class="dropzone-empty" id="payload-dropzone-empty">
+                  <div class="dropzone-icon">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="17 8 12 3 7 8" />
+                      <line x1="12" y1="3" x2="12" y2="15" />
+                    </svg>
+                  </div>
+                  <strong class="dropzone-title" data-i18n="dz_payload_title">اسحب وأفلت الملف هنا أو انقر للاختيار</strong>
+                  <span class="dropzone-sub" data-i18n="dz_payload_sub">يدعم المستندات، الأرشيفات، والملفات الثنائية بأي حجم</span>
+                </div>
+                <div class="dropzone-selected hidden" id="payload-dropzone-selected">
+                  <div class="dropzone-file-badge">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                      <polyline points="14 2 14 8 20 8" />
+                    </svg>
+                    <div class="dropzone-file-meta">
+                      <strong id="payload-selected-name">-</strong>
+                      <span id="payload-selected-size" class="small text-muted">-</span>
+                    </div>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-payload-file"
+                    data-i18n="dz_clear_btn">✕ إزالة</button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -1602,12 +2824,12 @@
                 <span class="sig-step-chip" data-i18n="enc_sig_chip1">1. بصمة SHA-256</span>
                 <span class="sig-step-chip" data-i18n="enc_sig_chip2">2. توقيع ECDSA P-256</span>
                 <span class="sig-step-chip" data-i18n="enc_sig_chip3">3. تغليف مفاتيح CRYSTALS-Kyber</span>
-                <span class="sig-step-chip" data-i18n="enc_sig_chip4">4. إخفاء PNG LSB</span>
+                <span class="sig-step-chip" data-i18n="enc_sig_chip4">4. إخفاء Sobel HBIG PNG</span>
               </div>
             </div>
           </div>
 
-          <!-- STEP 3: RECIPIENT CRYSTALS-KYBER PUBLIC KEY -->
+          <!-- STEP 3: RECIPIENT CRYSTALS-KYBER PUBLIC KEY (MASKED PASTEABLE + COPY ONLY) -->
           <div class="workflow-step-block mt-4">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -1618,21 +2840,24 @@
               <span data-i18n="enc_card2_title">3. تبادل وتغليف المفاتيح عبر CRYSTALS-Kyber (ML-KEM-768)</span>
             </h3>
             <div class="form-group">
-              <label data-i18n="enc_lbl_pk">المفتاح العام للمستلم (ترميز Base64 &bull; 1,184 بايت):</label>
-              <textarea id="encrypt-recipient-pk" class="form-input code-font" rows="3"
-                data-i18n-placeholder="enc_ph_pk"
-                placeholder="الصق المفتاح العام للمستلم (1,184 بايت) أو قم بتحميله من الخزنة..."></textarea>
-              <div class="btn-group mt-2">
-                <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-pk"
-                  data-i18n="enc_btn_load_vault">تحميل من خزنة المفاتيح</button>
-                <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-pk" data-i18n="enc_btn_gen_pk">⚡
-                  توليد زوج مفاتيح شبكية</button>
+              <label data-i18n="enc_lbl_pk">المفتاح العام للمستلم (مخفي أمنياً &bull; 1,184 بايت):</label>
+              <div class="masked-token-vault-box">
+                <input type="password" id="encrypt-recipient-pk" class="form-input code-font masked-token-input"
+                  autocomplete="off" data-i18n-placeholder="enc_ph_pk"
+                  placeholder="•••••••••••••••••••••••••••••••• (مملوء تلقائياً أو الصق مفتاح المستلم)"
+                  style="flex: 1; min-width: 180px;">
+                <button type="button" class="btn btn-primary btn-xs" id="btn-copy-recipient-pk">
+                  <span data-i18n="enc_btn_copy_pk">📋 نسخ مفتاحي العام</span>
+                </button>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-use-local-pk"
+                  data-i18n="enc_btn_use_local_pk">↺ مفتاحي المحلي</button>
               </div>
+              <p class="small text-muted mt-1" data-i18n="enc_pk_security_hint">المفتاح العام محجوب بصرياً (نقاط مخفية) ومنع تنزيله كملف؛ يتاح نسخ مفتاحك العام أو لصق المفتاح العام للمستلم الآخر هنا.</p>
             </div>
           </div>
 
           <!-- STEP 4: STEGO CARRIER & OPTIONAL PEER BROADCAST -->
-          <div class="workflow-step-block mt-4">
+          <div class="workflow-step-block mt-4" id="step4-stego-block">
             <h3 class="card-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -1642,16 +2867,60 @@
               </svg>
               <span data-i18n="enc_card3_title">4. الصورة الناقلة الحاملة وخيارات البث (اختياري)</span>
             </h3>
-            <div class="form-group">
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
-                <label style="margin-bottom: 0;" data-i18n="enc_lbl_cover">اختر صورة الغلاف (PNG غير فاقدة -
-                  اختياري):</label>
+
+            <div class="direct-pqc-notice hidden mb-3" id="step4-direct-note">
+              <strong data-i18n="enc_direct_note_title">وضع التشفير الكمومي المباشر نشط (بدون إخفاء في صورة)</strong>
+              <p class="small text-secondary mt-1" data-i18n="enc_direct_note_desc">
+                يتم تشفير البيانات مباشرة عبر CRYSTALS-Kyber و AEAD وتوليد حزمة (.fgp.json) مضغوطة دون الحاجة لصورة حاملة ضخمة.
+              </p>
+            </div>
+
+            <div class="form-group" id="cover-carrier-controls">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                <label style="margin-bottom: 0;" data-i18n="enc_lbl_cover">صورة الغلاف (مناظر طبيعية ذكية تلقائية أو رفع مخصص):</label>
                 <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-reset-cover"
-                  data-i18n="enc_btn_reset_cover">↺ استخدام صورة مولدة تلقائياً</button>
+                  data-i18n="enc_btn_reset_cover">↺ استخدام المناظر الطبيعية التلقائية</button>
               </div>
-              <input type="file" id="encrypt-cover-image" accept="image/png,image/jpeg,image/webp" class="form-input">
-              <p class="small text-muted mt-1" data-i18n="enc_hint_cover">اترك الحقل فارغاً لتوليد صورة ناقلة متوافقة
-                ومثلى تلقائياً.</p>
+
+              <!-- Modern Drag & Drop Box for Custom Cover Upload -->
+              <div class="file-dropzone cover-dropzone" id="cover-dropzone" tabindex="0" role="button"
+                aria-label="Upload cover image">
+                <input type="file" id="encrypt-cover-image" accept="image/png,image/jpeg,image/webp" class="sr-only-file">
+                <div class="dropzone-empty" id="cover-dropzone-empty">
+                  <div class="dropzone-icon">
+                    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                      stroke-linecap="round" stroke-linejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <polyline points="21 15 16 10 5 21" />
+                    </svg>
+                  </div>
+                  <strong class="dropzone-title" data-i18n="dz_cover_title">اسحب وأفلت صورة الغلاف هنا أو انقر للرفع (اختياري)</strong>
+                  <span class="dropzone-sub" data-i18n="dz_cover_sub">PNG / JPG / WebP — اتركه فارغاً ليختار النظام المنظر الطبيعي الأنسب لحجم بياناتك</span>
+                </div>
+                <div class="dropzone-selected hidden" id="cover-dropzone-selected">
+                  <div class="dropzone-file-badge">
+                    <img id="cover-selected-thumb" class="dropzone-thumb" alt="Uploaded Cover Thumbnail">
+                    <div class="dropzone-file-meta">
+                      <strong id="cover-selected-name">-</strong>
+                      <span id="cover-selected-meta" class="small text-muted">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Smart Auto-Selected Landscape Carrier Gallery -->
+              <div class="default-cover-selector-box mt-3" id="default-cover-selector-box">
+                <div class="default-cover-header">
+                  <div class="default-cover-title-wrap">
+                    <span class="badge badge-success" id="default-cover-badge" data-i18n="def_cover_auto_badge">اختيار ذكي تلقائي</span>
+                    <strong class="small" data-i18n="def_cover_heading">مكتبة المناظر الطبيعية الافتراضية (تتكيف مع حجم البيانات):</strong>
+                  </div>
+                  <button type="button" class="btn btn-secondary btn-xs hidden" id="btn-auto-cover-mode"
+                    data-i18n="def_cover_btn_auto">↺ تلقائي</button>
+                </div>
+                <div class="default-cover-tier-grid" id="default-cover-tier-grid"></div>
+              </div>
 
               <!-- Simple Cover Size Indicator Message -->
               <div id="cover-size-msg" class="cover-size-msg mt-2">
@@ -1696,9 +2965,24 @@
 
           <div id="encrypt-results-container" class="hidden">
             <!-- Image Preview -->
-            <div class="stego-preview-container">
+            <div class="stego-preview-container" id="encrypt-stego-preview-box">
               <img id="stego-image-preview" class="stego-preview" alt="Stego Image Preview">
-              <div class="stego-badge" data-i18n="enc_stego_badge">تم تضمين البيانات المحجوبة بنجاح &bull; صورة PNG نقية
+              <div class="stego-badge" id="enc-result-stego-badge" data-i18n="enc_stego_badge">تم تضمين البيانات المحجوبة بنجاح &bull; صورة PNG نقية
+              </div>
+            </div>
+
+            <!-- Direct PQC Armored Banner (shown when pipeline_target === 'direct_pqc') -->
+            <div class="direct-pqc-result-banner hidden" id="encrypt-direct-result-box">
+              <div class="verification-banner">
+                <div class="verification-icon">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                  </svg>
+                </div>
+                <div>
+                  <strong data-i18n="enc_direct_res_title">تم تشفير الحزمة مباشرة عبر Direct Quantum-Safe PQC ✓</strong>
+                  <p class="small text-secondary" data-i18n="enc_direct_res_desc">ملف مشفر مقاوم للكم (.fgp.json) دون تضخم حجم الصورة الناقلة.</p>
+                </div>
               </div>
             </div>
 
@@ -1706,6 +2990,10 @@
               <a id="btn-download-stego" class="btn btn-success btn-block" download="stego_carrier.png"
                 data-i18n="enc_btn_dl_stego">
                 تحميل صورة الإخفاء (PNG)
+              </a>
+              <a id="btn-download-direct-pqc" class="btn btn-success btn-block hidden" download="encrypted_package.fgp.json"
+                data-i18n="enc_btn_dl_direct">
+                تحميل الحزمة المشفرة (.fgp.json)
               </a>
             </div>
 
@@ -1759,7 +3047,7 @@
                 <span data-i18n="enc_telem_sig_lbl">التوقيع الرقمي ECDSA P-256:</span>
                 <strong id="telem-signature" class="text-success">-</strong>
               </div>
-              <div class="telemetry-row">
+              <div class="telemetry-row" id="telem-digest-row">
                 <span data-i18n="enc_telem_digest_lbl">بصمة النزاهة SHA-256:</span>
                 <strong id="telem-digest" class="code-font small">-</strong>
               </div>
@@ -1794,8 +3082,38 @@
             <span data-i18n="dec_card1_title">1. الصورة الناقلة المحجوبة</span>
           </h3>
           <div class="form-group">
-            <label data-i18n="dec_lbl_carrier">رفع صورة الإخفاء (PNG):</label>
-            <input type="file" id="decrypt-stego-file" accept="image/png" class="form-input">
+            <label data-i18n="dec_lbl_carrier">رفع صورة الإخفاء (PNG) أو حزمة التشفير المباشر (.fgp.json):</label>
+            <div class="file-dropzone" id="decrypt-dropzone" tabindex="0" role="button"
+              aria-label="Upload stego PNG or direct PQC bundle">
+              <input type="file" id="decrypt-stego-file" accept="image/png,.fgp.json,.json" class="sr-only-file">
+              <div class="dropzone-empty" id="decrypt-dropzone-empty">
+                <div class="dropzone-icon">
+                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="17 8 12 3 7 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </div>
+                <strong class="dropzone-title" data-i18n="dz_dec_title">اسحب وأفلت صورة الإخفاء (PNG) أو حزمة .fgp.json هنا</strong>
+                <span class="dropzone-sub" data-i18n="dz_dec_sub">انقر للتصفح أو أفلت الملف لاستخراج وفك التشفير الكمومي</span>
+              </div>
+              <div class="dropzone-selected hidden" id="decrypt-dropzone-selected">
+                <div class="dropzone-file-badge">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                  <div class="dropzone-file-meta">
+                    <strong id="decrypt-selected-name">-</strong>
+                    <span id="decrypt-selected-size" class="small text-muted">-</span>
+                  </div>
+                </div>
+                <button type="button" class="btn btn-secondary btn-xs" id="btn-clear-decrypt-file"
+                  data-i18n="dz_clear_btn">✕ إزالة</button>
+              </div>
+            </div>
           </div>
 
           <div id="decrypt-image-preview-box" class="stego-preview-container small-preview hidden mb-3">
@@ -1810,9 +3128,15 @@
             <span data-i18n="dec_card2_title">2. رمز التغليف المشفر (ML-KEM-768)</span>
           </h3>
           <div class="form-group">
-            <label data-i18n="dec_lbl_token">النص المشفر لكايبر (1,088 بايت Base64):</label>
-            <textarea id="decrypt-kyber-ct" class="form-input code-font" rows="3" data-i18n-placeholder="dec_ph_token"
-              placeholder="الصق رمز كايبر (1,088 بايت) المنسوخ من الحافظة..."></textarea>
+            <label data-i18n="dec_lbl_token">النص المشفر لكايبر (مخفي أمنياً &bull; 1,088 بايت):</label>
+            <div class="masked-token-vault-box">
+              <input type="password" id="decrypt-kyber-ct" class="form-input code-font masked-token-input"
+                autocomplete="off" data-i18n-placeholder="dec_ph_token"
+                placeholder="•••••••••••••••••••••••••••••••• (الصق الرمز المنسوخ هنا)"
+                style="flex: 1; min-width: 180px;">
+              <button type="button" class="btn btn-primary btn-xs" id="btn-copy-decrypt-ct"
+                data-i18n="dec_btn_copy_ct">📋 نسخ الرمز</button>
+            </div>
           </div>
 
           <h3 class="card-title mt-4">
@@ -1824,17 +3148,16 @@
             <span data-i18n="dec_card3_title">3. المفتاح السري المحلي للمستلم</span>
           </h3>
           <div class="form-group">
-            <label data-i18n="dec_lbl_sk">المفتاح السري للمستلم (2,400 بايت Base64):</label>
-            <textarea id="decrypt-kyber-sk" class="form-input code-font" rows="3" data-i18n-placeholder="dec_ph_sk"
-              placeholder="الصق المفتاح السري لفك التغليف أو قم بتحميله من الخزنة..."></textarea>
-            <div class="btn-group mt-2">
-              <button type="button" class="btn btn-secondary btn-xs" id="btn-use-vault-sk"
-                data-i18n="dec_btn_load_vault">تحميل من خزنة المفاتيح</button>
-              <button type="button" class="btn btn-primary btn-xs" id="btn-quick-gen-sk" data-i18n="dec_btn_gen_sk">⚡
-                توليد زوج مفاتيح شبكية</button>
-              <input type="file" id="decrypt-sk-file" class="hidden">
-              <button type="button" class="btn btn-secondary btn-xs" id="btn-browse-sk"
-                data-i18n="dec_btn_browse_sk">تحميل من ملف مفتاح</button>
+            <label data-i18n="dec_lbl_sk">المفتاح السري للمستلم (مخفي أمنياً &bull; 2,400 بايت):</label>
+            <div class="masked-token-vault-box">
+              <input type="password" id="decrypt-kyber-sk" class="form-input code-font masked-token-input"
+                autocomplete="off" data-i18n-placeholder="dec_ph_sk"
+                placeholder="•••••••••••••••••••••••••••••••• (محمّل تلقائياً أو الصق مفتاحك السري)"
+                style="flex: 1; min-width: 180px;">
+              <button type="button" class="btn btn-primary btn-xs" id="btn-copy-decrypt-sk"
+                data-i18n="dec_btn_copy_sk">📋 نسخ</button>
+              <button type="button" class="btn btn-secondary btn-xs" id="btn-use-local-sk"
+                data-i18n="dec_btn_use_local_sk">↺ المحلي</button>
             </div>
           </div>
 
@@ -1910,7 +3233,7 @@
                 <span data-i18n="dec_telem_sig_lbl">التوقيع الرقمي (ECDSA):</span>
                 <strong id="rec-sig-status">-</strong>
               </div>
-              <div class="telemetry-row">
+              <div class="telemetry-row" id="rec-digest-row">
                 <span data-i18n="dec_telem_digest_lbl">بصمة النزاهة SHA-256:</span>
                 <strong id="rec-digest" class="code-font small">-</strong>
               </div>
@@ -2141,7 +3464,7 @@
   </main>
 
   <!-- Application Controller -->
-  <script src="/static/app.js?v=2.2"></script>
+  <script src="/static/app.js?v=3.1"></script>
 </body>
 
 </html>
